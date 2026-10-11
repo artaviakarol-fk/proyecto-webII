@@ -1,0 +1,9 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app/
+
+    # Nivel inicial acordado: 5. Se puede subir conforme crezca el dominio.
+    level: 5
