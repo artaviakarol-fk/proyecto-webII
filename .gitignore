@@ -1,0 +1,10 @@
+# Archivos de entorno (nunca subir credenciales)
+.env
+.env.*
+!.env.example
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
