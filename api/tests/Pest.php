@@ -1,5 +1,7 @@
 <?php
 
+use Tests\TestCase;
+
 /*
 |--------------------------------------------------------------------------
 | Configuración de Pest
@@ -10,4 +12,4 @@
 |
 */
 
-pest()->extend(Tests\TestCase::class)->in('Feature');
+pest()->extend(TestCase::class)->in('Feature');
