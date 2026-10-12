@@ -24,7 +24,7 @@ Una prueba de arquitectura con Pest verificará que `Domain` no dependa de `Illu
 
 ## Puesta en marcha
 
-Requisitos: PHP 8.5, Composer 2.
+Requisitos: PHP 8.4 o superior, Composer 2.
 
 ```bash
 cd api
