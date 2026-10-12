@@ -11,7 +11,7 @@ it('responde 200 con el estado de la app y de la base de datos', function () {
         ->assertJsonStructure(['status', 'checks' => ['app', 'database'], 'checked_at']);
 });
 
-it('responde 503 en formato problem+json si la base de datos no responde', function () {
+it('responde 200 e indica que la base de datos no está disponible si no responde', function () {
     $this->app->instance(DatabaseStatusChecker::class, new class implements DatabaseStatusChecker
     {
         public function isAvailable(): bool
@@ -21,9 +21,8 @@ it('responde 503 en formato problem+json si la base de datos no responde', funct
     });
 
     $this->getJson('/api/v1/health')
-        ->assertStatus(503)
-        ->assertHeader('Content-Type', 'application/problem+json')
-        ->assertJsonPath('status', 503)
-        ->assertJsonPath('title', 'Servicio no disponible.')
+        ->assertOk()
+        ->assertJsonPath('status', 'degraded')
+        ->assertJsonPath('checks.app', 'ok')
         ->assertJsonPath('checks.database', 'unavailable');
 });
