@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Infrastructure\Http\Problems;
+declare(strict_types=1);
+
+namespace Src\Shared\Infrastructure\Http\Problem;
 
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;

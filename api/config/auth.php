@@ -1,7 +1,5 @@
 <?php
 
-use App\Models\User;
-
 return [
 
     /*
@@ -64,7 +62,8 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
+            // The Identity/Users module provides its Eloquent model when it exists.
+            'model' => env('AUTH_MODEL'),
         ],
 
         // 'users' => [
