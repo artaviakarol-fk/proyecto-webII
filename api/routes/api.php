@@ -1,8 +1,5 @@
 <?php
 
-use App\Infrastructure\Http\Controllers\HealthController;
-use Illuminate\Support\Facades\Route;
+declare(strict_types=1);
 
-Route::prefix('v1')->group(function () {
-    Route::get('/health', HealthController::class)->name('health');
-});
+require base_path('src/Shared/Infrastructure/Http/routes.php');
