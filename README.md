@@ -8,19 +8,20 @@ Proyecto del curso **ISW-621 Web II**. API REST en **Laravel (PHP)** para la ges
 
 ## Estructura del repositorio
 
-```
-api/   → API Laravel (backend)
-```
+| Ruta | Contenido |
+|---|---|
+| [`api/`](api/) | API REST en Laravel. El código del producto vive en `api/src/`. |
+| [`docs/architecture.md`](docs/architecture.md) | Estructura, capas, regla de dependencias, errores y rutas. |
 
 ## Arquitectura
 
-La API usa **arquitectura hexagonal** (puertos y adaptadores):
+La API combina **arquitectura hexagonal** (puertos y adaptadores) con diseño guiado por el dominio, siguiendo la misma estructura del proyecto guía del curso, [SodaYa-Hexagonal](https://github.com/BryanChavesSalas/SodaYa-Hexagonal). El código del producto vive en `api/src/`, bajo el namespace `Src\`, organizado por contexto y módulo y, dentro de cada módulo, en tres capas:
 
-- `Domain`: reglas de negocio puras, sin dependencias de Laravel.
-- `Application`: casos de uso y puertos (interfaces).
-- `Infrastructure`: adaptadores (Eloquent, HTTP, pasarelas de pago, WhatsApp, etc.).
+```
+Infrastructure  ──▶  Application  ──▶  Domain
+```
 
-Una prueba de arquitectura con Pest verificará que `Domain` no dependa de `Illuminate`.
+El dominio no depende de Laravel y la prueba `tests/Architecture/LayerDependencyTest.php` lo verifica en cada cambio. El detalle está en [docs/architecture.md](docs/architecture.md).
 
 ## Puesta en marcha
 
@@ -57,7 +58,7 @@ Si la base de datos no responde, `status` es `degraded` y `database` es `unavail
 
 ### Errores de la API
 
-Los errores bajo `/api/*` se devuelven en formato **RFC 9457** (`application/problem+json`), con `type`, `title`, `status`, `detail` e `instance`. Los errores de validación incluyen además `errors`.
+Todos los errores se devuelven en formato **RFC 9457** (`application/problem+json`), con `type`, `title`, `status`, `detail` e `instance`, y con los mensajes en español desde `api/lang/es`. Los errores de validación incluyen además `errores` por campo. Cada respuesta lleva el encabezado `X-Request-Id`, que se repite en `instance`. La tabla completa está en [docs/architecture.md](docs/architecture.md#errores).
 
 ### Sin Docker
 
