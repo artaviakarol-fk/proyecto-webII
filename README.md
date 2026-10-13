@@ -11,7 +11,7 @@ Proyecto del curso **ISW-621 Web II**. API REST en **Laravel (PHP)** para la ges
 | Ruta | Contenido |
 |---|---|
 | [`api/`](api/) | API REST en Laravel. El código del producto vive en `api/src/`. |
-| [`docs/architecture.md`](docs/architecture.md) | Estructura, capas, regla de dependencias y rutas. |
+| [`docs/architecture.md`](docs/architecture.md) | Estructura, capas, regla de dependencias, errores y rutas. |
 
 ## Arquitectura
 
@@ -58,7 +58,7 @@ Si la base de datos no responde, `status` es `degraded` y `database` es `unavail
 
 ### Errores de la API
 
-Los errores bajo `/api/*` se devuelven en formato **RFC 9457** (`application/problem+json`), con `type`, `title`, `status`, `detail` e `instance`. Los errores de validación incluyen además `errors`.
+Todos los errores se devuelven en formato **RFC 9457** (`application/problem+json`), con `type`, `title`, `status`, `detail` e `instance`, y con los mensajes en español desde `api/lang/es`. Los errores de validación incluyen además `errores` por campo. Cada respuesta lleva el encabezado `X-Request-Id`, que se repite en `instance`. La tabla completa está en [docs/architecture.md](docs/architecture.md#errores).
 
 ### Sin Docker
 

@@ -102,6 +102,25 @@ Cuando dos contextos necesitan colaborar lo hacen por un puerto declarado en el 
 
 El dominio y la aplicación nunca preguntan la hora. El momento actual se crea en el borde HTTP con `now()` y viaja como `DateTimeImmutable` hasta el caso de uso (`CheckHealth::execute($now)`). Así las reglas que dependen del reloj, como el vencimiento de un lote, se prueban con momentos fijos sin arrancar el framework.
 
+## Errores
+
+El dominio lanza excepciones que extienden `Src\Shared\Domain\Exceptions\DomainException`. Cada excepción lleva una clave de traducción, no un texto: el mensaje en español se resuelve en la infraestructura desde `lang/es`.
+
+Toda respuesta de error sigue RFC 9457 (`application/problem+json`). `ProblemDetailsRenderer` convierte cada excepción en un documento con `type`, `title`, `status`, `detail` e `instance`:
+
+| Excepción | Tipo de problema | HTTP |
+| --- | --- | --- |
+| Validación de un Form Request | `datos-invalidos`, con `errores` por campo | 422 |
+| `InvalidValueException` | `datos-invalidos` | 422 |
+| `NotFoundException` | `no-encontrado` | 404 |
+| `AuthenticationFailedException` | `credenciales-invalidas` | 401 |
+| Ruta protegida sin sesión (`AuthenticationException` del framework) | `no-autenticado` | 401 |
+| Otra excepción del dominio, como un stock insuficiente | `conflicto` | 409 |
+| Excepción HTTP del framework | El tipo de su código de estado | 4xx o 5xx |
+| Cualquier otra | `error-interno`, sin detalles técnicos | 500 |
+
+Los tipos están en el enum `ProblemType` y sus textos en `lang/es/problems.php`. El campo `instance` repite el identificador de la solicitud, que también viaja en el encabezado `X-Request-Id` (lo asigna el middleware `AssignRequestId`) y en el contexto de cada línea de log.
+
 ## Rutas
 
 `routes/api.php` incluye el archivo de rutas de cada módulo. Todas se sirven bajo `/api/v1`, prefijo que se configura una sola vez en `bootstrap/app.php`. Un cambio incompatible se publica como `/api/v2`.
