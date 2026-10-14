@@ -24,12 +24,49 @@ Una prueba de arquitectura con Pest verificará que `Domain` no dependa de `Illu
 
 ## Puesta en marcha
 
-Requisitos: PHP 8.4 o superior, Composer 2.
+Por ahora la API se ejecuta **en local con Docker** (API + PostgreSQL). El frontend se publicará más adelante en GitHub Pages.
+
+Requisitos: Docker Desktop.
+
+```bash
+cp .env.example .env      # definir DB_PASSWORD con una contraseña propia
+docker compose up -d --build
+```
+
+La primera vez tarda unos minutos: instala dependencias, genera la clave de la app y corre las migraciones.
+
+- API: <http://localhost:8000>
+- Ruta de salud: <http://localhost:8000/api/v1/health>
+- PostgreSQL de Docker: `localhost:5433` (usa el 5433 para no chocar con un PostgreSQL instalado en la compu)
+
+Para detenerlo: `docker compose down`.
+
+### Ruta de salud
+
+`GET /api/v1/health` siempre responde `200` e indica el estado de la aplicación y de la base de datos:
+
+```json
+{
+  "status": "ok",
+  "checks": { "app": "ok", "database": "ok" },
+  "checked_at": "2026-10-12T14:00:00-06:00"
+}
+```
+
+Si la base de datos no responde, `status` es `degraded` y `database` es `unavailable`.
+
+### Errores de la API
+
+Los errores bajo `/api/*` se devuelven en formato **RFC 9457** (`application/problem+json`), con `type`, `title`, `status`, `detail` e `instance`. Los errores de validación incluyen además `errors`.
+
+### Sin Docker
+
+Requisitos: PHP 8.4 o superior, Composer 2 y PostgreSQL.
 
 ```bash
 cd api
 composer install
-cp .env.example .env
+cp .env.example .env      # ajustar DB_* a tu PostgreSQL local
 php artisan key:generate
 php artisan migrate
 php artisan serve
