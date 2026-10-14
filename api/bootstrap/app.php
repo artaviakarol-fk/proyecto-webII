@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Request;
 use Src\Shared\Infrastructure\Http\Middleware\AssignRequestId;
-use Src\Shared\Infrastructure\Http\Problem\ProblemDetails;
+use Src\Shared\Infrastructure\Http\Problem\ProblemDetailsRenderer;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,11 +18,5 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(AssignRequestId::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (Throwable $e, Request $request) {
-            if ($request->is('api/*')) {
-                return ProblemDetails::fromThrowable($e, $request);
-            }
-
-            return null;
-        });
+        $exceptions->render(new ProblemDetailsRenderer);
     })->create();
