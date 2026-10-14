@@ -8,19 +8,20 @@ Proyecto del curso **ISW-621 Web II**. API REST en **Laravel (PHP)** para la ges
 
 ## Estructura del repositorio
 
-```
-api/   → API Laravel (backend)
-```
+| Ruta | Contenido |
+|---|---|
+| [`api/`](api/) | API REST en Laravel. El código del producto vive en `api/src/`. |
+| [`docs/architecture.md`](docs/architecture.md) | Estructura, capas y regla de dependencias. |
 
 ## Arquitectura
 
-La API usa **arquitectura hexagonal** (puertos y adaptadores):
+La API combina **arquitectura hexagonal** (puertos y adaptadores) con diseño guiado por el dominio, siguiendo la misma estructura del proyecto guía del curso, [SodaYa-Hexagonal](https://github.com/BryanChavesSalas/SodaYa-Hexagonal). El código del producto vive en `api/src/`, bajo el namespace `Src\`, organizado por contexto y módulo y, dentro de cada módulo, en tres capas:
 
-- `Domain`: reglas de negocio puras, sin dependencias de Laravel.
-- `Application`: casos de uso y puertos (interfaces).
-- `Infrastructure`: adaptadores (Eloquent, HTTP, pasarelas de pago, WhatsApp, etc.).
+```
+Infrastructure  ──▶  Application  ──▶  Domain
+```
 
-Una prueba de arquitectura con Pest verificará que `Domain` no dependa de `Illuminate`.
+El dominio no depende de Laravel y la prueba `tests/Architecture/LayerDependencyTest.php` lo verifica en cada cambio. El detalle está en [docs/architecture.md](docs/architecture.md).
 
 ## Puesta en marcha
 
