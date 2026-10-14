@@ -11,7 +11,7 @@ Proyecto del curso **ISW-621 Web II**. API REST en **Laravel (PHP)** para la ges
 | Ruta | Contenido |
 |---|---|
 | [`api/`](api/) | API REST en Laravel. El código del producto vive en `api/src/`. |
-| [`docs/architecture.md`](docs/architecture.md) | Estructura, capas y regla de dependencias. |
+| [`docs/architecture.md`](docs/architecture.md) | Estructura, capas, regla de dependencias y rutas. |
 
 ## Arquitectura
 

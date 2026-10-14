@@ -102,6 +102,16 @@ Cuando dos contextos necesitan colaborar lo hacen por un puerto declarado en el 
 
 El dominio y la aplicación nunca preguntan la hora. El momento actual se crea en el borde HTTP con `now()` y viaja como `DateTimeImmutable` hasta el caso de uso (`CheckHealth::execute($now)`). Así las reglas que dependen del reloj, como el vencimiento de un lote, se prueban con momentos fijos sin arrancar el framework.
 
+## Rutas
+
+`routes/api.php` incluye el archivo de rutas de cada módulo. Todas se sirven bajo `/api/v1`, prefijo que se configura una sola vez en `bootstrap/app.php`. Un cambio incompatible se publica como `/api/v2`.
+
+| Ruta | Qué hace |
+| --- | --- |
+| `GET /api/v1` | Identifica la API y su versión |
+| `GET /api/v1/health` | Estado de la aplicación y de la base de datos |
+| `GET /up` | Ruta de salud del framework |
+
 ## Pruebas
 
 | Carpeta | Alcance |
