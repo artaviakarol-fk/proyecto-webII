@@ -10,6 +10,7 @@ use Src\Sales\Sales\Domain\Contracts\SaleRepository;
 use Src\Sales\Sales\Domain\Entities\Sale;
 use Src\Sales\Sales\Domain\Exceptions\InsufficientStockException;
 use Src\Sales\Sales\Domain\Exceptions\SaleProductUnavailableException;
+use Src\Sales\Sales\Domain\ValueObjects\BuyerIdNumber;
 use Src\Sales\Sales\Domain\ValueObjects\SaleId;
 use Src\Sales\Sales\Domain\ValueObjects\SaleLine;
 use Src\Sales\Sales\Domain\ValueObjects\SaleStatus;
@@ -62,7 +63,7 @@ final readonly class DatabaseSaleRepository implements SaleRepository
             ))
             ->all();
 
-        return Sale::reconstitute($id, $negocioId, (string) $row->cajero_id, SaleStatus::from((string) $row->estado), array_values($lines));
+        return Sale::reconstitute($id, $negocioId, (string) $row->cajero_id, SaleStatus::from((string) $row->estado), array_values($lines), $row->cedula_comprador === null ? null : new BuyerIdNumber((string) $row->cedula_comprador));
     }
 
     /**
@@ -93,6 +94,7 @@ final readonly class DatabaseSaleRepository implements SaleRepository
             $columns = [
                 'cajero_id' => $sale->cashierId,
                 'metodo_pago' => self::PAYMENT_METHOD,
+                'cedula_comprador' => $sale->buyer?->value,
                 'estado' => $sale->status->value,
                 'total' => $sale->total()->toDecimal(),
                 'cobrada_at' => $sale->status === SaleStatus::Paid ? ($existing->cobrada_at ?? $now) : null,

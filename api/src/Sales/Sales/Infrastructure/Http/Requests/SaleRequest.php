@@ -11,7 +11,10 @@ use Src\Sales\Sales\Domain\ValueObjects\SaleLine;
 use Src\Shared\Domain\Contracts\NegocioContext;
 use Stringable;
 
-/** The lines of a sale: each one names a product of the negocio and how many units. The price is never sent. */
+/**
+ * The lines of a sale: each one names a product of the negocio and how many units. The price is never sent.
+ * The id number of the buyer is optional here, but a sale with liquor needs it: the sale itself enforces it.
+ */
 final class SaleRequest extends FormRequest
 {
     public const int MAX_LINES = 100;
@@ -24,6 +27,7 @@ final class SaleRequest extends FormRequest
     public function rules(NegocioContext $context): array
     {
         return [
+            'cedula_comprador' => ['nullable', 'string', 'max:20', 'regex:/^[0-9\s-]+$/'],
             'lineas' => ['required', 'array', 'min:1', 'max:'.self::MAX_LINES],
             'lineas.*' => ['array'],
             'lineas.*.producto_id' => [
@@ -35,6 +39,14 @@ final class SaleRequest extends FormRequest
             ],
             'lineas.*.cantidad' => ['required', 'integer', 'min:1', 'max:'.SaleLine::MAX_QUANTITY],
         ];
+    }
+
+    /** The id number of the buyer, when the request brings one. */
+    public function buyerIdNumber(): ?string
+    {
+        $idNumber = $this->input('cedula_comprador');
+
+        return is_string($idNumber) && trim($idNumber) !== '' ? $idNumber : null;
     }
 
     /**

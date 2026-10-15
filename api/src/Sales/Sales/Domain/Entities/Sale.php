@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Src\Sales\Sales\Domain\Entities;
 
 use Src\Sales\Sales\Domain\Exceptions\InvalidSaleStateException;
+use Src\Sales\Sales\Domain\ValueObjects\BuyerIdNumber;
 use Src\Sales\Sales\Domain\ValueObjects\SaleId;
 use Src\Sales\Sales\Domain\ValueObjects\SaleLine;
 use Src\Sales\Sales\Domain\ValueObjects\SaleStatus;
@@ -15,7 +16,7 @@ use Src\Shared\Domain\ValueObjects\NegocioId;
 final class Sale
 {
     /**
-     * Hold a sale paid in cash: who sold it, what was sold and the stage it is in.
+     * Hold a sale paid in cash: who sold it, what was sold, who bought it when it is known and the stage it is in.
      *
      * @param  list<SaleLine>  $lines
      */
@@ -25,18 +26,19 @@ final class Sale
         public readonly string $cashierId,
         public private(set) SaleStatus $status,
         public private(set) array $lines,
+        public private(set) ?BuyerIdNumber $buyer,
     ) {}
 
     /**
-     * Open a sale; it needs at least one line and a product cannot appear twice.
+     * Open a sale; it needs at least one line, a product cannot appear twice and liquor needs the buyer's id number.
      *
      * @param  list<SaleLine>  $lines
      */
-    public static function open(SaleId $id, NegocioId $negocioId, string $cashierId, array $lines): self
+    public static function open(SaleId $id, NegocioId $negocioId, string $cashierId, array $lines, ?BuyerIdNumber $buyer = null): self
     {
-        self::guardLines($lines);
+        self::guardLines($lines, $buyer);
 
-        return new self($id, $negocioId, $cashierId, SaleStatus::Open, $lines);
+        return new self($id, $negocioId, $cashierId, SaleStatus::Open, $lines, $buyer);
     }
 
     /**
@@ -44,9 +46,9 @@ final class Sale
      *
      * @param  list<SaleLine>  $lines
      */
-    public static function reconstitute(SaleId $id, NegocioId $negocioId, string $cashierId, SaleStatus $status, array $lines): self
+    public static function reconstitute(SaleId $id, NegocioId $negocioId, string $cashierId, SaleStatus $status, array $lines, ?BuyerIdNumber $buyer = null): self
     {
-        return new self($id, $negocioId, $cashierId, $status, $lines);
+        return new self($id, $negocioId, $cashierId, $status, $lines, $buyer);
     }
 
     /** The sum of the lines. */
@@ -60,16 +62,18 @@ final class Sale
     }
 
     /**
-     * Replace the lines while the sale is still open.
+     * Replace the lines while the sale is still open; without a new buyer, the one already registered stays.
      *
      * @param  list<SaleLine>  $lines
      */
-    public function revise(array $lines): void
+    public function revise(array $lines, ?BuyerIdNumber $buyer = null): void
     {
         $this->assertOpen();
-        self::guardLines($lines);
+        $buyer ??= $this->buyer;
+        self::guardLines($lines, $buyer);
 
         $this->lines = $lines;
+        $this->buyer = $buyer;
     }
 
     /** Close the sale as paid in cash. */
@@ -99,11 +103,11 @@ final class Sale
     }
 
     /**
-     * A sale needs lines, and each product goes in one line only.
+     * A sale needs lines, each product goes in one line only, and a sale with liquor needs the buyer's id number.
      *
      * @param  list<SaleLine>  $lines
      */
-    private static function guardLines(array $lines): void
+    private static function guardLines(array $lines, ?BuyerIdNumber $buyer): void
     {
         if ($lines === []) {
             throw new InvalidValueException('sales.sale_without_lines');
@@ -113,6 +117,10 @@ final class Sale
 
         if (count($products) !== count(array_unique($products))) {
             throw new InvalidValueException('sales.duplicate_product');
+        }
+
+        if ($buyer === null && array_any($lines, fn (SaleLine $line): bool => $line->liquor)) {
+            throw new InvalidValueException('sales.buyer_id_required_for_liquor');
         }
     }
 }

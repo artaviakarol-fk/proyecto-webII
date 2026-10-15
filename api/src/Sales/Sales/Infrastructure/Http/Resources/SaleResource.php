@@ -31,6 +31,7 @@ final class SaleResource extends JsonResource
             'estado' => $this->sale->status,
             'metodo_pago' => $this->sale->paymentMethod,
             'cajero' => ['id' => $this->sale->cashierId, 'nombre' => $this->sale->cashierName],
+            'cedula_comprador' => $this->sale->buyerIdNumber,
             'creada_en' => $this->sale->createdAt,
             'cobrada_en' => $this->sale->paidAt,
             'anulada_en' => $this->sale->cancelledAt,
