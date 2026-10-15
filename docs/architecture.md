@@ -159,6 +159,14 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `POST /api/v1/productos` | Crear un producto. Solo administración |
 | `PUT /api/v1/productos/{id}` | Reemplazar los datos de un producto. Solo administración |
 | `DELETE /api/v1/productos/{id}` | Borrado lógico de un producto; su código queda libre. Solo administración |
+| `POST /api/v1/productos/{id}/foto` | Subir o reemplazar la foto (campo `imagen`, multipart). Solo administración |
+| `GET /api/v1/productos/{id}/foto` | Descargar la foto del producto. Todo el personal |
+| `POST /api/v1/negocio/logo` | Subir o reemplazar el logo del negocio. Solo administración |
+| `GET /api/v1/negocio/logo` | Descargar el logo del negocio de la cuenta |
+
+### Archivos
+
+Las fotos y los logos se aceptan solo en JPG, PNG o WebP de hasta 2 MB. La regla `mimes` revisa el contenido real del archivo, no solo la extensión. Se guardan en el disco privado `local` (`storage/app/private`), nunca en `public/`, bajo `negocios/{id}/productos/{producto}/` y `negocios/{id}/logo/`. El nombre es el hash SHA-256 del contenido, nunca el nombre original. Cada producto tiene su propia carpeta, para que dos productos con la misma imagen no compartan el archivo y reemplazar la foto de uno no borre la del otro. Solo se descargan por las rutas de arriba, que exigen token y pasan por el aislamiento por negocio: la foto de un producto de otro negocio responde 404 aunque el archivo exista.
 | `GET /up` | Ruta de salud del framework |
 
 ## Pruebas

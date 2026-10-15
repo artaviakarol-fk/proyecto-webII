@@ -38,7 +38,7 @@ final class ProductResource extends JsonResource
             'stock' => $details->stock->units,
             'es_perecedero' => $details->perishable,
             'es_licor' => $details->liquor,
-            'foto' => $this->product->photoPath,
+            'foto' => $this->product->photoPath === null ? null : route('inventory.products.photo.show', $this->product->id->value),
             'agotado' => $this->product->isSoldOut(),
         ];
     }

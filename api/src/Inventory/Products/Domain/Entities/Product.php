@@ -15,7 +15,7 @@ final class Product
         public readonly ProductId $id,
         public readonly NegocioId $negocioId,
         public private(set) ProductDetails $details,
-        public readonly ?string $photoPath,
+        public private(set) ?string $photoPath,
     ) {}
 
     /** Register a new product in the catalog of a negocio. */
@@ -34,6 +34,15 @@ final class Product
     public function revise(ProductDetails $details): void
     {
         $this->details = $details;
+    }
+
+    /** Point the product to a new stored photo and answer the path of the one it replaces, if any. */
+    public function changePhoto(string $path): ?string
+    {
+        $previous = $this->photoPath;
+        $this->photoPath = $path;
+
+        return $previous === $path ? null : $previous;
     }
 
     /** Tell whether no unit is left to sell. */

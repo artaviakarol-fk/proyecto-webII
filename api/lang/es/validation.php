@@ -183,6 +183,7 @@ return [
         'es_licor' => 'es licor',
         'por_pagina' => 'por página',
         'pagina' => 'página',
+        'imagen' => 'imagen',
     ],
 
 ];
