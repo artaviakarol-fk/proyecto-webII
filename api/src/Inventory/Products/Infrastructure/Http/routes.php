@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use Src\Inventory\Products\Infrastructure\Http\Controllers\AvailabilityController;
 use Src\Inventory\Products\Infrastructure\Http\Controllers\ProductController;
 use Src\Inventory\Products\Infrastructure\Http\Controllers\ProductPhotoController;
 use Src\Inventory\Products\Infrastructure\Http\Controllers\ProductPriceController;
@@ -17,6 +18,7 @@ Route::prefix('productos')
             Route::get('/', 'index')->name('index');
             Route::get('{producto}', 'show')->name('show')->whereUuid('producto');
             Route::get('{producto}/foto', [ProductPhotoController::class, 'show'])->name('photo.show')->whereUuid('producto');
+            Route::get('{producto}/disponibilidad', AvailabilityController::class)->name('availability')->whereUuid('producto');
         });
 
         // Solo la administración lo cambia.
