@@ -64,6 +64,7 @@ final class VentaTest extends TestCase
                 'estado' => 'abierta',
                 'metodo_pago' => 'efectivo',
                 'cajero' => ['id' => $this->cajero->id, 'nombre' => 'Ana Caja'],
+                'cedula_comprador' => null,
                 'creada_en' => '2026-10-15T09:30:00+00:00',
                 'cobrada_en' => null,
                 'anulada_en' => null,

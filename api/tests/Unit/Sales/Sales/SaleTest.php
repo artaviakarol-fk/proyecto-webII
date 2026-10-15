@@ -7,6 +7,7 @@ namespace Tests\Unit\Sales\Sales;
 use PHPUnit\Framework\TestCase;
 use Src\Sales\Sales\Domain\Entities\Sale;
 use Src\Sales\Sales\Domain\Exceptions\InvalidSaleStateException;
+use Src\Sales\Sales\Domain\ValueObjects\BuyerIdNumber;
 use Src\Sales\Sales\Domain\ValueObjects\SaleId;
 use Src\Sales\Sales\Domain\ValueObjects\SaleLine;
 use Src\Sales\Sales\Domain\ValueObjects\SaleStatus;
@@ -97,24 +98,62 @@ final class SaleTest extends TestCase
         $sale->cancel();
     }
 
+    /** A sale with liquor cannot be opened without the id number of the buyer. */
+    public function test_sale_with_liquor_needs_the_buyer_id(): void
+    {
+        $this->expectException(InvalidValueException::class);
+
+        $this->openSale([$this->line(self::ARROZ, 1, '1500.00'), $this->line(self::FRIJOLES, 1, '2000.00', liquor: true)]);
+    }
+
+    /** With the id number of the buyer, a sale with liquor opens and keeps it. */
+    public function test_sale_with_liquor_keeps_the_buyer_id(): void
+    {
+        $sale = $this->openSale([$this->line(self::FRIJOLES, 1, '2000.00', liquor: true)], new BuyerIdNumber('1-1111-1111'));
+
+        $this->assertSame('111111111', $sale->buyer?->value);
+    }
+
+    /** A sale without liquor does not need the buyer. */
+    public function test_sale_without_liquor_does_not_need_the_buyer_id(): void
+    {
+        $sale = $this->openSale([$this->line(self::ARROZ, 1, '1500.00')]);
+
+        $this->assertNull($sale->buyer);
+    }
+
+    /** Revising keeps the buyer that was registered, and adding liquor without any buyer is rejected. */
+    public function test_revising_keeps_the_buyer_and_checks_the_liquor(): void
+    {
+        $sale = $this->openSale([$this->line(self::FRIJOLES, 1, '2000.00', liquor: true)], new BuyerIdNumber('1-1111-1111'));
+
+        $sale->revise([$this->line(self::FRIJOLES, 2, '2000.00', liquor: true)]);
+        $this->assertSame('111111111', $sale->buyer?->value);
+
+        $withoutBuyer = $this->openSale([$this->line(self::ARROZ, 1, '1500.00')]);
+        $this->expectException(InvalidValueException::class);
+        $withoutBuyer->revise([$this->line(self::FRIJOLES, 1, '2000.00', liquor: true)]);
+    }
+
     /**
      * Open a sale of a negocio with the given lines.
      *
      * @param  list<SaleLine>  $lines
      */
-    private function openSale(array $lines): Sale
+    private function openSale(array $lines, ?BuyerIdNumber $buyer = null): Sale
     {
         return Sale::open(
             new SaleId('018f0000-0000-7000-8000-0000000000aa'),
             new NegocioId('018f0000-0000-7000-8000-0000000000bb'),
             '018f0000-0000-7000-8000-0000000000cc',
             $lines,
+            $buyer,
         );
     }
 
     /** Build a line of a product with a decimal price. */
-    private function line(string $productId, int $quantity, string $price): SaleLine
+    private function line(string $productId, int $quantity, string $price, bool $liquor = false): SaleLine
     {
-        return new SaleLine(new ProductId($productId), $quantity, Money::fromDecimal($price));
+        return new SaleLine(new ProductId($productId), $quantity, Money::fromDecimal($price), $liquor);
     }
 }
