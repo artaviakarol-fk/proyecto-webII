@@ -174,6 +174,8 @@ return [
 
     'attributes' => [
         'contrasena' => 'contraseña',
+        'correo' => 'correo',
+        'dispositivo' => 'dispositivo',
     ],
 
 ];
