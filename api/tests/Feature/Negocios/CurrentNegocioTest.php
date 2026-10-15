@@ -27,7 +27,7 @@ final class CurrentNegocioTest extends TestCase
             ->assertExactJson(['data' => [
                 'id' => $negocio->id,
                 'nombre' => 'Minisúper Teresita',
-                'logo' => 'logos/teresita.png',
+                'logo' => 'http://localhost/api/v1/negocio/logo',
                 'activo' => true,
             ]]);
     }
