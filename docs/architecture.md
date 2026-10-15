@@ -163,12 +163,16 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `GET /api/v1/productos/{id}/foto` | Descargar la foto del producto. Todo el personal |
 | `POST /api/v1/negocio/logo` | Subir o reemplazar el logo del negocio. Solo administración |
 | `GET /api/v1/negocio/logo` | Descargar el logo del negocio de la cuenta |
+| `PATCH /api/v1/productos/{id}/precio` | Aceptar un nuevo precio de venta (`precio_venta`). Solo administración |
+| `GET /api/v1/productos/{id}/historial-precios` | Historial de costos y precios del producto, del más reciente al más antiguo. Solo administración |
 | `POST /api/v1/entradas` | Registrar mercadería recibida: proveedor, fecha y líneas (producto existente o nuevo, cantidad, costo unitario). Bodega y administración |
 | `GET /api/v1/entradas/{id}` | Ver una entrada con sus líneas, quién la registró y cuándo. Bodega y administración |
 
 ### Stock y trazabilidad
 
 Cada entrada de mercadería se guarda en una sola transacción: crea los productos nuevos, bloquea la fila de cada producto con `SELECT ... FOR UPDATE` antes de sumar su stock y deja una fila en `movimientos_inventario` con el tipo, la cantidad, el stock que resultó, quién y cuándo. Si una línea falla, no se guarda nada. Un `CHECK` en la base de datos impide que el stock quede negativo.
+
+Cada línea de una entrada guarda el costo anterior del producto, y la respuesta muestra `costo_anterior`, `costo_unitario`, `diferencia_costo` y el `precio_venta` actual, para que la administración decida si cambia el precio con `PATCH /productos/{id}/precio` o lo mantiene. La entrada nunca cambia el precio por su cuenta. Todo cambio de costo o de precio (al crear, editar, recibir o cambiar el precio de un producto) deja una fila en `historial_precios` con el motivo, quién y cuándo.
 
 ### Archivos
 
