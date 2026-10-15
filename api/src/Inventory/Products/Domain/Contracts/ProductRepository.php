@@ -1,0 +1,33 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Src\Inventory\Products\Domain\Contracts;
+
+use Src\Inventory\Products\Domain\Entities\Product;
+use Src\Inventory\Products\Domain\Exceptions\ProductCodeAlreadyInUseException;
+use Src\Inventory\Products\Domain\ValueObjects\ProductId;
+use Src\Inventory\Products\Domain\ValueObjects\ProductPage;
+use Src\Shared\Domain\ValueObjects\NegocioId;
+
+interface ProductRepository
+{
+    /** Generate the identity for a new product. */
+    public function nextId(): ProductId;
+
+    /**
+     * Persist a new or modified product.
+     *
+     * @throws ProductCodeAlreadyInUseException
+     */
+    public function save(Product $product): void;
+
+    /** Find a live product of the negocio. */
+    public function find(ProductId $id, NegocioId $negocioId): ?Product;
+
+    /** One page of the live products of the negocio ordered by name, optionally matching a name or code. */
+    public function search(NegocioId $negocioId, ?string $term, int $page, int $perPage): ProductPage;
+
+    /** Remove the product from the catalog, keeping its history (soft delete). */
+    public function delete(Product $product): void;
+}

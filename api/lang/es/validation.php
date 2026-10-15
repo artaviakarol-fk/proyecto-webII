@@ -176,6 +176,13 @@ return [
         'contrasena' => 'contraseña',
         'correo' => 'correo',
         'dispositivo' => 'dispositivo',
+        'codigo' => 'código',
+        'precio_venta' => 'precio de venta',
+        'costo_actual' => 'costo actual',
+        'es_perecedero' => 'es perecedero',
+        'es_licor' => 'es licor',
+        'por_pagina' => 'por página',
+        'pagina' => 'página',
     ],
 
 ];
