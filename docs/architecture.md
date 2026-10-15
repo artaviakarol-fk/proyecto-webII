@@ -163,6 +163,12 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `GET /api/v1/productos/{id}/foto` | Descargar la foto del producto. Todo el personal |
 | `POST /api/v1/negocio/logo` | Subir o reemplazar el logo del negocio. Solo administración |
 | `GET /api/v1/negocio/logo` | Descargar el logo del negocio de la cuenta |
+| `POST /api/v1/entradas` | Registrar mercadería recibida: proveedor, fecha y líneas (producto existente o nuevo, cantidad, costo unitario). Bodega y administración |
+| `GET /api/v1/entradas/{id}` | Ver una entrada con sus líneas, quién la registró y cuándo. Bodega y administración |
+
+### Stock y trazabilidad
+
+Cada entrada de mercadería se guarda en una sola transacción: crea los productos nuevos, bloquea la fila de cada producto con `SELECT ... FOR UPDATE` antes de sumar su stock y deja una fila en `movimientos_inventario` con el tipo, la cantidad, el stock que resultó, quién y cuándo. Si una línea falla, no se guarda nada. Un `CHECK` en la base de datos impide que el stock quede negativo.
 
 ### Archivos
 

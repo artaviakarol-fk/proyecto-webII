@@ -6,7 +6,7 @@ namespace Tests\Unit\Inventory\Products;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Src\Inventory\Products\Domain\ValueObjects\Money;
+use Src\Inventory\Shared\Domain\ValueObjects\Money;
 use Src\Shared\Domain\Exceptions\InvalidValueException;
 
 final class MoneyTest extends TestCase

@@ -6,7 +6,7 @@ namespace Src\Inventory\Products\Application\UseCases;
 
 use Src\Inventory\Products\Domain\Contracts\ProductRepository;
 use Src\Inventory\Products\Domain\Exceptions\ProductNotFoundException;
-use Src\Inventory\Products\Domain\ValueObjects\ProductId;
+use Src\Inventory\Shared\Domain\ValueObjects\ProductId;
 use Src\Shared\Domain\Contracts\NegocioContext;
 
 final readonly class DeleteProduct
