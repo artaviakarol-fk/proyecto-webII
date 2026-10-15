@@ -6,8 +6,8 @@ namespace Src\Inventory\Products\Domain\Contracts;
 
 use Src\Inventory\Products\Domain\Entities\Product;
 use Src\Inventory\Products\Domain\Exceptions\ProductCodeAlreadyInUseException;
-use Src\Inventory\Products\Domain\ValueObjects\ProductId;
 use Src\Inventory\Products\Domain\ValueObjects\ProductPage;
+use Src\Inventory\Shared\Domain\ValueObjects\ProductId;
 use Src\Shared\Domain\ValueObjects\NegocioId;
 
 interface ProductRepository

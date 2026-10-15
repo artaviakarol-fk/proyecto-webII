@@ -6,11 +6,11 @@ namespace Src\Inventory\Products\Application\UseCases;
 
 use Src\Inventory\Products\Application\DTOs\ProductData;
 use Src\Inventory\Products\Domain\ValueObjects\Category;
-use Src\Inventory\Products\Domain\ValueObjects\Money;
 use Src\Inventory\Products\Domain\ValueObjects\ProductCode;
 use Src\Inventory\Products\Domain\ValueObjects\ProductDetails;
 use Src\Inventory\Products\Domain\ValueObjects\ProductName;
 use Src\Inventory\Products\Domain\ValueObjects\Stock;
+use Src\Inventory\Shared\Domain\ValueObjects\Money;
 
 trait BuildsProductDetails
 {

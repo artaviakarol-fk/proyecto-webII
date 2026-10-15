@@ -12,14 +12,14 @@ use Src\Inventory\Products\Domain\Contracts\ProductRepository;
 use Src\Inventory\Products\Domain\Entities\Product;
 use Src\Inventory\Products\Domain\Exceptions\ProductCodeAlreadyInUseException;
 use Src\Inventory\Products\Domain\ValueObjects\Category;
-use Src\Inventory\Products\Domain\ValueObjects\Money;
 use Src\Inventory\Products\Domain\ValueObjects\ProductCode;
 use Src\Inventory\Products\Domain\ValueObjects\ProductDetails;
-use Src\Inventory\Products\Domain\ValueObjects\ProductId;
 use Src\Inventory\Products\Domain\ValueObjects\ProductName;
 use Src\Inventory\Products\Domain\ValueObjects\ProductPage;
 use Src\Inventory\Products\Domain\ValueObjects\Stock;
 use Src\Inventory\Products\Infrastructure\Persistence\Models\ProductModel;
+use Src\Inventory\Shared\Domain\ValueObjects\Money;
+use Src\Inventory\Shared\Domain\ValueObjects\ProductId;
 use Src\Shared\Domain\ValueObjects\NegocioId;
 
 /**

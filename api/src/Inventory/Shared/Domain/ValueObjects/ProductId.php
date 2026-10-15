@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Src\Inventory\Products\Domain\ValueObjects;
+namespace Src\Inventory\Shared\Domain\ValueObjects;
 
 use Src\Shared\Domain\ValueObjects\Identifier;
 

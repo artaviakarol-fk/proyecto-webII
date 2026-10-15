@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Tests\Unit\Inventory\Products;
 
 use PHPUnit\Framework\TestCase;
-use Src\Inventory\Products\Domain\ValueObjects\Money;
 use Src\Inventory\Products\Domain\ValueObjects\ProductCode;
 use Src\Inventory\Products\Domain\ValueObjects\ProductDetails;
 use Src\Inventory\Products\Domain\ValueObjects\ProductName;
 use Src\Inventory\Products\Domain\ValueObjects\Stock;
+use Src\Inventory\Shared\Domain\ValueObjects\Money;
 use Src\Shared\Domain\Exceptions\InvalidValueException;
 
 final class ProductDetailsTest extends TestCase
