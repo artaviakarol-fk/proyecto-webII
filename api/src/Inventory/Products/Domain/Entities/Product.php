@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Src\Inventory\Products\Domain\Entities;
 
 use Src\Inventory\Products\Domain\ValueObjects\ProductDetails;
+use Src\Inventory\Shared\Domain\ValueObjects\Money;
 use Src\Inventory\Shared\Domain\ValueObjects\ProductId;
 use Src\Shared\Domain\ValueObjects\NegocioId;
 
@@ -34,6 +35,12 @@ final class Product
     public function revise(ProductDetails $details): void
     {
         $this->details = $details;
+    }
+
+    /** Accept a new sale price, for example after a delivery with a different cost. */
+    public function changeSalePrice(Money $salePrice): void
+    {
+        $this->details = $this->details->withSalePrice($salePrice);
     }
 
     /** Point the product to a new stored photo and answer the path of the one it replaces, if any. */

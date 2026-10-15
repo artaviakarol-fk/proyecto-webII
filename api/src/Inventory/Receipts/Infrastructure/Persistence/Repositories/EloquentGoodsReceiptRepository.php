@@ -13,6 +13,7 @@ use Src\Inventory\Receipts\Domain\Contracts\GoodsReceiptRepository;
 use Src\Inventory\Receipts\Domain\Entities\GoodsReceipt;
 use Src\Inventory\Receipts\Domain\Exceptions\StockLimitExceededException;
 use Src\Inventory\Receipts\Domain\ValueObjects\ReceiptId;
+use Src\Inventory\Shared\Infrastructure\Persistence\PriceHistory;
 
 final readonly class EloquentGoodsReceiptRepository implements GoodsReceiptRepository
 {
@@ -59,7 +60,21 @@ final readonly class EloquentGoodsReceiptRepository implements GoodsReceiptRepos
                     throw StockLimitExceededException::create(Stock::MAX);
                 }
 
+                // A product created by this same receipt has no previous cost to compare with.
+                $previousCost = $line->newProduct ? null : $product->costo_actual;
                 $product->update(['stock' => $stock, 'costo_actual' => $line->unitCost->toDecimal()]);
+
+                // El historial guarda el costo de cada entrada; el precio de venta no cambia aquí:
+                // lo decide la administración después de ver la diferencia (PATCH /productos/{id}/precio).
+                PriceHistory::record(
+                    $negocioId,
+                    $product->id,
+                    $line->unitCost->toDecimal(),
+                    $product->precio_venta,
+                    PriceHistory::RECEIVED,
+                    $receipt->receivedBy,
+                    $receipt->id->value,
+                );
 
                 DB::table('entrada_lineas')->insert([
                     'id' => (string) Str::uuid7(),
@@ -68,6 +83,7 @@ final readonly class EloquentGoodsReceiptRepository implements GoodsReceiptRepos
                     'producto_id' => $product->id,
                     'cantidad' => $line->quantity,
                     'costo_unitario' => $line->unitCost->toDecimal(),
+                    'costo_anterior' => $previousCost,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ]);

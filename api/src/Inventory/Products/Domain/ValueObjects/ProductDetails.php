@@ -25,4 +25,19 @@ final readonly class ProductDetails
             throw new InvalidValueException('inventory.price_must_be_positive');
         }
     }
+
+    /** The same details with another sale price. */
+    public function withSalePrice(Money $salePrice): self
+    {
+        return new self(
+            $this->code,
+            $this->name,
+            $this->category,
+            $salePrice,
+            $this->currentCost,
+            $this->stock,
+            $this->perishable,
+            $this->liquor,
+        );
+    }
 }

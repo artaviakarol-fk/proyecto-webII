@@ -36,6 +36,9 @@ final class ReceiptResource extends JsonResource
                 ...$line,
                 'costo_unitario' => (float) $line['costo_unitario'],
                 'subtotal' => (float) $line['subtotal'],
+                'costo_anterior' => $line['costo_anterior'] === null ? null : (float) $line['costo_anterior'],
+                'diferencia_costo' => $line['diferencia_costo'] === null ? null : (float) $line['diferencia_costo'],
+                'precio_venta' => (float) $line['precio_venta'],
             ], $this->receipt->lines),
             'total' => (float) $this->receipt->total,
         ];
