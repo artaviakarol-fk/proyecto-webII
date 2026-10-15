@@ -11,6 +11,6 @@ class DatabaseSeeder extends Seeder
     /** Seed the demo data; each module adds its own seeder here. */
     public function run(): void
     {
-        $this->call([NegociosDemoSeeder::class]);
+        $this->call([NegociosDemoSeeder::class, ProductosDemoSeeder::class]);
     }
 }
