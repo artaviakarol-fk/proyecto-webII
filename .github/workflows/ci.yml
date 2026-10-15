@@ -15,6 +15,25 @@ jobs:
     name: Pint, Larastan y Pest
     runs-on: ubuntu-latest
 
+    # Las pruebas corren contra PostgreSQL, porque el aislamiento por negocio usa Row Level Security.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PASSWORD: app-secret
+      DB_ADMIN_PASSWORD: owner-secret
+
     defaults:
       run:
         working-directory: api
@@ -27,7 +46,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: mbstring, pdo_sqlite, sqlite3, intl
+          extensions: mbstring, pdo_pgsql, intl
           coverage: none
           tools: composer:v2
 
@@ -49,6 +68,14 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate
+
+      - name: Crear los roles y las bases de datos
+        env:
+          PGPASSWORD: postgres
+        run: >-
+          psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1
+          -v owner_password="$DB_ADMIN_PASSWORD" -v app_password="$DB_PASSWORD"
+          -f database/roles.sql
 
       - name: Pint (estilo de código)
         run: vendor/bin/pint --test

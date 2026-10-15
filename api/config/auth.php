@@ -1,5 +1,7 @@
 <?php
 
+use Src\Identity\Users\Infrastructure\Persistence\Models\UserModel;
+
 return [
 
     /*
@@ -62,8 +64,8 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            // The Identity/Users module provides its Eloquent model when it exists.
-            'model' => env('AUTH_MODEL'),
+            // Cuentas del personal, del módulo Identity/Users.
+            'model' => env('AUTH_MODEL', UserModel::class),
         ],
 
         // 'users' => [

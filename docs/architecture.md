@@ -42,7 +42,8 @@ Propuesta a partir de la ficha del proyecto; cada uno se crea cuando llegue su p
 | `Inventory` | `Products`, `Batches` | Stock, lotes con fecha de vencimiento, bloqueo de productos vencidos |
 | `Sales` | `Sales`, `CashShifts` | Venta en caja, control de edad para licor, cierre y cuadre de caja |
 | `Credit` | `Customers` | Fiado con límite por cliente |
-| `Identity` | `Users` | Cuentas y roles: administrador, cajero y bodeguero |
+| `Identity` | `Users` | Cuentas y roles: administrador, cajero y bodeguero. Login con tokens de Sanctum |
+| `Negocios` | `Profile` | El negocio (inquilino) al que pertenece cada cuenta y cada dato |
 
 ## Regla de dependencias
 
@@ -121,6 +122,28 @@ Toda respuesta de error sigue RFC 9457 (`application/problem+json`). `ProblemDet
 
 Los tipos están en el enum `ProblemType` y sus textos en `lang/es/problems.php`. El campo `instance` repite el identificador de la solicitud, que también viaja en el encabezado `X-Request-Id` (lo asigna el middleware `AssignRequestId`) y en el contexto de cada línea de log.
 
+## Aislamiento por negocio
+
+Varios negocios comparten la misma base de datos. El aislamiento tiene dos capas, igual que en el proyecto guía SodaYa-Hexagonal:
+
+1. **El negocio sale del token.** El middleware `negocio` (`ScopeRequestToNegocio`) toma el `negocio_id` de la cuenta autenticada y abre una transacción con `set_config('app.negocio_id', ...)`. Ningún `negocio_id` del cuerpo, la query string o la URL se lee nunca. En el dominio, el puerto `NegocioContext` entrega ese mismo negocio a los casos de uso.
+2. **PostgreSQL filtra las filas (Row Level Security).** Cada tabla con `negocio_id` se protege en su migración con `RowLevelSecurity::enable('tabla')`. La política solo deja leer, insertar, cambiar o borrar filas del negocio fijado en la transacción; sin negocio fijado no se ve ninguna. Por eso un recurso de otro negocio responde `404`, igual que uno que no existe, aunque el código olvide filtrar.
+
+Para que la política se aplique siempre, la aplicación se conecta con un rol sin privilegios (`minisuper_app`): no es superusuario ni dueño de ninguna tabla. Las migraciones las corre el dueño del esquema (`minisuper_owner`, conexión `pgsql_admin`). Los roles se crean con `api/database/roles.sql`.
+
+Una tabla nueva de un negocio se crea así:
+
+```php
+Schema::create('productos', function (Blueprint $table): void {
+    $table->uuid('id')->primary();
+    $table->foreignUuid('negocio_id')->constrained('negocios')->cascadeOnDelete();
+    // ...
+});
+RowLevelSecurity::enable('productos');      // en down(): RowLevelSecurity::disable('productos');
+```
+
+y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLevelSecurityTest` falla si alguna tabla con `negocio_id` (salvo `users`, que se consulta en el login antes de saber el negocio) no tiene su política.
+
 ## Rutas
 
 `routes/api.php` incluye el archivo de rutas de cada módulo. Todas se sirven bajo `/api/v1`, prefijo que se configura una sola vez en `bootstrap/app.php`. Un cambio incompatible se publica como `/api/v2`.
@@ -129,6 +152,8 @@ Los tipos están en el enum `ProblemType` y sus textos en `lang/es/problems.php`
 | --- | --- |
 | `GET /api/v1` | Identifica la API y su versión |
 | `GET /api/v1/health` | Estado de la aplicación y de la base de datos |
+| `POST /api/v1/tokens` | Login: correo, contraseña y dispositivo → token Bearer con las abilities del rol |
+| `GET /api/v1/negocio` | Perfil del negocio de la cuenta autenticada |
 | `GET /up` | Ruta de salud del framework |
 
 ## Pruebas
@@ -140,3 +165,5 @@ Los tipos están en el enum `ProblemType` y sus textos en `lang/es/problems.php`
 | `tests/Architecture` | Regla de dependencias entre capas y entre módulos. |
 
 Las pruebas se ejecutan con Pest (`vendor/bin/pest`), que también corre las pruebas escritas como clases de PHPUnit.
+
+Las pruebas de `tests/Feature` usan PostgreSQL (base `minisuper_testing`), porque el aislamiento depende de Row Level Security. Migran con el dueño del esquema (`RefreshDatabaseAsOwner`) y consultan con el rol de la aplicación, como en producción. `tests/Feature/Tenancy` demuestra que un negocio no puede leer, editar ni borrar recursos de otro cambiando el ID.
