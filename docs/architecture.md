@@ -168,6 +168,11 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `GET /api/v1/productos/{id}/historial-precios` | Historial de costos y precios del producto, del más reciente al más antiguo. Solo administración |
 | `POST /api/v1/entradas` | Registrar mercadería recibida: proveedor, fecha y líneas (producto existente o nuevo, cantidad, costo unitario). Bodega y administración |
 | `GET /api/v1/entradas/{id}` | Ver una entrada con sus líneas, quién la registró y cuándo. Bodega y administración |
+| `POST /api/v1/ventas` | Abrir una venta en efectivo: líneas con producto y cantidad (el precio sale del catálogo). Descuenta el stock. Caja y administración |
+| `GET /api/v1/ventas/{id}` | Ver una venta con sus líneas, total, cajero y estado. Caja y administración |
+| `PUT /api/v1/ventas/{id}` | Reemplazar las líneas de una venta abierta; el stock se ajusta por la diferencia. Caja y administración |
+| `POST /api/v1/ventas/{id}/cobrar` | Cerrar la venta como cobrada en efectivo; ya no se puede modificar. Caja y administración |
+| `POST /api/v1/ventas/{id}/anular` | Anular una venta abierta o cobrada y devolver sus unidades al stock. Caja y administración |
 
 ### Stock y trazabilidad
 
@@ -176,6 +181,12 @@ Cada entrada de mercadería se guarda en una sola transacción: crea los product
 El **stock vendible** es el stock menos las unidades marcadas como vencidas que siguen en el estante (`unidades_vencidas` con estado `activa`), y nunca es negativo. Un producto está agotado cuando su stock vendible es 0.
 
 Cada línea de una entrada guarda el costo anterior del producto, y la respuesta muestra `costo_anterior`, `costo_unitario`, `diferencia_costo` y el `precio_venta` actual, para que la administración decida si cambia el precio con `PATCH /productos/{id}/precio` o lo mantiene. La entrada nunca cambia el precio por su cuenta. Todo cambio de costo o de precio (al crear, editar, recibir o cambiar el precio de un producto) deja una fila en `historial_precios` con el motivo, quién y cuándo.
+
+### Ventas en efectivo y concurrencia
+
+Una venta (`ventas` y `venta_lineas`) tiene tres estados: `abierta`, `cobrada` y `anulada`. El precio de cada línea se toma del catálogo en el momento de vender y se guarda en la línea; el cliente nunca lo envía. Una venta abierta se puede modificar; una cobrada ya no; una cobrada o abierta se puede anular, y una anulada es definitiva.
+
+Las unidades salen del stock al abrir la venta y vuelven al anularla. `DatabaseSaleRepository::save` hace todo en una transacción: bloquea la fila de la venta y la de cada producto con `SELECT ... FOR UPDATE` (siempre en el orden de los ids, para que dos ventas con los mismos productos no se bloqueen entre sí), calcula la diferencia entre lo que la venta tenía y lo que tiene ahora, y deja una fila en `movimientos_inventario` (`venta` o `anulacion`). Solo se venden las unidades vendibles (stock menos unidades vencidas en el estante). Si alguna línea no alcanza, responde `409` en formato RFC 9457 con el producto y las unidades disponibles, y no se guarda nada. Si dos cajas venden la última unidad, la segunda espera el bloqueo, ve que ya no queda y recibe el 409; el `CHECK (stock >= 0)` de la base de datos es la última red de seguridad.
 
 ### Archivos
 
