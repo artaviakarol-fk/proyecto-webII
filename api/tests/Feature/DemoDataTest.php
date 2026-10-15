@@ -8,11 +8,12 @@ use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\NegociosDemoSeeder;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\RefreshDatabaseAsOwner;
+use Tests\Support\Shared\ScopesQueriesToNegocio;
 use Tests\TestCase;
 
 final class DemoDataTest extends TestCase
 {
-    use RefreshDatabaseAsOwner;
+    use RefreshDatabaseAsOwner, ScopesQueriesToNegocio;
 
     /** The seeder creates two fictitious negocios, each with its own administrator. */
     public function test_seeder_creates_two_negocios_with_their_administrators(): void
@@ -37,6 +38,8 @@ final class DemoDataTest extends TestCase
 
         $this->assertDatabaseCount('negocios', 2);
         $this->assertDatabaseCount('users', 5);
+        $this->scopeQueriesTo(NegociosDemoSeeder::TERESITA_ID);
+        $this->assertDatabaseCount('productos', 5);
     }
 
     /** Every demo account logs in with the documented password. */
