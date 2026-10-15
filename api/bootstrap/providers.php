@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Providers\AppServiceProvider;
 use Src\Identity\Users\Infrastructure\UsersServiceProvider;
 use Src\Inventory\Products\Infrastructure\ProductsServiceProvider;
+use Src\Inventory\Receipts\Infrastructure\ReceiptsServiceProvider;
 use Src\Negocios\Profile\Infrastructure\ProfileServiceProvider;
 use Src\Shared\Infrastructure\SharedServiceProvider;
 
@@ -14,4 +15,5 @@ return [
     UsersServiceProvider::class,
     ProfileServiceProvider::class,
     ProductsServiceProvider::class,
+    ReceiptsServiceProvider::class,
 ];

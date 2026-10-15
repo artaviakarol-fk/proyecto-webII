@@ -13,5 +13,12 @@ return [
     'amount_out_of_range' => 'El monto debe ser un número positivo con hasta dos decimales.',
     'price_must_be_positive' => 'El precio de venta debe ser mayor que cero.',
     'stock_out_of_range' => 'El stock debe ser un número entero entre 0 y :max.',
+    'receipt_not_found' => 'La entrada de mercadería no existe.',
+    'supplier_invalid' => 'El proveedor es obligatorio y puede tener hasta :max caracteres.',
+    'quantity_out_of_range' => 'La cantidad debe ser un número entero entre 1 y :max.',
+    'receipt_without_lines' => 'La entrada debe tener al menos una línea.',
+    'receipt_in_the_future' => 'La fecha de la entrada no puede ser posterior a hoy.',
+    'receipt_date_invalid' => 'La fecha de la entrada no es válida.',
+    'stock_limit_exceeded' => 'La entrada dejaría un producto con más de :max unidades en stock.',
 
 ];

@@ -184,6 +184,16 @@ return [
         'por_pagina' => 'por página',
         'pagina' => 'página',
         'imagen' => 'imagen',
+        'proveedor' => 'proveedor',
+        'fecha' => 'fecha',
+        'lineas' => 'líneas',
+        'lineas.*.producto_id' => 'producto',
+        'lineas.*.producto' => 'producto nuevo',
+        'lineas.*.producto.codigo' => 'código del producto nuevo',
+        'lineas.*.producto.nombre' => 'nombre del producto nuevo',
+        'lineas.*.producto.precio_venta' => 'precio de venta del producto nuevo',
+        'lineas.*.cantidad' => 'cantidad',
+        'lineas.*.costo_unitario' => 'costo unitario',
     ],
 
 ];
