@@ -30,11 +30,14 @@ Por ahora la API se ejecuta **en local con Docker** (API + PostgreSQL). El front
 Requisitos: Docker Desktop.
 
 ```bash
-cp .env.example .env      # definir DB_PASSWORD con una contraseña propia
+cp .env.example .env      # definir DB_PASSWORD y DB_ADMIN_PASSWORD con contraseñas propias
 docker compose up -d --build
+docker compose exec api php artisan db:seed   # dos negocios ficticios con sus cuentas
 ```
 
-La primera vez tarda unos minutos: instala dependencias, genera la clave de la app y corre las migraciones.
+La primera vez tarda unos minutos: crea los roles de PostgreSQL, instala dependencias, genera la clave de la app y corre las migraciones.
+
+> **Si ya tenían la base de Docker de antes del aislamiento por negocio**, bórrenla una vez para que se creen los roles nuevos: `docker compose down -v` y luego `docker compose up -d --build`. Se pierden los datos locales, que se recuperan con el `db:seed`.
 
 - API: <http://localhost:8000>
 - Ruta de salud: <http://localhost:8000/api/v1/health>
@@ -67,11 +70,40 @@ Requisitos: PHP 8.4 o superior, Composer 2 y PostgreSQL.
 ```bash
 cd api
 composer install
-cp .env.example .env      # ajustar DB_* a tu PostgreSQL local
+# Una sola vez, como superusuario: crea los roles minisuper_owner y minisuper_app y las bases
+psql -U postgres -v owner_password='...' -v app_password='...' -f database/roles.sql
+cp .env.example .env      # poner esas contraseñas en DB_ADMIN_PASSWORD y DB_PASSWORD
 php artisan key:generate
-php artisan migrate
+php artisan migrate --database=pgsql_admin   # las migraciones las corre el dueño del esquema
+php artisan db:seed
 php artisan serve
 ```
+
+Las pruebas (`vendor/bin/pest`) usan la base `minisuper_testing`, que también crea `roles.sql`.
+
+### Sesión y aislamiento por negocio
+
+Cada cuenta pertenece a un negocio. Para usar la API se pide un token y se envía en cada petición:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/tokens \
+  -H 'Content-Type: application/json' -H 'Accept: application/json' \
+  -d '{"correo":"admin@teresita.test","contrasena":"password","dispositivo":"Mi compu"}'
+
+curl http://localhost:8000/api/v1/negocio -H 'Authorization: Bearer <token>' -H 'Accept: application/json'
+```
+
+El negocio **siempre sale de la cuenta del token**, nunca del cuerpo ni de la URL, y PostgreSQL (Row Level Security) solo deja ver las filas de ese negocio. Un recurso de otro negocio responde `404`, igual que uno que no existe. El detalle está en [docs/architecture.md](docs/architecture.md#aislamiento-por-negocio).
+
+Cuentas de demostración (`php artisan db:seed`, contraseña `password`, datos ficticios):
+
+| Negocio | Correo | Rol |
+|---|---|---|
+| Minisúper Teresita | `admin@teresita.test` | administrador |
+| Minisúper Teresita | `caja@teresita.test` | cajero |
+| Minisúper Teresita | `bodega@teresita.test` | bodeguero |
+| Minisúper La Esquina | `admin@laesquina.test` | administrador |
+| Minisúper La Esquina | `caja@laesquina.test` | cajero |
 
 ## Flujo de trabajo
 
@@ -102,5 +134,6 @@ Este proyecto se desarrolla con asistencia de IA (Claude, de Anthropic). Su uso 
 |---|---|---|
 | Planificación (milestones, issues, historias de usuario) | Borradores generados a partir de la entrevista con el cliente | Revisados y ajustados por el equipo |
 | Configuración inicial del repositorio y CI | Guía paso a paso y propuestas de archivos | Ejecutado y probado por el equipo |
+| Aislamiento por negocio y login (#5) | Código y pruebas generados siguiendo el proyecto guía SodaYa-Hexagonal | Revisado en el PR por el equipo; pruebas en verde en CI |
 
 Esta tabla se actualiza conforme avanza el proyecto. Cada integrante debe poder explicar y modificar cualquier parte del código.
