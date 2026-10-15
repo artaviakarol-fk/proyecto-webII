@@ -29,7 +29,7 @@ final readonly class ChangeProductPhoto
         $product = $this->products->find(new ProductId($productId), $negocioId)
             ?? throw ProductNotFoundException::create();
 
-        $path = $this->images->store(ImageFolders::products($negocioId), $image->sourcePath, $image->extension);
+        $path = $this->images->store(ImageFolders::product($negocioId, $product->id->value), $image->sourcePath, $image->extension);
         $replaced = $product->changePhoto($path);
         $this->products->save($product);
 

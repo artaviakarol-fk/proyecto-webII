@@ -44,7 +44,7 @@ final class ImagenesTest extends TestCase
     public function test_photo_is_stored_in_the_folder_of_the_negocio(string $name, string $extension): void
     {
         $image = UploadedFile::fake()->image($name, 300, 300);
-        $expected = 'negocios/'.$this->negocio->id.'/productos/'.hash_file('sha256', $image->getRealPath()).'.'.$extension;
+        $expected = 'negocios/'.$this->negocio->id.'/productos/'.$this->product->id.'/'.hash_file('sha256', $image->getRealPath()).'.'.$extension;
 
         $this->post($this->photoUrl($this->product->id), ['imagen' => $image], ['Accept' => 'application/json'])
             ->assertOk()
@@ -104,6 +104,24 @@ final class ImagenesTest extends TestCase
         $this->post($this->photoUrl($this->product->id), ['imagen' => UploadedFile::fake()->image('segunda.png', 20, 20)], ['Accept' => 'application/json'])->assertOk();
 
         $this->assertCount(1, Storage::disk(DiskImageStorage::DISK)->allFiles());
+    }
+
+    /** Two products with the same image keep their own files: replacing the photo of one leaves the other intact. */
+    public function test_products_with_the_same_image_do_not_share_the_file(): void
+    {
+        $other = ProductModel::factory()->create(['negocio_id' => $this->negocio->id]);
+        $same = UploadedFile::fake()->image('igual.png', 50, 50);
+        $contents = (string) file_get_contents($same->getRealPath());
+
+        foreach ([$this->product->id, $other->id] as $productId) {
+            $copy = UploadedFile::fake()->createWithContent('igual.png', $contents);
+            $this->post($this->photoUrl($productId), ['imagen' => $copy], ['Accept' => 'application/json'])->assertOk();
+        }
+
+        $this->post($this->photoUrl($this->product->id), ['imagen' => UploadedFile::fake()->image('nueva.png', 60, 60)], ['Accept' => 'application/json'])->assertOk();
+
+        $this->get($this->photoUrl($other->id))->assertOk()->assertHeader('Content-Type', 'image/png');
+        $this->assertCount(2, Storage::disk(DiskImageStorage::DISK)->allFiles());
     }
 
     /** The photo is sent back only through the authenticated route, with its image type. */
