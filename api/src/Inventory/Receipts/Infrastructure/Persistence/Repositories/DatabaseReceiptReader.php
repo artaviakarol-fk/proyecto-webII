@@ -56,7 +56,7 @@ final readonly class DatabaseReceiptReader implements ReceiptReader
             (string) $receipt->fecha,
             (string) $receipt->usuario_id,
             (string) $receipt->usuario_nombre,
-            CarbonImmutable::parse((string) $receipt->created_at)->toIso8601String(),
+            CarbonImmutable::parse((string) $receipt->created_at)->setTimezone((string) config('app.timezone'))->toIso8601String(),
             $rows,
             new Money($total)->toDecimal(),
         );

@@ -60,7 +60,7 @@ final class EntradaMercaderiaTest extends TestCase
                 'proveedor' => 'Distribuidora Central',
                 'fecha' => '2026-10-15',
                 'registrada_por' => ['id' => $this->bodeguero->id, 'nombre' => 'Luis Bodega'],
-                'registrada_en' => '2026-10-15T09:30:00-06:00',
+                'registrada_en' => '2026-10-15T09:30:00+00:00',
                 'lineas' => [[
                     'producto_id' => $this->arroz->id,
                     'codigo' => 'ARROZ-1',
