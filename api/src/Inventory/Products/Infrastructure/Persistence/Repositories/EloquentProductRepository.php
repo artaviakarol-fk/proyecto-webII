@@ -52,6 +52,7 @@ final readonly class EloquentProductRepository implements ProductRepository
                     'stock' => $details->stock->units,
                     'es_perecedero' => $details->perishable,
                     'es_licor' => $details->liquor,
+                    'foto_path' => $product->photoPath,
                 ],
             ));
         } catch (UniqueConstraintViolationException) {

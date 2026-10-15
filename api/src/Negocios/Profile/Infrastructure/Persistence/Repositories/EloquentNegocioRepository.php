@@ -11,6 +11,12 @@ use Src\Shared\Domain\ValueObjects\NegocioId;
 
 final readonly class EloquentNegocioRepository implements NegocioRepository
 {
+    /** Persist the changes of a negocio; its name and state are managed elsewhere, so only the logo is written. */
+    public function save(Negocio $negocio): void
+    {
+        NegocioModel::query()->whereKey($negocio->id->value)->update(['logo_path' => $negocio->logoPath]);
+    }
+
     /** Find a negocio by its identifier. */
     public function find(NegocioId $id): ?Negocio
     {

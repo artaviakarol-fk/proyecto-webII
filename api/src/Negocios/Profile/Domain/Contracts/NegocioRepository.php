@@ -11,4 +11,7 @@ interface NegocioRepository
 {
     /** Find a negocio by its identifier. */
     public function find(NegocioId $id): ?Negocio;
+
+    /** Persist the changes of a negocio. */
+    public function save(Negocio $negocio): void;
 }

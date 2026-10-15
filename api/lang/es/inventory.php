@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
 
     'product_not_found' => 'El producto no existe.',
+    'photo_not_found' => 'El producto todavía no tiene foto.',
     'code_in_use' => 'Ya hay otro producto con ese código en el negocio.',
     'code_invalid' => 'El código solo puede tener letras, números, punto, guion y guion bajo, y hasta :max caracteres.',
     'name_invalid' => 'El nombre es obligatorio y puede tener hasta :max caracteres.',

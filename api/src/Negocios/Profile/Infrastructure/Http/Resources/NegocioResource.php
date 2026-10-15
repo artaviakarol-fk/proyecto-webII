@@ -29,7 +29,7 @@ final class NegocioResource extends JsonResource
         return [
             'id' => $this->negocio->id->value,
             'nombre' => $this->negocio->name,
-            'logo' => $this->negocio->logoPath,
+            'logo' => $this->negocio->logoPath === null ? null : route('negocios.profile.logo.show'),
             'activo' => $this->negocio->active,
         ];
     }
