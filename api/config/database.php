@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'pgsql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -84,14 +84,31 @@ return [
             ]) : [],
         ],
 
+        // Rol de la aplicación: lee y escribe datos, pero no es dueño de ninguna tabla,
+        // así que las políticas de Row Level Security siempre se le aplican.
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
+            'database' => env('DB_DATABASE', 'minisuper'),
+            'username' => env('DB_USERNAME', 'minisuper_app'),
             'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
+
+        // Rol dueño del esquema: solo se usa para correr las migraciones.
+        'pgsql_admin' => [
+            'driver' => 'pgsql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'minisuper'),
+            'username' => env('DB_ADMIN_USERNAME', 'minisuper_owner'),
+            'password' => env('DB_ADMIN_PASSWORD', ''),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,

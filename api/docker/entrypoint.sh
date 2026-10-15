@@ -15,6 +15,6 @@ if ! grep -q '^APP_KEY=base64:' .env; then
 fi
 
 # Migraciones contra PostgreSQL
-php artisan migrate --force
+php artisan migrate --database=pgsql_admin --force
 
 exec "$@"
