@@ -66,7 +66,7 @@ final readonly class RegisterGoodsReceipt
             ? $data->productId
             : $this->createProduct->execute($this->withoutStock($data->newProduct, $unitCost))->id->value;
 
-        return new ReceiptLine(new ProductId((string) $productId), $data->quantity, $unitCost);
+        return new ReceiptLine(new ProductId((string) $productId), $data->quantity, $unitCost, $data->newProduct !== null);
     }
 
     /** A product created from a receipt starts at zero units: its stock comes from the line itself. */

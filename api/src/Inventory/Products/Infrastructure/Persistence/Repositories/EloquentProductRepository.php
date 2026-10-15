@@ -12,6 +12,7 @@ use Src\Inventory\Products\Domain\Contracts\ProductRepository;
 use Src\Inventory\Products\Domain\Entities\Product;
 use Src\Inventory\Products\Domain\Exceptions\ProductCodeAlreadyInUseException;
 use Src\Inventory\Products\Domain\ValueObjects\Category;
+use Src\Inventory\Products\Domain\ValueObjects\PriceChangeReason;
 use Src\Inventory\Products\Domain\ValueObjects\ProductCode;
 use Src\Inventory\Products\Domain\ValueObjects\ProductDetails;
 use Src\Inventory\Products\Domain\ValueObjects\ProductName;
@@ -20,6 +21,8 @@ use Src\Inventory\Products\Domain\ValueObjects\Stock;
 use Src\Inventory\Products\Infrastructure\Persistence\Models\ProductModel;
 use Src\Inventory\Shared\Domain\ValueObjects\Money;
 use Src\Inventory\Shared\Domain\ValueObjects\ProductId;
+use Src\Inventory\Shared\Infrastructure\Persistence\PriceHistory;
+use Src\Shared\Domain\Contracts\CurrentUser;
 use Src\Shared\Domain\ValueObjects\NegocioId;
 
 /**
@@ -28,33 +31,57 @@ use Src\Shared\Domain\ValueObjects\NegocioId;
  */
 final readonly class EloquentProductRepository implements ProductRepository
 {
+    /** Receive the account that performs the change, for the price history. */
+    public function __construct(private CurrentUser $user) {}
+
     /** Generate a time-ordered UUID for a new product. */
     public function nextId(): ProductId
     {
         return new ProductId((string) Str::uuid7());
     }
 
-    /** Insert or update the product inside a savepoint and translate a repeated code. */
-    public function save(Product $product): void
+    /** Insert or update the product inside a savepoint, record a price change and translate a repeated code. */
+    public function save(Product $product, PriceChangeReason $reason = PriceChangeReason::Edited): void
     {
         $details = $product->details;
 
         try {
-            DB::transaction(fn () => ProductModel::query()->updateOrCreate(
-                ['id' => $product->id->value],
-                [
-                    'negocio_id' => $product->negocioId->value,
-                    'codigo' => $details->code->value,
-                    'nombre' => $details->name->value,
-                    'categoria' => $details->category?->value,
-                    'precio_venta' => $details->salePrice->toDecimal(),
-                    'costo_actual' => $details->currentCost->toDecimal(),
-                    'stock' => $details->stock->units,
-                    'es_perecedero' => $details->perishable,
-                    'es_licor' => $details->liquor,
-                    'foto_path' => $product->photoPath,
-                ],
-            ));
+            DB::transaction(function () use ($product, $details, $reason): void {
+                $before = ProductModel::query()
+                    ->where('negocio_id', $product->negocioId->value)
+                    ->whereKey($product->id->value)
+                    ->first(['precio_venta', 'costo_actual']);
+
+                ProductModel::query()->updateOrCreate(
+                    ['id' => $product->id->value],
+                    [
+                        'negocio_id' => $product->negocioId->value,
+                        'codigo' => $details->code->value,
+                        'nombre' => $details->name->value,
+                        'categoria' => $details->category?->value,
+                        'precio_venta' => $details->salePrice->toDecimal(),
+                        'costo_actual' => $details->currentCost->toDecimal(),
+                        'stock' => $details->stock->units,
+                        'es_perecedero' => $details->perishable,
+                        'es_licor' => $details->liquor,
+                        'foto_path' => $product->photoPath,
+                    ],
+                );
+
+                $cost = $details->currentCost->toDecimal();
+                $price = $details->salePrice->toDecimal();
+
+                if ($before === null || $before->costo_actual !== $cost || $before->precio_venta !== $price) {
+                    PriceHistory::record(
+                        $product->negocioId->value,
+                        $product->id->value,
+                        $cost,
+                        $price,
+                        $before === null ? PriceHistory::CREATED : $reason->value,
+                        $this->user->id(),
+                    );
+                }
+            });
         } catch (UniqueConstraintViolationException) {
             throw ProductCodeAlreadyInUseException::create();
         }

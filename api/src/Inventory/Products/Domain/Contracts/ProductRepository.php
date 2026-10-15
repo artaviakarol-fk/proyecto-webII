@@ -6,6 +6,7 @@ namespace Src\Inventory\Products\Domain\Contracts;
 
 use Src\Inventory\Products\Domain\Entities\Product;
 use Src\Inventory\Products\Domain\Exceptions\ProductCodeAlreadyInUseException;
+use Src\Inventory\Products\Domain\ValueObjects\PriceChangeReason;
 use Src\Inventory\Products\Domain\ValueObjects\ProductPage;
 use Src\Inventory\Shared\Domain\ValueObjects\ProductId;
 use Src\Shared\Domain\ValueObjects\NegocioId;
@@ -16,11 +17,12 @@ interface ProductRepository
     public function nextId(): ProductId;
 
     /**
-     * Persist a new or modified product.
+     * Persist a new or modified product; when its cost or sale price changes, the price history
+     * records the new values and the reason (a new product is recorded as created).
      *
      * @throws ProductCodeAlreadyInUseException
      */
-    public function save(Product $product): void;
+    public function save(Product $product, PriceChangeReason $reason = PriceChangeReason::Edited): void;
 
     /** Find a live product of the negocio. */
     public function find(ProductId $id, NegocioId $negocioId): ?Product;

@@ -32,13 +32,15 @@ final readonly class DatabaseReceiptReader implements ReceiptReader
             ->where('l.negocio_id', $negocioId->value)
             ->where('l.entrada_id', $id->value)
             ->orderBy('l.id')
-            ->get(['l.producto_id', 'p.codigo', 'p.nombre', 'l.cantidad', 'l.costo_unitario']);
+            ->get(['l.producto_id', 'p.codigo', 'p.nombre', 'p.precio_venta', 'l.cantidad', 'l.costo_unitario', 'l.costo_anterior']);
 
         $total = 0;
         $rows = [];
 
         foreach ($lines as $line) {
-            $subtotal = Money::fromDecimal((string) $line->costo_unitario)->cents * (int) $line->cantidad;
+            $unitCost = Money::fromDecimal((string) $line->costo_unitario);
+            $previousCost = $line->costo_anterior === null ? null : Money::fromDecimal((string) $line->costo_anterior);
+            $subtotal = $unitCost->cents * (int) $line->cantidad;
             $total += $subtotal;
             $rows[] = [
                 'producto_id' => (string) $line->producto_id,
@@ -47,6 +49,10 @@ final readonly class DatabaseReceiptReader implements ReceiptReader
                 'cantidad' => (int) $line->cantidad,
                 'costo_unitario' => (string) $line->costo_unitario,
                 'subtotal' => new Money($subtotal)->toDecimal(),
+                'costo_anterior' => $previousCost?->toDecimal(),
+                'diferencia_costo' => $previousCost === null ? null : self::signedDecimal($unitCost->cents - $previousCost->cents),
+                'cambio_costo' => $previousCost !== null && $previousCost->cents !== $unitCost->cents,
+                'precio_venta' => (string) $line->precio_venta,
             ];
         }
 
@@ -60,5 +66,11 @@ final readonly class DatabaseReceiptReader implements ReceiptReader
             $rows,
             new Money($total)->toDecimal(),
         );
+    }
+
+    /** Write a difference of céntimos, which may be negative, with two decimals. */
+    private static function signedDecimal(int $cents): string
+    {
+        return ($cents < 0 ? '-' : '').new Money(abs($cents))->toDecimal();
     }
 }

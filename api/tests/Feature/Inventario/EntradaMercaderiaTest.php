@@ -68,6 +68,10 @@ final class EntradaMercaderiaTest extends TestCase
                     'cantidad' => 12,
                     'costo_unitario' => 1050.5,
                     'subtotal' => 12606,
+                    'costo_anterior' => 1000,
+                    'diferencia_costo' => 50.5,
+                    'cambio_costo' => true,
+                    'precio_venta' => 1500,
                 ]],
                 'total' => 12606,
             ]]);
