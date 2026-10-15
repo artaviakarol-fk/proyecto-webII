@@ -154,6 +154,11 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `GET /api/v1/health` | Estado de la aplicación y de la base de datos |
 | `POST /api/v1/tokens` | Login: correo, contraseña y dispositivo → token Bearer con las abilities del rol |
 | `GET /api/v1/negocio` | Perfil del negocio de la cuenta autenticada |
+| `GET /api/v1/productos` | Catálogo del negocio por páginas (`?buscar=`, `?pagina=`, `?por_pagina=`). Todo el personal |
+| `GET /api/v1/productos/{id}` | Un producto del negocio. Todo el personal |
+| `POST /api/v1/productos` | Crear un producto. Solo administración |
+| `PUT /api/v1/productos/{id}` | Reemplazar los datos de un producto. Solo administración |
+| `DELETE /api/v1/productos/{id}` | Borrado lógico de un producto; su código queda libre. Solo administración |
 | `GET /up` | Ruta de salud del framework |
 
 ## Pruebas

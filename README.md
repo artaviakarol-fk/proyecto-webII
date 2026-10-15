@@ -135,5 +135,6 @@ Este proyecto se desarrolla con asistencia de IA (Claude, de Anthropic). Su uso 
 | Planificación (milestones, issues, historias de usuario) | Borradores generados a partir de la entrevista con el cliente | Revisados y ajustados por el equipo |
 | Configuración inicial del repositorio y CI | Guía paso a paso y propuestas de archivos | Ejecutado y probado por el equipo |
 | Aislamiento por negocio y login (#5) | Código y pruebas generados siguiendo el proyecto guía SodaYa-Hexagonal | Revisado en el PR por el equipo; pruebas en verde en CI |
+| CRUD de catálogo de productos (#6) | Código y pruebas generados con el mismo patrón | Revisado en el PR por el equipo; pruebas en verde en CI |
 
 Esta tabla se actualiza conforme avanza el proyecto. Cada integrante debe poder explicar y modificar cualquier parte del código.
