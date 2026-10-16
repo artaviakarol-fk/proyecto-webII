@@ -41,6 +41,11 @@ final class SaleResource extends JsonResource
                 'subtotal' => (float) $line['subtotal'],
             ], $this->sale->lines),
             'total' => (float) $this->sale->total,
+            'advertencias' => array_map(fn (array $warning): array => [
+                'tipo' => 'unidades_vencidas',
+                ...$warning,
+                'mensaje' => __('sales.expired_units_warning', ['count' => $warning['unidades_vencidas'], 'product' => $warning['nombre']]),
+            ], $this->sale->expiredWarnings),
         ];
     }
 }

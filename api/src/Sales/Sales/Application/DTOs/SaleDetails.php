@@ -10,6 +10,7 @@ final readonly class SaleDetails
      * A stored sale as it is shown: amounts are decimal strings in colones.
      *
      * @param  list<array{producto_id: string, codigo: string, nombre: string, cantidad: int, precio_unitario: string, subtotal: string}>  $lines
+     * @param  list<array{producto_id: string, nombre: string, unidades_vencidas: int}>  $expiredWarnings  Products of an open sale that have expired units on the shelf.
      */
     public function __construct(
         public string $id,
@@ -23,5 +24,6 @@ final readonly class SaleDetails
         public ?string $cancelledAt,
         public array $lines,
         public string $total,
+        public array $expiredWarnings = [],
     ) {}
 }

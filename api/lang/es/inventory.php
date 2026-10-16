@@ -19,6 +19,9 @@ return [
     'receipt_without_lines' => 'La entrada debe tener al menos una línea.',
     'receipt_in_the_future' => 'La fecha de la entrada no puede ser posterior a hoy.',
     'receipt_date_invalid' => 'La fecha de la entrada no es válida.',
+    'expired_quantity_out_of_range' => 'Las unidades vencidas deben ser un número entero entre 1 y :max.',
+    'expiry_reason_invalid' => 'El motivo es obligatorio y puede tener hasta :max caracteres.',
+    'expired_units_exceed_sellable' => 'No se pueden marcar :quantity unidades como vencidas: el producto solo tiene :available unidades sin marcar.',
     'stock_limit_exceeded' => 'La entrada dejaría un producto con más de :max unidades en stock.',
 
 ];
