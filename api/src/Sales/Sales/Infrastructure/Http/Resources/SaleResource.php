@@ -35,12 +35,14 @@ final class SaleResource extends JsonResource
             'creada_en' => $this->sale->createdAt,
             'cobrada_en' => $this->sale->paidAt,
             'anulada_en' => $this->sale->cancelledAt,
+            /** @var list<array{producto_id: string, codigo: string, nombre: string, cantidad: int, precio_unitario: float, subtotal: float}> */
             'lineas' => array_map(fn (array $line): array => [
                 ...$line,
                 'precio_unitario' => (float) $line['precio_unitario'],
                 'subtotal' => (float) $line['subtotal'],
             ], $this->sale->lines),
             'total' => (float) $this->sale->total,
+            /** @var list<array{tipo: string, producto_id: string, nombre: string, unidades_vencidas: int, mensaje: string}> */
             'advertencias' => array_map(fn (array $warning): array => [
                 'tipo' => 'unidades_vencidas',
                 ...$warning,
