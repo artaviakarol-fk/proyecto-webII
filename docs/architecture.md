@@ -166,6 +166,7 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `GET /api/v1/productos/{id}/disponibilidad` | Stock, unidades vencidas, stock vendible y si está agotado. Todo el personal |
 | `PATCH /api/v1/productos/{id}/precio` | Aceptar un nuevo precio de venta (`precio_venta`). Solo administración |
 | `GET /api/v1/productos/{id}/historial-precios` | Historial de costos y precios del producto, del más reciente al más antiguo. Solo administración |
+| `POST /api/v1/productos/{id}/vencidos` | Marcar unidades vencidas de un producto (`cantidad`, `motivo`). Siguen en el stock pero salen del stock vendible. Bodega y administración |
 | `POST /api/v1/entradas` | Registrar mercadería recibida: proveedor, fecha y líneas (producto existente o nuevo, cantidad, costo unitario). Bodega y administración |
 | `GET /api/v1/entradas/{id}` | Ver una entrada con sus líneas, quién la registró y cuándo. Bodega y administración |
 | `POST /api/v1/ventas` | Abrir una venta en efectivo: líneas con producto y cantidad (el precio sale del catálogo). Descuenta el stock. Caja y administración |
@@ -191,6 +192,10 @@ Las unidades salen del stock al abrir la venta y vuelven al anularla. `DatabaseS
 ### Control de edad en la venta de licor
 
 Si alguna línea de una venta es de un producto con `es_licor = true`, la venta necesita la cédula del comprador (`cedula_comprador`, en el cuerpo de `POST` y de `PUT /ventas`). Sin ella la venta no se completa: responde `422` con el motivo y no se toca el stock. La regla vive en la entidad `Sale`, así que vale al abrir la venta y al modificarla; al modificarla sin mandar la cédula se conserva la que ya estaba registrada. La cédula se guarda solo con dígitos (de 9 a 12) en `ventas.cedula_comprador` y la revisa a mano el cajero: nunca se valida contra un servicio externo. Los datos de prueba y de demostración usan solo cédulas ficticias.
+
+### Unidades vencidas y aviso en caja
+
+`POST /productos/{id}/vencidos` guarda en `unidades_vencidas` la cantidad y el motivo, con quién la marcó, en estado `activa`. Las unidades marcadas siguen contando en el `stock`, pero salen del stock vendible (`stock - unidades vencidas activas`). No hace falta que el producto tenga fecha de vencimiento: la bodega marca lo que encuentra vencido en el estante. El repositorio bloquea la fila del producto (`FOR UPDATE`, el mismo bloqueo que usa una venta) y responde `409` si se intentan marcar más unidades de las que quedan sin marcar. Mientras la venta está abierta, su respuesta trae `advertencias`: un aviso `unidades_vencidas` por cada producto de las líneas que tenga unidades vencidas en el estante. El aviso no bloquea la venta: las demás unidades se pueden vender y solo se rechaza (`409`) pedir más de las vendibles.
 
 ### Archivos
 
