@@ -32,6 +32,7 @@ final class ReceiptResource extends JsonResource
             'fecha' => $this->receipt->date,
             'registrada_por' => ['id' => $this->receipt->receivedById, 'nombre' => $this->receipt->receivedByName],
             'registrada_en' => $this->receipt->registeredAt,
+            /** @var list<array{producto_id: string, codigo: string, nombre: string, cantidad: int, costo_unitario: float, subtotal: float, costo_anterior: float|null, diferencia_costo: float|null, cambio_costo: bool, precio_venta: float}> */
             'lineas' => array_map(fn (array $line): array => [
                 ...$line,
                 'costo_unitario' => (float) $line['costo_unitario'],

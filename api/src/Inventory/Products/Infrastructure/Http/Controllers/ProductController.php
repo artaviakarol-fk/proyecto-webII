@@ -18,7 +18,11 @@ use Src\Inventory\Products\Infrastructure\Http\Resources\ProductResource;
 
 final readonly class ProductController
 {
-    /** List the catalog of the negocio by pages, optionally searching by name or code. */
+    /**
+     * List the catalog of the negocio by pages, optionally searching by name or code.
+     *
+     * @response array{data: list<ProductResource>, meta: array{pagina: int, por_pagina: int, total: int, ultima_pagina: int}}
+     */
     public function index(ListProductsRequest $request, ListProducts $listProducts): JsonResponse
     {
         $page = $listProducts->execute($request->term(), $request->page(), $request->perPage());

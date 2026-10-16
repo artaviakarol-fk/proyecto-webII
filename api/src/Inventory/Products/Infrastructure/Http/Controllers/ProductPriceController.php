@@ -19,7 +19,11 @@ final readonly class ProductPriceController
         return new ProductResource($changePrice->execute($producto, $request->salePrice()));
     }
 
-    /** The history of cost and sale price of a product, newest first. */
+    /**
+     * The history of cost and sale price of a product, newest first.
+     *
+     * @response array{data: list<array{fecha: string, costo: float, precio_venta: float, motivo: string, usuario: array{id: string, nombre: string}, referencia_id: string|null}>}
+     */
     public function history(string $producto, GetPriceHistory $getHistory): JsonResponse
     {
         return new JsonResponse(['data' => array_map(fn (PriceHistoryEntry $entry): array => [

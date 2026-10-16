@@ -9,7 +9,11 @@ use Src\Inventory\Products\Application\UseCases\GetAvailability;
 
 final readonly class AvailabilityController
 {
-    /** How many units of a product of the negocio can really be sold right now. */
+    /**
+     * How many units of a product of the negocio can really be sold right now.
+     *
+     * @response array{data: array{producto_id: string, codigo: string, nombre: string, stock: int, unidades_vencidas: int, stock_vendible: int, agotado: bool}}
+     */
     public function __invoke(string $producto, GetAvailability $getAvailability): JsonResponse
     {
         [$product, $availability] = $getAvailability->execute($producto);

@@ -202,6 +202,28 @@ Si alguna línea de una venta es de un producto con `es_licor = true`, la venta 
 Las fotos y los logos se aceptan solo en JPG, PNG o WebP de hasta 2 MB. La regla `mimes` revisa el contenido real del archivo, no solo la extensión. Se guardan en el disco privado `local` (`storage/app/private`), nunca en `public/`, bajo `negocios/{id}/productos/{producto}/` y `negocios/{id}/logo/`. El nombre es el hash SHA-256 del contenido, nunca el nombre original. Cada producto tiene su propia carpeta, para que dos productos con la misma imagen no compartan el archivo y reemplazar la foto de uno no borre la del otro. Solo se descargan por las rutas de arriba, que exigen token y pasan por el aislamiento por negocio: la foto de un producto de otro negocio responde 404 aunque el archivo exista.
 | `GET /up` | Ruta de salud del framework |
 
+### Documentación de la API (Scramble)
+
+La API se documenta sola con [Scramble](https://scramble.dedoc.co) (`dedoc/scramble`), a partir de las rutas, los Form Requests y los Resources:
+
+| Qué | Dónde |
+|---|---|
+| Documentación interactiva | `GET /docs/api` (abre sin token; no tiene datos de ningún negocio) |
+| Documento OpenAPI en vivo | `GET /docs/api.json` |
+| Documento exportado | `api/openapi.json`, para generar los tipos de TypeScript del cliente web |
+
+Para volver a exportarlo después de cambiar endpoints:
+
+```
+docker compose exec api php artisan scramble:export
+```
+
+- **Qué se documenta:** solo las rutas bajo `/api/v1` (`api_path` en `config/scramble.php`). La seguridad (bearer token) se deduce del middleware `auth:sanctum`.
+- **Errores:** Scramble infiere los `422` de los Form Requests, pero no sigue las excepciones de dominio que lanzan los casos de uso. `Src\Shared\Infrastructure\Http\Docs\ProblemResponses` agrega a cada endpoint los `401`, `403`, `404`, `409` y `429` que corresponden, con el esquema `Problema` (RFC 9457).
+- **Tipos:** donde Scramble no puede inferir la forma de una respuesta (listas armadas con `array_map` o con `JsonResponse`), se declara con `@return` en `toArray()` de los Resources o con `@response` en el método del controlador.
+- **Advertencias conocidas de `scramble:analyze`:** tres reglas de validación consultan el negocio de la cuenta (`unique`/`exists` filtradas por `negocio_id`). Al generar la documentación no hay cuenta autenticada, así que Scramble salta esas reglas; las demás reglas del mismo campo y de la petición sí quedan documentadas.
+- **Prueba:** `DocumentacionApiTest` falla si una ruta de `/api/v1` queda fuera del documento.
+
 ## Pruebas
 
 | Carpeta | Alcance |
