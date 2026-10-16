@@ -73,6 +73,7 @@ final class VentaTest extends TestCase
                     ['producto_id' => $this->frijoles->id, 'codigo' => 'FRIJOL-1', 'nombre' => 'Frijoles 1 kg', 'cantidad' => 1, 'precio_unitario' => 2000, 'subtotal' => 2000],
                 ],
                 'total' => 5000,
+                'advertencias' => [],
             ]]);
     }
 
