@@ -166,8 +166,14 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `GET /api/v1/productos/{id}/disponibilidad` | Stock, unidades vencidas, stock vendible y si está agotado. Todo el personal |
 | `PATCH /api/v1/productos/{id}/precio` | Aceptar un nuevo precio de venta (`precio_venta`). Solo administración |
 | `GET /api/v1/productos/{id}/historial-precios` | Historial de costos y precios del producto, del más reciente al más antiguo. Solo administración |
+| `POST /api/v1/productos/{id}/vencidos` | Marcar unidades vencidas de un producto (`cantidad`, `motivo`). Siguen en el stock pero salen del stock vendible. Bodega y administración |
 | `POST /api/v1/entradas` | Registrar mercadería recibida: proveedor, fecha y líneas (producto existente o nuevo, cantidad, costo unitario). Bodega y administración |
 | `GET /api/v1/entradas/{id}` | Ver una entrada con sus líneas, quién la registró y cuándo. Bodega y administración |
+| `POST /api/v1/ventas` | Abrir una venta en efectivo: líneas con producto y cantidad (el precio sale del catálogo). Descuenta el stock. Caja y administración |
+| `GET /api/v1/ventas/{id}` | Ver una venta con sus líneas, total, cajero y estado. Caja y administración |
+| `PUT /api/v1/ventas/{id}` | Reemplazar las líneas de una venta abierta; el stock se ajusta por la diferencia. Caja y administración |
+| `POST /api/v1/ventas/{id}/cobrar` | Cerrar la venta como cobrada en efectivo; ya no se puede modificar. Caja y administración |
+| `POST /api/v1/ventas/{id}/anular` | Anular una venta abierta o cobrada y devolver sus unidades al stock. Caja y administración |
 
 ### Stock y trazabilidad
 
@@ -177,10 +183,46 @@ El **stock vendible** es el stock menos las unidades marcadas como vencidas que 
 
 Cada línea de una entrada guarda el costo anterior del producto, y la respuesta muestra `costo_anterior`, `costo_unitario`, `diferencia_costo` y el `precio_venta` actual, para que la administración decida si cambia el precio con `PATCH /productos/{id}/precio` o lo mantiene. La entrada nunca cambia el precio por su cuenta. Todo cambio de costo o de precio (al crear, editar, recibir o cambiar el precio de un producto) deja una fila en `historial_precios` con el motivo, quién y cuándo.
 
+### Ventas en efectivo y concurrencia
+
+Una venta (`ventas` y `venta_lineas`) tiene tres estados: `abierta`, `cobrada` y `anulada`. El precio de cada línea se toma del catálogo en el momento de vender y se guarda en la línea; el cliente nunca lo envía. Una venta abierta se puede modificar; una cobrada ya no; una cobrada o abierta se puede anular, y una anulada es definitiva.
+
+Las unidades salen del stock al abrir la venta y vuelven al anularla. `DatabaseSaleRepository::save` hace todo en una transacción: bloquea la fila de la venta y la de cada producto con `SELECT ... FOR UPDATE` (siempre en el orden de los ids, para que dos ventas con los mismos productos no se bloqueen entre sí), calcula la diferencia entre lo que la venta tenía y lo que tiene ahora, y deja una fila en `movimientos_inventario` (`venta` o `anulacion`). Solo se venden las unidades vendibles (stock menos unidades vencidas en el estante). Si alguna línea no alcanza, responde `409` en formato RFC 9457 con el producto y las unidades disponibles, y no se guarda nada. Si dos cajas venden la última unidad, la segunda espera el bloqueo, ve que ya no queda y recibe el 409; el `CHECK (stock >= 0)` de la base de datos es la última red de seguridad.
+
+### Control de edad en la venta de licor
+
+Si alguna línea de una venta es de un producto con `es_licor = true`, la venta necesita la cédula del comprador (`cedula_comprador`, en el cuerpo de `POST` y de `PUT /ventas`). Sin ella la venta no se completa: responde `422` con el motivo y no se toca el stock. La regla vive en la entidad `Sale`, así que vale al abrir la venta y al modificarla; al modificarla sin mandar la cédula se conserva la que ya estaba registrada. La cédula se guarda solo con dígitos (de 9 a 12) en `ventas.cedula_comprador` y la revisa a mano el cajero: nunca se valida contra un servicio externo. Los datos de prueba y de demostración usan solo cédulas ficticias.
+
+### Unidades vencidas y aviso en caja
+
+`POST /productos/{id}/vencidos` guarda en `unidades_vencidas` la cantidad y el motivo, con quién la marcó, en estado `activa`. Las unidades marcadas siguen contando en el `stock`, pero salen del stock vendible (`stock - unidades vencidas activas`). No hace falta que el producto tenga fecha de vencimiento: la bodega marca lo que encuentra vencido en el estante. El repositorio bloquea la fila del producto (`FOR UPDATE`, el mismo bloqueo que usa una venta) y responde `409` si se intentan marcar más unidades de las que quedan sin marcar. Mientras la venta está abierta, su respuesta trae `advertencias`: un aviso `unidades_vencidas` por cada producto de las líneas que tenga unidades vencidas en el estante. El aviso no bloquea la venta: las demás unidades se pueden vender y solo se rechaza (`409`) pedir más de las vendibles.
+
 ### Archivos
 
 Las fotos y los logos se aceptan solo en JPG, PNG o WebP de hasta 2 MB. La regla `mimes` revisa el contenido real del archivo, no solo la extensión. Se guardan en el disco privado `local` (`storage/app/private`), nunca en `public/`, bajo `negocios/{id}/productos/{producto}/` y `negocios/{id}/logo/`. El nombre es el hash SHA-256 del contenido, nunca el nombre original. Cada producto tiene su propia carpeta, para que dos productos con la misma imagen no compartan el archivo y reemplazar la foto de uno no borre la del otro. Solo se descargan por las rutas de arriba, que exigen token y pasan por el aislamiento por negocio: la foto de un producto de otro negocio responde 404 aunque el archivo exista.
 | `GET /up` | Ruta de salud del framework |
+
+### Documentación de la API (Scramble)
+
+La API se documenta sola con [Scramble](https://scramble.dedoc.co) (`dedoc/scramble`), a partir de las rutas, los Form Requests y los Resources:
+
+| Qué | Dónde |
+|---|---|
+| Documentación interactiva | `GET /docs/api` (abre sin token; no tiene datos de ningún negocio) |
+| Documento OpenAPI en vivo | `GET /docs/api.json` |
+| Documento exportado | `api/openapi.json`, para generar los tipos de TypeScript del cliente web |
+
+Para volver a exportarlo después de cambiar endpoints:
+
+```
+docker compose exec api php artisan scramble:export
+```
+
+- **Qué se documenta:** solo las rutas bajo `/api/v1` (`api_path` en `config/scramble.php`). La seguridad (bearer token) se deduce del middleware `auth:sanctum`.
+- **Errores:** Scramble infiere los `422` de los Form Requests, pero no sigue las excepciones de dominio que lanzan los casos de uso. `Src\Shared\Infrastructure\Http\Docs\ProblemResponses` agrega a cada endpoint los `401`, `403`, `404`, `409` y `429` que corresponden, con el esquema `Problema` (RFC 9457).
+- **Tipos:** donde Scramble no puede inferir la forma de una respuesta (listas armadas con `array_map` o con `JsonResponse`), se declara con `@return` en `toArray()` de los Resources o con `@response` en el método del controlador.
+- **Advertencias conocidas de `scramble:analyze`:** tres reglas de validación consultan el negocio de la cuenta (`unique`/`exists` filtradas por `negocio_id`). Al generar la documentación no hay cuenta autenticada, así que Scramble salta esas reglas; las demás reglas del mismo campo y de la petición sí quedan documentadas.
+- **Prueba:** `DocumentacionApiTest` falla si una ruta de `/api/v1` queda fuera del documento.
 
 ## Pruebas
 
@@ -193,3 +235,10 @@ Las fotos y los logos se aceptan solo en JPG, PNG o WebP de hasta 2 MB. La regla
 Las pruebas se ejecutan con Pest (`vendor/bin/pest`), que también corre las pruebas escritas como clases de PHPUnit.
 
 Las pruebas de `tests/Feature` usan PostgreSQL (base `minisuper_testing`), porque el aislamiento depende de Row Level Security. Migran con el dueño del esquema (`RefreshDatabaseAsOwner`) y consultan con el rol de la aplicación, como en producción. `tests/Feature/Tenancy` demuestra que un negocio no puede leer, editar ni borrar recursos de otro cambiando el ID.
+
+### Pruebas de la ruta crítica
+
+- **Fábricas:** los negocios, usuarios y productos se arman con sus factories de Eloquent; las ventas, que no tienen modelo, con `tests/Support/Factories/SaleFactory.php` (`SaleFactory::new()->for($negocio, $cajero)->line($producto, 2)->paid()->create()`). La fábrica no toca el stock.
+- **Aislamiento:** `tests/Feature/Tenancy/AislamientoApiTest.php` recorre todos los endpoints que reciben un ID (productos, entradas, ventas y vencidos) con una cuenta administradora de otro negocio. Cada uno responde 404 y los datos del otro negocio quedan intactos. También comprueba las listas, el perfil y el camino inverso.
+- **Concurrencia:** `VentaConcurrenciaTest` cubre las ventas simultáneas y `VencidosConcurrenciaTest` el cruce entre marcar vencidos y vender: ambos bloquean la fila del producto con `FOR UPDATE`, así que lo vendido más lo marcado nunca supera el stock.
+- **Flujo completo:** `tests/Feature/Flujos/RutaCriticaTest.php` hace entrada de mercadería, marcado de vencidos, venta con advertencia, cobro y anulación, y comprueba la disponibilidad en cada paso. Incluye la venta de licor con cédula.
