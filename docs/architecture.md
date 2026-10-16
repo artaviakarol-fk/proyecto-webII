@@ -235,3 +235,10 @@ docker compose exec api php artisan scramble:export
 Las pruebas se ejecutan con Pest (`vendor/bin/pest`), que también corre las pruebas escritas como clases de PHPUnit.
 
 Las pruebas de `tests/Feature` usan PostgreSQL (base `minisuper_testing`), porque el aislamiento depende de Row Level Security. Migran con el dueño del esquema (`RefreshDatabaseAsOwner`) y consultan con el rol de la aplicación, como en producción. `tests/Feature/Tenancy` demuestra que un negocio no puede leer, editar ni borrar recursos de otro cambiando el ID.
+
+### Pruebas de la ruta crítica
+
+- **Fábricas:** los negocios, usuarios y productos se arman con sus factories de Eloquent; las ventas, que no tienen modelo, con `tests/Support/Factories/SaleFactory.php` (`SaleFactory::new()->for($negocio, $cajero)->line($producto, 2)->paid()->create()`). La fábrica no toca el stock.
+- **Aislamiento:** `tests/Feature/Tenancy/AislamientoApiTest.php` recorre todos los endpoints que reciben un ID (productos, entradas, ventas y vencidos) con una cuenta administradora de otro negocio. Cada uno responde 404 y los datos del otro negocio quedan intactos. También comprueba las listas, el perfil y el camino inverso.
+- **Concurrencia:** `VentaConcurrenciaTest` cubre las ventas simultáneas y `VencidosConcurrenciaTest` el cruce entre marcar vencidos y vender: ambos bloquean la fila del producto con `FOR UPDATE`, así que lo vendido más lo marcado nunca supera el stock.
+- **Flujo completo:** `tests/Feature/Flujos/RutaCriticaTest.php` hace entrada de mercadería, marcado de vencidos, venta con advertencia, cobro y anulación, y comprueba la disponibilidad en cada paso. Incluye la venta de licor con cédula.
