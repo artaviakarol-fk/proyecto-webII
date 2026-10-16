@@ -13,6 +13,7 @@ use Src\Inventory\Receipts\Domain\Contracts\GoodsReceiptRepository;
 use Src\Inventory\Receipts\Domain\Entities\GoodsReceipt;
 use Src\Inventory\Receipts\Domain\Exceptions\StockLimitExceededException;
 use Src\Inventory\Receipts\Domain\ValueObjects\ReceiptId;
+use Src\Inventory\Receipts\Domain\ValueObjects\ReceiptLine;
 use Src\Inventory\Shared\Infrastructure\Persistence\PriceHistory;
 
 final readonly class EloquentGoodsReceiptRepository implements GoodsReceiptRepository
@@ -30,6 +31,8 @@ final readonly class EloquentGoodsReceiptRepository implements GoodsReceiptRepos
      *
      * Each product row is locked with SELECT ... FOR UPDATE before its stock changes, so two receipts,
      * or a receipt and a sale, that touch the same product run one after the other and none is lost.
+     * All the rows are locked first, in the order of their ids, the same order the sales use: locking
+     * them in the order of the lines would let a receipt and a sale wait for each other (a deadlock).
      */
     public function save(GoodsReceipt $receipt): void
     {
@@ -46,6 +49,8 @@ final readonly class EloquentGoodsReceiptRepository implements GoodsReceiptRepos
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
+
+            $this->lockProducts($negocioId, $receipt);
 
             foreach ($receipt->lines as $line) {
                 $product = ProductModel::query()
@@ -102,5 +107,23 @@ final readonly class EloquentGoodsReceiptRepository implements GoodsReceiptRepos
                 ]);
             }
         });
+    }
+
+    /** Lock the product rows of the receipt, one by one, in the order of their ids. */
+    private function lockProducts(string $negocioId, GoodsReceipt $receipt): void
+    {
+        $productIds = array_values(array_unique(array_map(
+            fn (ReceiptLine $line): string => $line->productId->value,
+            $receipt->lines,
+        )));
+        sort($productIds);
+
+        foreach ($productIds as $productId) {
+            ProductModel::query()
+                ->where('negocio_id', $negocioId)
+                ->whereKey($productId)
+                ->lockForUpdate()
+                ->first(['id']) ?? throw ProductNotFoundException::create();
+        }
     }
 }

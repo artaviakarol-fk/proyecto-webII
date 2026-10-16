@@ -187,6 +187,32 @@ final class EntradaMercaderiaTest extends TestCase
             ->assertJson(['errores' => ['lineas.0.producto.codigo' => ['El valor del campo código del producto nuevo ya está en uso.']]]);
     }
 
+    /**
+     * The products are locked in the order of their ids, whatever the order of the lines, the same order
+     * the sales use: otherwise a receipt and a sale that share two products could wait for each other.
+     */
+    public function test_products_are_locked_in_the_order_of_their_ids(): void
+    {
+        $leche = ProductModel::factory()->create(['negocio_id' => $this->negocio->id]);
+        $locked = [];
+        DB::listen(function ($query) use (&$locked): void {
+            if (str_contains(strtolower($query->sql), 'from "productos"') && str_contains(strtolower($query->sql), 'for update')) {
+                $locked[] = (string) array_values(array_filter($query->bindings, fn (mixed $value): bool => is_string($value) && $value !== $this->negocio->id))[0];
+            }
+        });
+        $lines = [$this->arroz->id, $leche->id];
+        rsort($lines);
+
+        $this->postJson(self::ENDPOINT, $this->receipt(array_map(
+            fn (string $id): array => ['producto_id' => $id, 'cantidad' => 1, 'costo_unitario' => 1000],
+            $lines,
+        )))->assertCreated();
+
+        $expected = $lines;
+        sort($expected);
+        $this->assertSame($expected, array_slice($locked, 0, 2));
+    }
+
     /** A product of another negocio is rejected like a missing one, and its stock stays as it was. */
     public function test_product_of_another_negocio_is_rejected_like_a_missing_one(): void
     {
