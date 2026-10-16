@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Src\Sales\Sales\Application\Contracts\SaleReader;
 use Src\Sales\Sales\Application\DTOs\SaleDetails;
 use Src\Sales\Sales\Domain\ValueObjects\SaleId;
+use Src\Sales\Sales\Domain\ValueObjects\SaleStatus;
 use Src\Shared\Domain\ValueObjects\NegocioId;
 
 final readonly class DatabaseSaleReader implements SaleReader
@@ -58,7 +59,37 @@ final readonly class DatabaseSaleReader implements SaleReader
             $sale->anulada_at === null ? null : $this->moment((string) $sale->anulada_at),
             $rows,
             (string) $sale->total,
+            $sale->estado === SaleStatus::Open->value ? $this->expiredWarnings($negocioId, $rows) : [],
         );
+    }
+
+    /**
+     * The products of the lines that have expired units on the shelf: the sale goes on, but the cashier is warned.
+     *
+     * @param  list<array{producto_id: string, nombre: string, ...}>  $rows
+     * @return list<array{producto_id: string, nombre: string, unidades_vencidas: int}>
+     */
+    private function expiredWarnings(NegocioId $negocioId, array $rows): array
+    {
+        $expired = DB::table('unidades_vencidas')
+            ->where('negocio_id', $negocioId->value)
+            ->where('estado', 'activa')
+            ->whereIn('producto_id', array_column($rows, 'producto_id'))
+            ->groupBy('producto_id')
+            ->selectRaw('producto_id, sum(cantidad) as total')
+            ->pluck('total', 'producto_id');
+
+        $warnings = [];
+
+        foreach ($rows as $row) {
+            $units = (int) ($expired[$row['producto_id']] ?? 0);
+
+            if ($units > 0) {
+                $warnings[] = ['producto_id' => $row['producto_id'], 'nombre' => $row['nombre'], 'unidades_vencidas' => $units];
+            }
+        }
+
+        return $warnings;
     }
 
     /** Write a stored moment in the timezone of the application, as ISO 8601. */

@@ -14,6 +14,7 @@ return [
     'product_unavailable' => 'Uno de los productos de la venta ya no está disponible.',
     'buyer_id_required_for_liquor' => 'La venta incluye licor: registre la cédula del comprador en cedula_comprador para completarla.',
     'buyer_id_invalid' => 'La cédula del comprador debe tener entre :min y :max dígitos.',
+    'expired_units_warning' => 'Hay :count unidades vencidas de :product en el estante: no se pueden vender, pero las demás sí.',
     'insufficient_stock' => 'No alcanza el stock de :product. Disponible para vender: :available.',
 
 ];
