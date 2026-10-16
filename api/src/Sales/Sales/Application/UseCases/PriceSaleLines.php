@@ -30,7 +30,7 @@ final readonly class PriceSaleLines
         return array_map(function (SaleLineData $line) use ($products): SaleLine {
             $product = $products[$line->productId] ?? throw SaleProductUnavailableException::create();
 
-            return new SaleLine(new ProductId($product->id), $line->quantity, Money::fromDecimal($product->salePrice));
+            return new SaleLine(new ProductId($product->id), $line->quantity, Money::fromDecimal($product->salePrice), $product->liquor);
         }, $lines);
     }
 }

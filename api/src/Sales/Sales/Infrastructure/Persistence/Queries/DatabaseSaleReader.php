@@ -20,7 +20,7 @@ final readonly class DatabaseSaleReader implements SaleReader
             ->join('users as u', 'u.id', '=', 'v.cajero_id')
             ->where('v.negocio_id', $negocioId->value)
             ->where('v.id', $id->value)
-            ->first(['v.id', 'v.estado', 'v.metodo_pago', 'v.total', 'v.created_at', 'v.cobrada_at', 'v.anulada_at', 'u.id as cajero_id', 'u.nombre as cajero_nombre']);
+            ->first(['v.id', 'v.estado', 'v.metodo_pago', 'v.cedula_comprador', 'v.total', 'v.created_at', 'v.cobrada_at', 'v.anulada_at', 'u.id as cajero_id', 'u.nombre as cajero_nombre']);
 
         if ($sale === null) {
             return null;
@@ -52,6 +52,7 @@ final readonly class DatabaseSaleReader implements SaleReader
             (string) $sale->metodo_pago,
             (string) $sale->cajero_id,
             (string) $sale->cajero_nombre,
+            $sale->cedula_comprador === null ? null : (string) $sale->cedula_comprador,
             $this->moment((string) $sale->created_at),
             $sale->cobrada_at === null ? null : $this->moment((string) $sale->cobrada_at),
             $sale->anulada_at === null ? null : $this->moment((string) $sale->anulada_at),

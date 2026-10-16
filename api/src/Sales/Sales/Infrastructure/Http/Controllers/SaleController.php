@@ -19,7 +19,7 @@ final readonly class SaleController
     /** Open a cash sale and take its units out of the stock. */
     public function store(SaleRequest $request, OpenSale $openSale): JsonResponse
     {
-        $sale = $openSale->execute($request->toLines());
+        $sale = $openSale->execute($request->toLines(), $request->buyerIdNumber());
 
         return new SaleResource($sale)
             ->response()
@@ -36,7 +36,7 @@ final readonly class SaleController
     /** Replace the lines of an open sale. */
     public function update(string $venta, SaleRequest $request, ReviseSale $reviseSale): SaleResource
     {
-        return new SaleResource($reviseSale->execute($venta, $request->toLines()));
+        return new SaleResource($reviseSale->execute($venta, $request->toLines(), $request->buyerIdNumber()));
     }
 
     /** Close an open sale as paid in cash. */

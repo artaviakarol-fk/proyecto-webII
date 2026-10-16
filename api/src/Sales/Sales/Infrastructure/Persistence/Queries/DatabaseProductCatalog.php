@@ -25,10 +25,10 @@ final readonly class DatabaseProductCatalog implements ProductCatalog
             ->where('negocio_id', $negocioId->value)
             ->whereIn('id', $productIds)
             ->whereNull('deleted_at')
-            ->get(['id', 'nombre', 'precio_venta']);
+            ->get(['id', 'nombre', 'precio_venta', 'es_licor']);
 
         foreach ($rows as $row) {
-            $products[(string) $row->id] = new CatalogProduct((string) $row->id, (string) $row->nombre, (string) $row->precio_venta);
+            $products[(string) $row->id] = new CatalogProduct((string) $row->id, (string) $row->nombre, (string) $row->precio_venta, (bool) $row->es_licor);
         }
 
         return $products;
