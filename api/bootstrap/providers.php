@@ -7,6 +7,7 @@ use Src\Identity\Users\Infrastructure\UsersServiceProvider;
 use Src\Inventory\Products\Infrastructure\ProductsServiceProvider;
 use Src\Inventory\Receipts\Infrastructure\ReceiptsServiceProvider;
 use Src\Negocios\Profile\Infrastructure\ProfileServiceProvider;
+use Src\Sales\Sales\Infrastructure\SalesServiceProvider;
 use Src\Shared\Infrastructure\SharedServiceProvider;
 
 return [
@@ -16,4 +17,5 @@ return [
     ProfileServiceProvider::class,
     ProductsServiceProvider::class,
     ReceiptsServiceProvider::class,
+    SalesServiceProvider::class,
 ];
