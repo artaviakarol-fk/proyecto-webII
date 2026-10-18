@@ -140,5 +140,11 @@ Este proyecto se desarrolla con asistencia de IA (Claude, de Anthropic). Su uso 
 | Entradas de mercadería (#8) | Código y pruebas generados con el mismo patrón | Revisado en el PR por el equipo; pruebas en verde en CI |
 | Comparar costo y ajustar precio (#9) | Código y pruebas generados con el mismo patrón | Revisado en el PR por el equipo; pruebas en verde en CI |
 | Consulta de disponibilidad (#10) | Código y pruebas generados con el mismo patrón | Revisado en el PR por el equipo; pruebas en verde en CI |
+| Venta en efectivo con control de concurrencia (#11) | Código y pruebas generados con el mismo patrón | Revisado en el PR por la otra integrante; pruebas en verde en CI; la revisora probó 4 cajas vendiendo la última unidad al mismo tiempo |
+| Control de edad en la venta de licor (#12) | Código y pruebas generados con el mismo patrón | Revisado en el PR por la otra integrante; pruebas en verde en CI |
+| Unidades vencidas y aviso en caja (#13) | Código y pruebas generados con el mismo patrón | Revisado en el PR por la otra integrante; pruebas en verde en CI; la revisora probó ventas y marcados simultáneos |
+| Documentación de la API con Scramble (#15) | Código, configuración y pruebas generados con asistencia de IA | Revisado en el PR por la otra integrante; pruebas en verde en CI; la revisora comprobó que `openapi.json` coincide con lo que genera Scramble |
+| Pruebas de caminos críticos (#16) | Pruebas generadas con asistencia de IA | Revisado en el PR por la otra integrante; pruebas en verde en CI |
+| Orden de bloqueo en entradas de mercadería (#70) | El problema se encontró y se corrigió con asistencia de IA al revisar las ventas | Revisado en el PR por la otra integrante; pruebas en verde en CI; probado con peticiones simultáneas contra un servidor real |
 
 Esta tabla se actualiza conforme avanza el proyecto. Cada integrante debe poder explicar y modificar cualquier parte del código.
