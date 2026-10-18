@@ -48,6 +48,18 @@
             "Composer\\Config::disableProcessTimeout",
             "@php artisan serve"
         ],
+        "lint": [
+            "pint --test"
+        ],
+        "format": [
+            "pint"
+        ],
+        "analyse": [
+            "phpstan analyse --memory-limit=1G"
+        ],
+        "openapi": [
+            "@php artisan scramble:export"
+        ],
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
