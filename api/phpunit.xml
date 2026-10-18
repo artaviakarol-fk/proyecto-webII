@@ -23,6 +23,7 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="APP_NAME" value="Minisúper Teresita"/>
         <env name="APP_KEY" value="base64:+sZEWc3cMINqKLLMgdfy/TvQmoBVPS57b33sA/UPoHQ="/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="APP_URL" value="http://localhost"/>
