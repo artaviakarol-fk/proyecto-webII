@@ -9,7 +9,9 @@ La documentación completa (arquitectura hexagonal, puesta en marcha, flujo de r
 ```bash
 composer install
 php artisan serve
-vendor/bin/pest
-vendor/bin/pint
-vendor/bin/phpstan analyse
+composer test       # pruebas con Pest
+composer lint       # revisa el estilo con Pint, sin cambiar archivos
+composer format     # corrige el estilo con Pint
+composer analyse    # análisis estático con Larastan
+composer openapi    # exporta la documentación a openapi.json
 ```
