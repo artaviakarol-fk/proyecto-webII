@@ -1,45 +1,52 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
+use Src\Identity\Users\Domain\ValueObjects\Role;
+use Src\Identity\Users\Infrastructure\Persistence\Models\UserModel;
+use Src\Negocios\Profile\Infrastructure\Persistence\Models\NegocioModel;
 
 /**
- * @extends Factory<User>
+ * @extends Factory<UserModel>
  */
-class UserFactory extends Factory
+final class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
-    protected static ?string $password;
+    public const string PASSWORD = 'password';
+
+    protected $model = UserModel::class;
+
+    private static ?string $passwordHash = null;
 
     /**
-     * Define the model's default state.
+     * Default state of a fictitious active administrator of a new negocio.
      *
      * @return array<string, mixed>
      */
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'negocio_id' => NegocioModel::factory(),
+            'nombre' => fake()->name(),
+            'correo' => fake()->unique()->safeEmail(),
+            'password' => self::$passwordHash ??= Hash::make(self::PASSWORD),
+            'rol' => Role::Administrador->value,
+            'activo' => true,
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
-    public function unverified(): static
+    /** Give the account a role. */
+    public function role(Role $role): static
     {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
+        return $this->state(['rol' => $role->value]);
+    }
+
+    /** Deactivate the account. */
+    public function inactive(): static
+    {
+        return $this->state(['activo' => false]);
     }
 }

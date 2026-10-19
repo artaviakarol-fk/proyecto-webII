@@ -1,0 +1,43 @@
+services:
+  api:
+    build: ./api
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: minisuper
+      # La API se conecta con el rol sin privilegios; las migraciones, con el dueño del esquema.
+      DB_USERNAME: minisuper_app
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en el archivo .env}
+      DB_ADMIN_USERNAME: minisuper_owner
+      DB_ADMIN_PASSWORD: ${DB_ADMIN_PASSWORD:?Define DB_ADMIN_PASSWORD en el archivo .env}
+    volumes:
+      - ./api:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17
+    environment:
+      # Superusuario de PostgreSQL: solo lo usa el script que crea los roles la primera vez.
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_ADMIN_PASSWORD:?Define DB_ADMIN_PASSWORD en el archivo .env}
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en el archivo .env}
+      DB_ADMIN_PASSWORD: ${DB_ADMIN_PASSWORD:?Define DB_ADMIN_PASSWORD en el archivo .env}
+    ports:
+      - "${DB_FORWARD_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./api/docker/postgres/init-roles.sh:/docker-entrypoint-initdb.d/10-init-roles.sh:ro
+      - ./api/database/roles.sql:/docker-entrypoint-initdb.d/roles.sql.in:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d minisuper"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

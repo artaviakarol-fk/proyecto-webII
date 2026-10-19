@@ -1,6 +1,8 @@
 <?php
 
-use App\Models\User;
+declare(strict_types=1);
+
+use Src\Identity\Users\Infrastructure\Persistence\Models\UserModel;
 
 return [
 
@@ -64,7 +66,8 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
+            // Cuentas del personal, del módulo Identity/Users.
+            'model' => env('AUTH_MODEL', UserModel::class),
         ],
 
         // 'users' => [
