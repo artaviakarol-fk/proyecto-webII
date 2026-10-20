@@ -43,7 +43,7 @@ Propuesta a partir de la ficha del proyecto; cada uno se crea cuando llegue su p
 | `Sales` | `Sales`, `CashShifts` | Venta en caja, control de edad para licor, cierre y cuadre de caja |
 | `Credit` | `Customers` | Fiado con límite por cliente |
 | `Identity` | `Users` | Cuentas y roles: administrador, cajero y bodeguero. Login con tokens de Sanctum |
-| `Negocios` | `Profile` | El negocio (inquilino) al que pertenece cada cuenta y cada dato |
+| `Negocios` | `Profile`, `OpeningHours` | El negocio (inquilino) al que pertenece cada cuenta y cada dato, y su horario de atención semanal |
 
 ## Regla de dependencias
 
@@ -163,6 +163,8 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `GET /api/v1/productos/{id}/foto` | Descargar la foto del producto. Todo el personal |
 | `POST /api/v1/negocio/logo` | Subir o reemplazar el logo del negocio. Solo administración |
 | `GET /api/v1/negocio/logo` | Descargar el logo del negocio de la cuenta |
+| `GET /api/v1/negocio/horario` | Horario semanal del negocio y si está abierto ahora. Todo el personal |
+| `PUT /api/v1/negocio/horario` | Reemplazar el horario semanal completo. Solo administración |
 | `GET /api/v1/productos/{id}/disponibilidad` | Stock, unidades vencidas, stock vendible y si está agotado. Todo el personal |
 | `PATCH /api/v1/productos/{id}/precio` | Aceptar un nuevo precio de venta (`precio_venta`). Solo administración |
 | `GET /api/v1/productos/{id}/historial-precios` | Historial de costos y precios del producto, del más reciente al más antiguo. Solo administración |
@@ -196,6 +198,12 @@ Si alguna línea de una venta es de un producto con `es_licor = true`, la venta 
 ### Unidades vencidas y aviso en caja
 
 `POST /productos/{id}/vencidos` guarda en `unidades_vencidas` la cantidad y el motivo, con quién la marcó, en estado `activa`. Las unidades marcadas siguen contando en el `stock`, pero salen del stock vendible (`stock - unidades vencidas activas`). No hace falta que el producto tenga fecha de vencimiento: la bodega marca lo que encuentra vencido en el estante. El repositorio bloquea la fila del producto (`FOR UPDATE`, el mismo bloqueo que usa una venta) y responde `409` si se intentan marcar más unidades de las que quedan sin marcar. Mientras la venta está abierta, su respuesta trae `advertencias`: un aviso `unidades_vencidas` por cada producto de las líneas que tenga unidades vencidas en el estante. El aviso no bloquea la venta: las demás unidades se pueden vender y solo se rechaza (`409`) pedir más de las vendibles.
+
+### Horario de atención del negocio
+
+El módulo `Negocios/OpeningHours` guarda cuándo atiende cada negocio. El horario se escribe por día (`lunes` … `domingo`) y cada día tiene hasta 3 tramos `{abre, cierra}` en formato `HH:MM`, así que un negocio puede cerrar al mediodía o un día completo (día sin tramos). Cada tramo es un registro de `horarios_negocio`, con Row Level Security y restricciones `CHECK` (día de 1 a 7 y cierre posterior a apertura). `PUT /negocio/horario` reemplaza el horario completo; un día que no se envía queda cerrado. La respuesta de ambas rutas trae los siete días, `abierto_ahora` y `zona_horaria`.
+
+Las reglas viven en el dominio (`WeeklySchedule`, `TimeSlot`, `TimeOfDay`, `Weekday`) y no usan Laravel: un tramo abre en su hora de apertura y cierra en su hora de cierre (a las 20:00 en punto ya está cerrado), los tramos de un mismo día no se traslapan y la hora se lee en `America/Costa_Rica`, sin importar la zona horaria del servidor. El instante actual entra como parámetro (`now()` del controlador), igual que en la ruta de salud, así las pruebas fijan la hora con `travelTo`. Los datos de demostración traen el horario real del Minisúper Teresita (lunes a viernes 7:00 a 20:00, sábado y domingo 7:00 a 18:00) y uno ficticio para La Esquina, que cierra los domingos. El horario del personal no se administra: la ficha del proyecto lo deja fuera.
 
 ### Archivos
 
