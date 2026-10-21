@@ -15,6 +15,7 @@ use Src\Inventory\Products\Domain\Entities\Product;
 use Src\Inventory\Products\Infrastructure\Http\Requests\ListProductsRequest;
 use Src\Inventory\Products\Infrastructure\Http\Requests\ProductRequest;
 use Src\Inventory\Products\Infrastructure\Http\Resources\ProductResource;
+use Src\Shared\Infrastructure\Http\Resources\PageMeta;
 
 final readonly class ProductController
 {
@@ -25,16 +26,11 @@ final readonly class ProductController
      */
     public function index(ListProductsRequest $request, ListProducts $listProducts): JsonResponse
     {
-        $page = $listProducts->execute($request->term(), $request->page(), $request->perPage());
+        $page = $listProducts->execute($request->term(), $request->page());
 
         return new JsonResponse([
-            'data' => array_map(fn (Product $product): array => new ProductResource($product)->toArray($request), $page->products),
-            'meta' => [
-                'pagina' => $page->page,
-                'por_pagina' => $page->perPage,
-                'total' => $page->total,
-                'ultima_pagina' => $page->lastPage(),
-            ],
+            'data' => array_map(fn (Product $product): array => new ProductResource($product)->toArray($request), $page->items),
+            ...PageMeta::of($page),
         ]);
     }
 

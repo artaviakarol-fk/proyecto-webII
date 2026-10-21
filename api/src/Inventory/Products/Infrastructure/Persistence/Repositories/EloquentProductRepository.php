@@ -16,7 +16,6 @@ use Src\Inventory\Products\Domain\ValueObjects\PriceChangeReason;
 use Src\Inventory\Products\Domain\ValueObjects\ProductCode;
 use Src\Inventory\Products\Domain\ValueObjects\ProductDetails;
 use Src\Inventory\Products\Domain\ValueObjects\ProductName;
-use Src\Inventory\Products\Domain\ValueObjects\ProductPage;
 use Src\Inventory\Products\Domain\ValueObjects\Stock;
 use Src\Inventory\Products\Infrastructure\Persistence\Models\ProductModel;
 use Src\Inventory\Shared\Domain\ValueObjects\ProductId;
@@ -24,6 +23,9 @@ use Src\Inventory\Shared\Infrastructure\Persistence\PriceHistory;
 use Src\Shared\Domain\Contracts\CurrentUser;
 use Src\Shared\Domain\ValueObjects\Money;
 use Src\Shared\Domain\ValueObjects\NegocioId;
+use Src\Shared\Domain\ValueObjects\Page;
+use Src\Shared\Domain\ValueObjects\PageRequest;
+use Src\Shared\Infrastructure\Persistence\EloquentPages;
 
 /**
  * Every query also filters by negocio_id: row-level security already isolates the negocios,
@@ -98,7 +100,7 @@ final readonly class EloquentProductRepository implements ProductRepository
     }
 
     /** One page of the live products of the negocio ordered by name, optionally matching a name or code. */
-    public function search(NegocioId $negocioId, ?string $term, int $page, int $perPage): ProductPage
+    public function search(NegocioId $negocioId, ?string $term, PageRequest $page): Page
     {
         $query = ProductModel::query()
             ->where('negocio_id', $negocioId->value)
@@ -109,10 +111,7 @@ final readonly class EloquentProductRepository implements ProductRepository
                     ->orWhere('codigo', 'ilike', $pattern));
             });
 
-        $total = (clone $query)->count();
-        $models = $query->orderBy('nombre')->orderBy('id')->forPage($page, $perPage)->get();
-
-        return new ProductPage(array_values($models->map($this->toDomain(...))->all()), $page, $perPage, $total);
+        return EloquentPages::of($query->orderBy('nombre')->orderBy('id'), $page, $this->toDomain(...));
     }
 
     /** Soft delete the product: it leaves the catalog but its sales keep pointing to it. */
