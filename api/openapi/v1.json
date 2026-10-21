@@ -1,0 +1,2968 @@
+{
+    "openapi": "3.1.2",
+    "info": {
+        "title": "Minis\u00faper Teresita \u00b7 API",
+        "version": "0.0.1",
+        "description": "API de **Minis\u00faper Teresita**: cat\u00e1logo, inventario con unidades vencidas y ventas en efectivo, separadas por negocio.\n\n**C\u00f3mo usarla**\n\n1. `POST /tokens` con correo y contrase\u00f1a devuelve un token.\n2. Env\u00edalo en cada petici\u00f3n: `Authorization: Bearer <token>`.\n3. Cada token solo ve los datos de su negocio; un recurso de otro negocio responde `404`.\n\n**Permisos (abilities):** `administrar` (administraci\u00f3n), `caja` (cajero y administraci\u00f3n) e `inventario` (bodega y administraci\u00f3n).\n\n**Errores:** todos responden `application/problem+json` (RFC 9457) con los mensajes en espa\u00f1ol; el campo `instance` trae el mismo identificador que el encabezado `X-Request-Id`."
+    },
+    "servers": [
+        {
+            "url": "/api/v1"
+        }
+    ],
+    "security": [
+        {
+            "http": []
+        }
+    ],
+    "paths": {
+        "/": {
+            "get": {
+                "operationId": "index",
+                "summary": "Describe the API and the version being served",
+                "tags": [
+                    "ApiIndex"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "nombre": {
+                                            "type": "string"
+                                        },
+                                        "version": {
+                                            "type": "string",
+                                            "const": "v1"
+                                        }
+                                    },
+                                    "required": [
+                                        "nombre",
+                                        "version"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/productos/{producto}/disponibilidad": {
+            "get": {
+                "operationId": "inventory.products.availability",
+                "summary": "How many units of a product of the negocio can really be sold right now",
+                "tags": [
+                    "Availability"
+                ],
+                "parameters": [
+                    {
+                        "name": "producto",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "producto_id": {
+                                                    "type": "string"
+                                                },
+                                                "codigo": {
+                                                    "type": "string"
+                                                },
+                                                "nombre": {
+                                                    "type": "string"
+                                                },
+                                                "stock": {
+                                                    "type": "integer"
+                                                },
+                                                "unidades_vencidas": {
+                                                    "type": "integer"
+                                                },
+                                                "stock_vendible": {
+                                                    "type": "integer"
+                                                },
+                                                "agotado": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "producto_id",
+                                                "codigo",
+                                                "nombre",
+                                                "stock",
+                                                "unidades_vencidas",
+                                                "stock_vendible",
+                                                "agotado"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar",
+                    "caja",
+                    "inventario"
+                ]
+            }
+        },
+        "/negocio": {
+            "get": {
+                "operationId": "negocios.profile.show",
+                "summary": "Show the negocio of the authenticated account, whatever negocio the request names",
+                "tags": [
+                    "CurrentNegocio"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`NegocioResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/NegocioResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/productos/{producto}/vencidos": {
+            "post": {
+                "operationId": "inventory.expirations.store",
+                "summary": "Mark units of a product as expired; they leave the sellable stock",
+                "tags": [
+                    "ExpiredUnits"
+                ],
+                "parameters": [
+                    {
+                        "name": "producto",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MarkExpiredRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`ExpiredUnitsResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ExpiredUnitsResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Una regla del negocio rechaza la operaci\u00f3n (por ejemplo stock insuficiente, c\u00f3digo repetido o venta en otro estado). El campo `detail` dice el motivo.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "inventario"
+                ]
+            }
+        },
+        "/entradas": {
+            "post": {
+                "operationId": "inventory.receipts.store",
+                "summary": "Register a delivery of goods and add it to the stock",
+                "tags": [
+                    "GoodsReceipt"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterReceiptRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`ReceiptResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReceiptResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Una regla del negocio rechaza la operaci\u00f3n (por ejemplo stock insuficiente, c\u00f3digo repetido o venta en otro estado). El campo `detail` dice el motivo.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "inventario"
+                ]
+            }
+        },
+        "/entradas/{entrada}": {
+            "get": {
+                "operationId": "inventory.receipts.show",
+                "summary": "Show a delivery of the negocio; one of another negocio answers 404",
+                "tags": [
+                    "GoodsReceipt"
+                ],
+                "parameters": [
+                    {
+                        "name": "entrada",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`ReceiptResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReceiptResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "inventario"
+                ]
+            }
+        },
+        "/health": {
+            "get": {
+                "operationId": "health",
+                "summary": "Report the status of the application and its database; always answers 200",
+                "tags": [
+                    "Health"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`HealthResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HealthResource"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/negocio/logo": {
+            "get": {
+                "operationId": "negocios.profile.logo.show",
+                "summary": "Send the logo of the negocio of the account",
+                "tags": [
+                    "NegocioLogo"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Transfer-Encoding": {
+                                "required": true,
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "chunked"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "negocios.profile.logo.store",
+                "summary": "Upload or replace the logo of the negocio of the account (multipart field \"imagen\")",
+                "tags": [
+                    "NegocioLogo"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UploadImageRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`NegocioResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/NegocioResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/negocio/horario": {
+            "get": {
+                "operationId": "negocios.opening_hours.show",
+                "summary": "Show the weekly opening hours of the negocio of the account and whether it is open right now",
+                "tags": [
+                    "OpeningHours"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`OpeningHoursResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/OpeningHoursResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar",
+                    "caja",
+                    "inventario"
+                ]
+            },
+            "put": {
+                "operationId": "negocios.opening_hours.update",
+                "summary": "Replace the whole weekly schedule; a day left out stays closed. Only the administration",
+                "tags": [
+                    "OpeningHours"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReplaceOpeningHoursRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`OpeningHoursResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/OpeningHoursResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/productos": {
+            "get": {
+                "operationId": "inventory.products.index",
+                "summary": "List the catalog of the negocio by pages, optionally searching by name or code",
+                "tags": [
+                    "Product"
+                ],
+                "parameters": [
+                    {
+                        "name": "pagina",
+                        "in": "query",
+                        "description": "N\u00famero de p\u00e1gina, desde 1.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "por_pagina",
+                        "in": "query",
+                        "description": "Elementos por p\u00e1gina, de 1 a 50. Por defecto, 15.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 50
+                        }
+                    },
+                    {
+                        "name": "buscar",
+                        "in": "query",
+                        "description": "Texto que se busca en el nombre o el c\u00f3digo.",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 120
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ProductResource"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "pagina": {
+                                                    "type": "integer"
+                                                },
+                                                "por_pagina": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "ultima_pagina": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "pagina",
+                                                "por_pagina",
+                                                "total",
+                                                "ultima_pagina"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar",
+                    "caja",
+                    "inventario"
+                ]
+            },
+            "post": {
+                "operationId": "inventory.products.store",
+                "summary": "Register a product in the catalog of the negocio",
+                "tags": [
+                    "Product"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProductRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`ProductResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Una regla del negocio rechaza la operaci\u00f3n (por ejemplo stock insuficiente, c\u00f3digo repetido o venta en otro estado). El campo `detail` dice el motivo.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/productos/{producto}": {
+            "get": {
+                "operationId": "inventory.products.show",
+                "summary": "Show one product of the negocio; a product of another negocio answers 404",
+                "tags": [
+                    "Product"
+                ],
+                "parameters": [
+                    {
+                        "name": "producto",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`ProductResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar",
+                    "caja",
+                    "inventario"
+                ]
+            },
+            "put": {
+                "operationId": "inventory.products.update",
+                "summary": "Replace the data of a product of the negocio",
+                "tags": [
+                    "Product"
+                ],
+                "parameters": [
+                    {
+                        "name": "producto",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProductRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`ProductResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Una regla del negocio rechaza la operaci\u00f3n (por ejemplo stock insuficiente, c\u00f3digo repetido o venta en otro estado). El campo `detail` dice el motivo.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            },
+            "delete": {
+                "operationId": "inventory.products.destroy",
+                "summary": "Take a product out of the catalog (soft delete)",
+                "tags": [
+                    "Product"
+                ],
+                "parameters": [
+                    {
+                        "name": "producto",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/productos/{producto}/foto": {
+            "get": {
+                "operationId": "inventory.products.photo.show",
+                "summary": "Send the photo of a product of the negocio; a product of another negocio answers 404",
+                "tags": [
+                    "ProductPhoto"
+                ],
+                "parameters": [
+                    {
+                        "name": "producto",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Transfer-Encoding": {
+                                "required": true,
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "chunked"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar",
+                    "caja",
+                    "inventario"
+                ]
+            },
+            "post": {
+                "operationId": "inventory.products.photo.store",
+                "summary": "Upload or replace the photo of a product of the negocio (multipart field \"imagen\")",
+                "tags": [
+                    "ProductPhoto"
+                ],
+                "parameters": [
+                    {
+                        "name": "producto",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UploadImageRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`ProductResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/productos/{producto}/precio": {
+            "patch": {
+                "operationId": "inventory.products.price.update",
+                "summary": "Accept a new sale price for a product of the negocio. Only the administration",
+                "tags": [
+                    "ProductPrice"
+                ],
+                "parameters": [
+                    {
+                        "name": "producto",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangeSalePriceRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`ProductResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/productos/{producto}/historial-precios": {
+            "get": {
+                "operationId": "inventory.products.price.history",
+                "summary": "The history of cost and sale price of a product, newest first",
+                "tags": [
+                    "ProductPrice"
+                ],
+                "parameters": [
+                    {
+                        "name": "producto",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "fecha": {
+                                                        "type": "string"
+                                                    },
+                                                    "costo": {
+                                                        "type": "number"
+                                                    },
+                                                    "precio_venta": {
+                                                        "type": "number"
+                                                    },
+                                                    "motivo": {
+                                                        "type": "string"
+                                                    },
+                                                    "usuario": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string"
+                                                            },
+                                                            "nombre": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "id",
+                                                            "nombre"
+                                                        ]
+                                                    },
+                                                    "referencia_id": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "fecha",
+                                                    "costo",
+                                                    "precio_venta",
+                                                    "motivo",
+                                                    "usuario",
+                                                    "referencia_id"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/ventas": {
+            "get": {
+                "operationId": "sales.index",
+                "summary": "List the sales of the negocio by pages, newest first, optionally by status and day",
+                "tags": [
+                    "Sale"
+                ],
+                "parameters": [
+                    {
+                        "name": "pagina",
+                        "in": "query",
+                        "description": "N\u00famero de p\u00e1gina, desde 1.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "por_pagina",
+                        "in": "query",
+                        "description": "Elementos por p\u00e1gina, de 1 a 50. Por defecto, 15.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 50
+                        }
+                    },
+                    {
+                        "name": "estado",
+                        "in": "query",
+                        "description": "Estado de la venta: abierta, cobrada o anulada.",
+                        "schema": {
+                            "$ref": "#/components/schemas/SaleStatus"
+                        }
+                    },
+                    {
+                        "name": "fecha",
+                        "in": "query",
+                        "description": "D\u00eda en que se abri\u00f3 la venta, en hora de Costa Rica (AAAA-MM-DD).",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SaleSummaryResource"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "pagina": {
+                                                    "type": "integer"
+                                                },
+                                                "por_pagina": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "ultima_pagina": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "pagina",
+                                                "por_pagina",
+                                                "total",
+                                                "ultima_pagina"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "caja"
+                ]
+            },
+            "post": {
+                "operationId": "sales.store",
+                "summary": "Open a cash sale and take its units out of the stock",
+                "tags": [
+                    "Sale"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SaleRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`SaleResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SaleResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Una regla del negocio rechaza la operaci\u00f3n (por ejemplo stock insuficiente, c\u00f3digo repetido o venta en otro estado). El campo `detail` dice el motivo.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "caja"
+                ]
+            }
+        },
+        "/ventas/{venta}": {
+            "get": {
+                "operationId": "sales.show",
+                "summary": "Show a sale of the negocio; one of another negocio answers 404",
+                "tags": [
+                    "Sale"
+                ],
+                "parameters": [
+                    {
+                        "name": "venta",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SaleResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SaleResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "caja"
+                ]
+            },
+            "put": {
+                "operationId": "sales.update",
+                "summary": "Replace the lines of an open sale",
+                "tags": [
+                    "Sale"
+                ],
+                "parameters": [
+                    {
+                        "name": "venta",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SaleRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SaleResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SaleResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Una regla del negocio rechaza la operaci\u00f3n (por ejemplo stock insuficiente, c\u00f3digo repetido o venta en otro estado). El campo `detail` dice el motivo.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "caja"
+                ]
+            }
+        },
+        "/ventas/{venta}/cobrar": {
+            "post": {
+                "operationId": "sales.pay",
+                "summary": "Close an open sale as paid in cash",
+                "tags": [
+                    "Sale"
+                ],
+                "parameters": [
+                    {
+                        "name": "venta",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SaleResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SaleResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Una regla del negocio rechaza la operaci\u00f3n (por ejemplo stock insuficiente, c\u00f3digo repetido o venta en otro estado). El campo `detail` dice el motivo.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "caja"
+                ]
+            }
+        },
+        "/ventas/{venta}/anular": {
+            "post": {
+                "operationId": "sales.cancel",
+                "summary": "Cancel a sale and give its units back to the stock",
+                "tags": [
+                    "Sale"
+                ],
+                "parameters": [
+                    {
+                        "name": "venta",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SaleResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SaleResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Una regla del negocio rechaza la operaci\u00f3n (por ejemplo stock insuficiente, c\u00f3digo repetido o venta en otro estado). El campo `detail` dice el motivo.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "caja"
+                ]
+            }
+        },
+        "/tokens": {
+            "post": {
+                "operationId": "identity.tokens.store",
+                "description": "The token goes in the `Authorization: Bearer <token>` header of every later request.\nA wrong password, an unknown email and an inactive account answer the same 401 problem.",
+                "summary": "Log in with email and password and answer a bearer token",
+                "tags": [
+                    "Token"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/IssueTokenRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`TokenResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TokenResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "description": "Credenciales inv\u00e1lidas: el correo, la contrase\u00f1a o la cuenta no son correctos.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Demasiados intentos de inicio de sesi\u00f3n; hay que esperar antes de volver a intentar.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "http": {
+                "type": "http",
+                "scheme": "bearer"
+            }
+        },
+        "schemas": {
+            "ChangeSalePriceRequest": {
+                "type": "object",
+                "properties": {
+                    "precio_venta": {
+                        "type": "number",
+                        "maximum": 99999999.99
+                    }
+                },
+                "required": [
+                    "precio_venta"
+                ],
+                "title": "ChangeSalePriceRequest"
+            },
+            "ExpiredUnitsResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "producto_id": {
+                        "type": "string"
+                    },
+                    "cantidad": {
+                        "type": "integer"
+                    },
+                    "motivo": {
+                        "type": "string"
+                    },
+                    "estado": {
+                        "type": "string"
+                    },
+                    "registrada_por": {
+                        "type": "string"
+                    },
+                    "registrada_en": {
+                        "type": "string"
+                    },
+                    "stock": {
+                        "type": "integer"
+                    },
+                    "unidades_vencidas": {
+                        "type": "integer"
+                    },
+                    "stock_vendible": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "id",
+                    "producto_id",
+                    "cantidad",
+                    "motivo",
+                    "estado",
+                    "registrada_por",
+                    "registrada_en",
+                    "stock",
+                    "unidades_vencidas",
+                    "stock_vendible"
+                ],
+                "title": "ExpiredUnitsResource"
+            },
+            "HealthResource": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "ok",
+                            "degraded"
+                        ]
+                    },
+                    "checks": {
+                        "type": "object",
+                        "properties": {
+                            "app": {
+                                "type": "string",
+                                "const": "ok"
+                            },
+                            "database": {
+                                "type": "string",
+                                "enum": [
+                                    "ok",
+                                    "unavailable"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "app",
+                            "database"
+                        ]
+                    },
+                    "checked_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "status",
+                    "checks",
+                    "checked_at"
+                ],
+                "title": "HealthResource"
+            },
+            "IssueTokenRequest": {
+                "type": "object",
+                "properties": {
+                    "correo": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255
+                    },
+                    "contrasena": {
+                        "type": "string"
+                    },
+                    "dispositivo": {
+                        "type": "string",
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "correo",
+                    "contrasena",
+                    "dispositivo"
+                ],
+                "title": "IssueTokenRequest"
+            },
+            "MarkExpiredRequest": {
+                "type": "object",
+                "description": "Units of a product found expired: \"cantidad\" and the \"motivo\". The product comes from the URL.",
+                "properties": {
+                    "cantidad": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000
+                    },
+                    "motivo": {
+                        "type": "string",
+                        "maxLength": 200
+                    }
+                },
+                "required": [
+                    "cantidad",
+                    "motivo"
+                ],
+                "title": "MarkExpiredRequest"
+            },
+            "NegocioResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "nombre": {
+                        "type": "string"
+                    },
+                    "logo": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "activo": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "id",
+                    "nombre",
+                    "logo",
+                    "activo"
+                ],
+                "title": "NegocioResource"
+            },
+            "OpeningHoursResource": {
+                "type": "object",
+                "properties": {
+                    "dias": {
+                        "type": "string"
+                    },
+                    "abierto_ahora": {
+                        "type": "boolean"
+                    },
+                    "zona_horaria": {
+                        "type": "string",
+                        "const": "America/Costa_Rica"
+                    }
+                },
+                "required": [
+                    "dias",
+                    "abierto_ahora",
+                    "zona_horaria"
+                ],
+                "title": "OpeningHoursResource"
+            },
+            "Problema": {
+                "type": "object",
+                "description": "Documento de problema (RFC 9457, `application/problem+json`).",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "URL que identifica el tipo de problema."
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Resumen corto del problema, en espa\u00f1ol."
+                    },
+                    "status": {
+                        "type": "integer",
+                        "description": "C\u00f3digo HTTP de la respuesta."
+                    },
+                    "detail": {
+                        "type": "string",
+                        "description": "Explicaci\u00f3n de este caso concreto, en espa\u00f1ol."
+                    },
+                    "instance": {
+                        "type": "string",
+                        "description": "Identificador de la petici\u00f3n (`urn:uuid:`), el mismo del encabezado `X-Request-Id`."
+                    },
+                    "errores": {
+                        "type": "object",
+                        "description": "Solo en los 422: los mensajes de cada campo inv\u00e1lido.",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance"
+                ],
+                "title": "Problema"
+            },
+            "ProductRequest": {
+                "type": "object",
+                "description": "Data of a product, used to create it (POST) and to replace it (PUT).",
+                "properties": {
+                    "codigo": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9._-]+$",
+                        "maxLength": 30
+                    },
+                    "nombre": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "categoria": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 60
+                    },
+                    "precio_venta": {
+                        "type": "number",
+                        "maximum": 99999999.99
+                    },
+                    "costo_actual": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 99999999.99
+                    },
+                    "stock": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                    },
+                    "es_perecedero": {
+                        "type": "boolean"
+                    },
+                    "es_licor": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "codigo",
+                    "nombre",
+                    "precio_venta"
+                ],
+                "title": "ProductRequest"
+            },
+            "ProductResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "codigo": {
+                        "type": "string"
+                    },
+                    "nombre": {
+                        "type": "string"
+                    },
+                    "categoria": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "precio_venta": {
+                        "type": "number"
+                    },
+                    "costo_actual": {
+                        "type": "number"
+                    },
+                    "stock": {
+                        "type": "integer"
+                    },
+                    "es_perecedero": {
+                        "type": "boolean"
+                    },
+                    "es_licor": {
+                        "type": "boolean"
+                    },
+                    "foto": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "agotado": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "id",
+                    "codigo",
+                    "nombre",
+                    "categoria",
+                    "precio_venta",
+                    "costo_actual",
+                    "stock",
+                    "es_perecedero",
+                    "es_licor",
+                    "foto",
+                    "agotado"
+                ],
+                "title": "ProductResource"
+            },
+            "ReceiptResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "proveedor": {
+                        "type": "string"
+                    },
+                    "fecha": {
+                        "type": "string"
+                    },
+                    "registrada_por": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "nombre": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "nombre"
+                        ]
+                    },
+                    "registrada_en": {
+                        "type": "string"
+                    },
+                    "lineas": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "producto_id": {
+                                    "type": "string"
+                                },
+                                "codigo": {
+                                    "type": "string"
+                                },
+                                "nombre": {
+                                    "type": "string"
+                                },
+                                "cantidad": {
+                                    "type": "integer"
+                                },
+                                "costo_unitario": {
+                                    "type": "number"
+                                },
+                                "subtotal": {
+                                    "type": "number"
+                                },
+                                "costo_anterior": {
+                                    "type": [
+                                        "number",
+                                        "null"
+                                    ]
+                                },
+                                "diferencia_costo": {
+                                    "type": [
+                                        "number",
+                                        "null"
+                                    ]
+                                },
+                                "cambio_costo": {
+                                    "type": "boolean"
+                                },
+                                "precio_venta": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": [
+                                "producto_id",
+                                "codigo",
+                                "nombre",
+                                "cantidad",
+                                "costo_unitario",
+                                "subtotal",
+                                "costo_anterior",
+                                "diferencia_costo",
+                                "cambio_costo",
+                                "precio_venta"
+                            ]
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "id",
+                    "proveedor",
+                    "fecha",
+                    "registrada_por",
+                    "registrada_en",
+                    "lineas",
+                    "total"
+                ],
+                "title": "ReceiptResource"
+            },
+            "RegisterReceiptRequest": {
+                "type": "object",
+                "description": "A delivery of goods. Each line brings either \"producto_id\" (a product of the catalog) or\n\"producto\" (the data of a new one), plus \"cantidad\" and \"costo_unitario\".",
+                "properties": {
+                    "proveedor": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "fecha": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "lineas": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "producto_id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "producto": {
+                                    "type": "object",
+                                    "properties": {
+                                        "codigo": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9._-]+$",
+                                            "maxLength": 30
+                                        },
+                                        "nombre": {
+                                            "type": "string",
+                                            "maxLength": 120
+                                        },
+                                        "categoria": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "maxLength": 60
+                                        },
+                                        "precio_venta": {
+                                            "type": "number",
+                                            "maximum": 99999999.99
+                                        },
+                                        "es_perecedero": {
+                                            "type": "boolean"
+                                        },
+                                        "es_licor": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                },
+                                "cantidad": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 1000000
+                                },
+                                "costo_unitario": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 99999999.99
+                                }
+                            },
+                            "required": [
+                                "cantidad",
+                                "costo_unitario"
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 100,
+                        "uniqueItems": true
+                    }
+                },
+                "required": [
+                    "proveedor",
+                    "fecha",
+                    "lineas"
+                ],
+                "title": "RegisterReceiptRequest"
+            },
+            "ReplaceOpeningHoursRequest": {
+                "type": "object",
+                "properties": {
+                    "dias": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "abre": {
+                                        "type": "string"
+                                    },
+                                    "cierra": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "abre",
+                                    "cierra"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "dias"
+                ],
+                "title": "ReplaceOpeningHoursRequest"
+            },
+            "SaleRequest": {
+                "type": "object",
+                "description": "The lines of a sale: each one names a product of the negocio and how many units. The price is never sent.\nThe id number of the buyer is optional here, but a sale with liquor needs it: the sale itself enforces it.",
+                "properties": {
+                    "cedula_comprador": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^[0-9\\s-]+$",
+                        "maxLength": 20
+                    },
+                    "lineas": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "producto_id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "cantidad": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 10000
+                                }
+                            },
+                            "required": [
+                                "producto_id",
+                                "cantidad"
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 100,
+                        "uniqueItems": true
+                    }
+                },
+                "required": [
+                    "lineas"
+                ],
+                "title": "SaleRequest"
+            },
+            "SaleResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "estado": {
+                        "type": "string"
+                    },
+                    "metodo_pago": {
+                        "type": "string"
+                    },
+                    "cajero": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "nombre": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "nombre"
+                        ]
+                    },
+                    "cedula_comprador": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "creada_en": {
+                        "type": "string"
+                    },
+                    "cobrada_en": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "anulada_en": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "lineas": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "producto_id": {
+                                    "type": "string"
+                                },
+                                "codigo": {
+                                    "type": "string"
+                                },
+                                "nombre": {
+                                    "type": "string"
+                                },
+                                "cantidad": {
+                                    "type": "integer"
+                                },
+                                "precio_unitario": {
+                                    "type": "number"
+                                },
+                                "subtotal": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": [
+                                "producto_id",
+                                "codigo",
+                                "nombre",
+                                "cantidad",
+                                "precio_unitario",
+                                "subtotal"
+                            ]
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    },
+                    "advertencias": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "tipo": {
+                                    "type": "string"
+                                },
+                                "producto_id": {
+                                    "type": "string"
+                                },
+                                "nombre": {
+                                    "type": "string"
+                                },
+                                "unidades_vencidas": {
+                                    "type": "integer"
+                                },
+                                "mensaje": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "tipo",
+                                "producto_id",
+                                "nombre",
+                                "unidades_vencidas",
+                                "mensaje"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "id",
+                    "estado",
+                    "metodo_pago",
+                    "cajero",
+                    "cedula_comprador",
+                    "creada_en",
+                    "cobrada_en",
+                    "anulada_en",
+                    "lineas",
+                    "total",
+                    "advertencias"
+                ],
+                "title": "SaleResource"
+            },
+            "SaleStatus": {
+                "type": "string",
+                "enum": [
+                    "abierta",
+                    "cobrada",
+                    "anulada"
+                ],
+                "title": "SaleStatus"
+            },
+            "SaleSummaryResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "estado": {
+                        "type": "string"
+                    },
+                    "metodo_pago": {
+                        "type": "string"
+                    },
+                    "cajero": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "nombre": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "nombre"
+                        ]
+                    },
+                    "cantidad_lineas": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "number"
+                    },
+                    "creada_en": {
+                        "type": "string"
+                    },
+                    "cobrada_en": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "anulada_en": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "estado",
+                    "metodo_pago",
+                    "cajero",
+                    "cantidad_lineas",
+                    "total",
+                    "creada_en",
+                    "cobrada_en",
+                    "anulada_en"
+                ],
+                "title": "SaleSummaryResource"
+            },
+            "TokenResource": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string"
+                    },
+                    "tipo": {
+                        "type": "string",
+                        "const": "Bearer"
+                    },
+                    "abilities": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "token",
+                    "tipo",
+                    "abilities"
+                ],
+                "title": "TokenResource"
+            },
+            "UploadImageRequest": {
+                "type": "object",
+                "description": "An image sent as multipart/form-data in the field \"imagen\": JPG, PNG or WebP up to 2 MB.",
+                "properties": {
+                    "imagen": {
+                        "type": "string",
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Maximum file size: 2048 kilobytes."
+                    }
+                },
+                "required": [
+                    "imagen"
+                ],
+                "title": "UploadImageRequest"
+            }
+        },
+        "responses": {
+            "ValidationException": {
+                "description": "Validation error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Errors overview."
+                                },
+                                "errors": {
+                                    "type": "object",
+                                    "description": "A detailed description of each field that failed validation.",
+                                    "additionalProperties": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "message",
+                                "errors"
+                            ]
+                        }
+                    }
+                }
+            },
+            "AuthenticationException": {
+                "description": "Unauthenticated",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

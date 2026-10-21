@@ -7,9 +7,10 @@ namespace Src\Inventory\Products\Domain\Contracts;
 use Src\Inventory\Products\Domain\Entities\Product;
 use Src\Inventory\Products\Domain\Exceptions\ProductCodeAlreadyInUseException;
 use Src\Inventory\Products\Domain\ValueObjects\PriceChangeReason;
-use Src\Inventory\Products\Domain\ValueObjects\ProductPage;
 use Src\Inventory\Shared\Domain\ValueObjects\ProductId;
 use Src\Shared\Domain\ValueObjects\NegocioId;
+use Src\Shared\Domain\ValueObjects\Page;
+use Src\Shared\Domain\ValueObjects\PageRequest;
 
 interface ProductRepository
 {
@@ -27,8 +28,12 @@ interface ProductRepository
     /** Find a live product of the negocio. */
     public function find(ProductId $id, NegocioId $negocioId): ?Product;
 
-    /** One page of the live products of the negocio ordered by name, optionally matching a name or code. */
-    public function search(NegocioId $negocioId, ?string $term, int $page, int $perPage): ProductPage;
+    /**
+     * One page of the live products of the negocio ordered by name, optionally matching a name or code.
+     *
+     * @return Page<Product>
+     */
+    public function search(NegocioId $negocioId, ?string $term, PageRequest $page): Page;
 
     /** Remove the product from the catalog, keeping its history (soft delete). */
     public function delete(Product $product): void;

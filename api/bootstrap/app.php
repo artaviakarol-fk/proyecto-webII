@@ -8,6 +8,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Src\Shared\Infrastructure\Http\Middleware\AssignRequestId;
+use Src\Shared\Infrastructure\Http\Middleware\EncodeJsonAsUnicode;
 use Src\Shared\Infrastructure\Http\Problem\ProblemDetailsRenderer;
 use Src\Shared\Infrastructure\Tenancy\ScopeRequestToNegocio;
 
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(AssignRequestId::class);
+        $middleware->append(EncodeJsonAsUnicode::class);
         // En el servidor la API está detrás de Caddy, que recibe el HTTPS. Confiar en sus encabezados
         // X-Forwarded-* hace que las URL que arma la API (fotos, logo, documentación) salgan en https.
         // Es seguro porque la API no publica su puerto: solo Caddy puede hablarle.

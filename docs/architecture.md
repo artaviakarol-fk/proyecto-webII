@@ -2,6 +2,8 @@
 
 La API combina arquitectura hexagonal (puertos y adaptadores) con diseño guiado por el dominio, con la misma estructura del proyecto guía del curso, [SodaYa-Hexagonal](https://github.com/BryanChavesSalas/SodaYa-Hexagonal). El objetivo es que las reglas del negocio se puedan leer, probar y cambiar sin depender de Laravel.
 
+Las decisiones están en [`adr/`](adr/), las tablas en [`data-model.md`](data-model.md), las reglas de PostgreSQL en [`database.md`](database.md), los patrones en [`patterns.md`](patterns.md) y el vocabulario en [`ubiquitous-language.md`](ubiquitous-language.md).
+
 ## Estructura
 
 Todo el código del producto vive en `api/src/`, bajo el namespace `Src\`. La forma es siempre contexto, módulo y capa:
@@ -171,6 +173,7 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `POST /api/v1/productos/{id}/vencidos` | Marcar unidades vencidas de un producto (`cantidad`, `motivo`). Siguen en el stock pero salen del stock vendible. Bodega y administración |
 | `POST /api/v1/entradas` | Registrar mercadería recibida: proveedor, fecha y líneas (producto existente o nuevo, cantidad, costo unitario). Bodega y administración |
 | `GET /api/v1/entradas/{id}` | Ver una entrada con sus líneas, quién la registró y cuándo. Bodega y administración |
+| `GET /api/v1/ventas` | Listar las ventas del negocio por páginas (`pagina`, `por_pagina`), de la más reciente a la más antigua, sin sus líneas. Filtros opcionales: `estado` y `fecha` (día en hora de Costa Rica). Caja y administración |
 | `POST /api/v1/ventas` | Abrir una venta en efectivo: líneas con producto y cantidad (el precio sale del catálogo). Descuenta el stock. Caja y administración |
 | `GET /api/v1/ventas/{id}` | Ver una venta con sus líneas, total, cajero y estado. Caja y administración |
 | `PUT /api/v1/ventas/{id}` | Reemplazar las líneas de una venta abierta; el stock se ajusta por la diferencia. Caja y administración |
@@ -218,7 +221,7 @@ La API se documenta sola con [Scramble](https://scramble.dedoc.co) (`dedoc/scram
 |---|---|
 | Documentación interactiva | `GET /docs/api` (abre sin token; no tiene datos de ningún negocio) |
 | Documento OpenAPI en vivo | `GET /docs/api.json` |
-| Documento exportado | `api/openapi.json`, para generar los tipos de TypeScript del cliente web |
+| Documento exportado | `api/openapi/v1.json`, para generar los tipos de TypeScript del cliente web |
 
 Para volver a exportarlo después de cambiar endpoints:
 
@@ -227,10 +230,10 @@ docker compose exec api php artisan scramble:export
 ```
 
 - **Qué se documenta:** solo las rutas bajo `/api/v1` (`api_path` en `config/scramble.php`). La seguridad (bearer token) se deduce del middleware `auth:sanctum`.
-- **Errores:** Scramble infiere los `422` de los Form Requests, pero no sigue las excepciones de dominio que lanzan los casos de uso. `Src\Shared\Infrastructure\Http\Docs\ProblemResponses` agrega a cada endpoint los `401`, `403`, `404`, `409` y `429` que corresponden, con el esquema `Problema` (RFC 9457).
+- **Errores:** Scramble infiere los `422` de los Form Requests, pero no sigue las excepciones de dominio que lanzan los casos de uso. `Src\Shared\Infrastructure\OpenApi\ProblemResponsesTransformer` agrega a cada endpoint los `401`, `403`, `404`, `409` y `429` que corresponden, con el esquema `Problema` (RFC 9457).
 - **Tipos:** donde Scramble no puede inferir la forma de una respuesta (listas armadas con `array_map` o con `JsonResponse`), se declara con `@return` en `toArray()` de los Resources o con `@response` en el método del controlador.
 - **Advertencias conocidas de `scramble:analyze`:** tres reglas de validación consultan el negocio de la cuenta (`unique`/`exists` filtradas por `negocio_id`). Al generar la documentación no hay cuenta autenticada, así que Scramble salta esas reglas; las demás reglas del mismo campo y de la petición sí quedan documentadas.
-- **Prueba:** `DocumentacionApiTest` falla si una ruta de `/api/v1` queda fuera del documento.
+- **Prueba:** `OpenApiContractTest` falla si una ruta de `/api/v1` queda fuera del documento.
 
 ## Pruebas
 
@@ -247,6 +250,6 @@ Las pruebas de `tests/Feature` usan PostgreSQL (base `minisuper_testing`), porqu
 ### Pruebas de la ruta crítica
 
 - **Fábricas:** los negocios, usuarios y productos se arman con sus factories de Eloquent; las ventas, que no tienen modelo, con `tests/Support/Factories/SaleFactory.php` (`SaleFactory::new()->for($negocio, $cajero)->line($producto, 2)->paid()->create()`). La fábrica no toca el stock.
-- **Aislamiento:** `tests/Feature/Tenancy/AislamientoApiTest.php` recorre todos los endpoints que reciben un ID (productos, entradas, ventas y vencidos) con una cuenta administradora de otro negocio. Cada uno responde 404 y los datos del otro negocio quedan intactos. También comprueba las listas, el perfil y el camino inverso.
-- **Concurrencia:** `VentaConcurrenciaTest` cubre las ventas simultáneas y `VencidosConcurrenciaTest` el cruce entre marcar vencidos y vender: ambos bloquean la fila del producto con `FOR UPDATE`, así que lo vendido más lo marcado nunca supera el stock.
-- **Flujo completo:** `tests/Feature/Flujos/RutaCriticaTest.php` hace entrada de mercadería, marcado de vencidos, venta con advertencia, cobro y anulación, y comprueba la disponibilidad en cada paso. Incluye la venta de licor con cédula.
+- **Aislamiento:** `tests/Feature/Tenancy/StaffIsolationTest.php` recorre todos los endpoints que reciben un ID (productos, entradas, ventas y vencidos) con una cuenta administradora de otro negocio. Cada uno responde 404 y los datos del otro negocio quedan intactos. También comprueba las listas, el perfil y el camino inverso.
+- **Concurrencia:** `LastUnitRaceTest` cubre las ventas simultáneas y `ExpiredUnitsRaceTest` el cruce entre marcar vencidos y vender: ambos bloquean la fila del producto con `FOR UPDATE`, así que lo vendido más lo marcado nunca supera el stock.
+- **Flujo completo:** `tests/Feature/CriticalPathTest.php` hace entrada de mercadería, marcado de vencidos, venta con advertencia, cobro y anulación, y comprueba la disponibilidad en cada paso. Incluye la venta de licor con cédula.

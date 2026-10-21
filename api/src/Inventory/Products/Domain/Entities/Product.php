@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Src\Inventory\Products\Domain\Entities;
 
 use Src\Inventory\Products\Domain\ValueObjects\ProductDetails;
-use Src\Inventory\Shared\Domain\ValueObjects\Money;
 use Src\Inventory\Shared\Domain\ValueObjects\ProductId;
+use Src\Shared\Domain\ValueObjects\Money;
 use Src\Shared\Domain\ValueObjects\NegocioId;
 
 final class Product

@@ -6,6 +6,9 @@ on:
   push:
     branches: [develop, main]
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -14,6 +17,7 @@ jobs:
   quality:
     name: Pint, Larastan y Pest
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     # Las pruebas corren contra PostgreSQL, porque el aislamiento por negocio usa Row Level Security.
     services:
@@ -81,13 +85,13 @@ jobs:
           -f database/roles.sql
 
       - name: Pint (estilo de código)
-        run: vendor/bin/pint --test
+        run: composer lint
 
       - name: Larastan (análisis estático)
-        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+        run: composer analyse
 
       - name: Pest (pruebas)
-        run: vendor/bin/pest
+        run: php artisan test
 
       - name: Auditar dependencias
         run: composer audit --locked --ignore-severity=low --ignore-severity=medium
