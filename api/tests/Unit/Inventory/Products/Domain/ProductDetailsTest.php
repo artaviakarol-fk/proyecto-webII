@@ -9,8 +9,8 @@ use Src\Inventory\Products\Domain\ValueObjects\ProductCode;
 use Src\Inventory\Products\Domain\ValueObjects\ProductDetails;
 use Src\Inventory\Products\Domain\ValueObjects\ProductName;
 use Src\Inventory\Products\Domain\ValueObjects\Stock;
-use Src\Shared\Domain\ValueObjects\Money;
 use Src\Shared\Domain\Exceptions\InvalidValueException;
+use Src\Shared\Domain\ValueObjects\Money;
 
 final class ProductDetailsTest extends TestCase
 {

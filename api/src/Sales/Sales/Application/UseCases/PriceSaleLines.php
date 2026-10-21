@@ -8,8 +8,8 @@ use Src\Sales\Sales\Application\Contracts\ProductCatalog;
 use Src\Sales\Sales\Application\DTOs\SaleLineData;
 use Src\Sales\Sales\Domain\Exceptions\SaleProductUnavailableException;
 use Src\Sales\Sales\Domain\ValueObjects\SaleLine;
-use Src\Shared\Domain\ValueObjects\Money;
 use Src\Sales\Shared\Domain\ValueObjects\ProductId;
+use Src\Shared\Domain\ValueObjects\Money;
 use Src\Shared\Domain\ValueObjects\NegocioId;
 
 final readonly class PriceSaleLines

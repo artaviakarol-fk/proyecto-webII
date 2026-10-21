@@ -6,8 +6,8 @@ namespace Tests\Unit\Shared\Domain;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Src\Shared\Domain\ValueObjects\Money;
 use Src\Shared\Domain\Exceptions\InvalidValueException;
+use Src\Shared\Domain\ValueObjects\Money;
 
 final class MoneyTest extends TestCase
 {

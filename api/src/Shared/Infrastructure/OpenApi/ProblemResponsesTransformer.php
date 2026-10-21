@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Src\Shared\Infrastructure\Http\Docs;
+namespace Src\Shared\Infrastructure\OpenApi;
 
 use Dedoc\Scramble\Contracts\DocumentTransformer;
 use Dedoc\Scramble\OpenApiContext;
@@ -21,7 +21,7 @@ use Illuminate\Support\Str;
  * Requests, but the use cases throw domain exceptions that it cannot follow, so the errors of the API
  * (RFC 9457 problem documents) are added here to each operation.
  */
-final class ProblemResponses implements DocumentTransformer
+final class ProblemResponsesTransformer implements DocumentTransformer
 {
     public const string SCHEMA = 'Problema';
 

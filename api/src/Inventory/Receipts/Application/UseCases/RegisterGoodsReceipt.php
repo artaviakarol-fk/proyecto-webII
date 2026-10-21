@@ -14,12 +14,12 @@ use Src\Inventory\Receipts\Domain\Contracts\GoodsReceiptRepository;
 use Src\Inventory\Receipts\Domain\Entities\GoodsReceipt;
 use Src\Inventory\Receipts\Domain\ValueObjects\ReceiptLine;
 use Src\Inventory\Receipts\Domain\ValueObjects\Supplier;
-use Src\Shared\Domain\ValueObjects\Money;
 use Src\Inventory\Shared\Domain\ValueObjects\ProductId;
 use Src\Shared\Domain\Contracts\CurrentUser;
 use Src\Shared\Domain\Contracts\NegocioContext;
 use Src\Shared\Domain\Contracts\TransactionRunner;
 use Src\Shared\Domain\Exceptions\InvalidValueException;
+use Src\Shared\Domain\ValueObjects\Money;
 
 final readonly class RegisterGoodsReceipt
 {

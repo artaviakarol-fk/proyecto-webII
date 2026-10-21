@@ -14,9 +14,9 @@ use Src\Sales\Sales\Domain\ValueObjects\BuyerIdNumber;
 use Src\Sales\Sales\Domain\ValueObjects\SaleId;
 use Src\Sales\Sales\Domain\ValueObjects\SaleLine;
 use Src\Sales\Sales\Domain\ValueObjects\SaleStatus;
-use Src\Shared\Domain\ValueObjects\Money;
 use Src\Sales\Shared\Domain\ValueObjects\ProductId;
 use Src\Shared\Domain\Contracts\CurrentUser;
+use Src\Shared\Domain\ValueObjects\Money;
 use Src\Shared\Domain\ValueObjects\NegocioId;
 
 final readonly class DatabaseSaleRepository implements SaleRepository
