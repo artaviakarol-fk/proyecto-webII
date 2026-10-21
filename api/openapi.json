@@ -569,6 +569,115 @@
                 }
             }
         },
+        "/negocio/horario": {
+            "get": {
+                "operationId": "negocios.opening_hours.show",
+                "summary": "Show the weekly opening hours of the negocio of the account and whether it is open right now",
+                "tags": [
+                    "OpeningHours"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`OpeningHoursResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/OpeningHoursResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "negocios.opening_hours.update",
+                "summary": "Replace the whole weekly schedule; a day left out stays closed. Only the administration",
+                "tags": [
+                    "OpeningHours"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReplaceOpeningHoursRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`OpeningHoursResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/OpeningHoursResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/productos": {
             "get": {
                 "operationId": "inventory.products.index",
@@ -1943,6 +2052,27 @@
                 ],
                 "title": "NegocioResource"
             },
+            "OpeningHoursResource": {
+                "type": "object",
+                "properties": {
+                    "dias": {
+                        "type": "string"
+                    },
+                    "abierto_ahora": {
+                        "type": "boolean"
+                    },
+                    "zona_horaria": {
+                        "type": "string",
+                        "const": "America/Costa_Rica"
+                    }
+                },
+                "required": [
+                    "dias",
+                    "abierto_ahora",
+                    "zona_horaria"
+                ],
+                "title": "OpeningHoursResource"
+            },
             "Problema": {
                 "type": "object",
                 "description": "Documento de problema (RFC 9457, `application/problem+json`).",
@@ -2273,6 +2403,36 @@
                     "lineas"
                 ],
                 "title": "RegisterReceiptRequest"
+            },
+            "ReplaceOpeningHoursRequest": {
+                "type": "object",
+                "properties": {
+                    "dias": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "abre": {
+                                        "type": "string"
+                                    },
+                                    "cierra": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "abre",
+                                    "cierra"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "dias"
+                ],
+                "title": "ReplaceOpeningHoursRequest"
             },
             "SaleRequest": {
                 "type": "object",
