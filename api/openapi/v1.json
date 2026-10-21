@@ -2063,6 +2063,91 @@
                     }
                 },
                 "security": []
+            },
+            "delete": {
+                "operationId": "identity.tokens.destroy-all",
+                "summary": "Log out on every device: revoke every token of the account, including the one of the request",
+                "tags": [
+                    "Token"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/usuario": {
+            "get": {
+                "operationId": "identity.user.show",
+                "summary": "Show the account behind the token: name, email, role, what the role allows and its negocio",
+                "tags": [
+                    "Token"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`CurrentUserResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/CurrentUserResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tokens/actual": {
+            "delete": {
+                "operationId": "identity.tokens.destroy-current",
+                "summary": "Log out on this device: revoke the token the request was made with; from then on it answers 401",
+                "tags": [
+                    "Token"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     },
@@ -2086,6 +2171,80 @@
                     "precio_venta"
                 ],
                 "title": "ChangeSalePriceRequest"
+            },
+            "CurrentUserResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "nombre": {
+                        "type": "string"
+                    },
+                    "correo": {
+                        "type": "string"
+                    },
+                    "rol": {
+                        "type": "string"
+                    },
+                    "abilities": {
+                        "anyOf": [
+                            {
+                                "type": "array",
+                                "prefixItems": [
+                                    {
+                                        "type": "string",
+                                        "const": "administrar"
+                                    },
+                                    {
+                                        "type": "string",
+                                        "const": "caja"
+                                    },
+                                    {
+                                        "type": "string",
+                                        "const": "inventario"
+                                    }
+                                ],
+                                "minItems": 3,
+                                "maxItems": 3
+                            },
+                            {
+                                "type": "array",
+                                "prefixItems": [
+                                    {
+                                        "type": "string",
+                                        "const": "caja"
+                                    }
+                                ],
+                                "minItems": 1,
+                                "maxItems": 1
+                            },
+                            {
+                                "type": "array",
+                                "prefixItems": [
+                                    {
+                                        "type": "string",
+                                        "const": "inventario"
+                                    }
+                                ],
+                                "minItems": 1,
+                                "maxItems": 1
+                            }
+                        ]
+                    },
+                    "negocio_id": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "nombre",
+                    "correo",
+                    "rol",
+                    "abilities",
+                    "negocio_id"
+                ],
+                "title": "CurrentUserResource"
             },
             "ExpiredUnitsResource": {
                 "type": "object",

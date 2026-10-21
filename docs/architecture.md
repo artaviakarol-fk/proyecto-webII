@@ -155,6 +155,9 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `GET /api/v1` | Identifica la API y su versión |
 | `GET /api/v1/health` | Estado de la aplicación y de la base de datos |
 | `POST /api/v1/tokens` | Login: correo, contraseña y dispositivo → token Bearer con las abilities del rol |
+| `GET /api/v1/usuario` | La cuenta del token: nombre, correo, rol, abilities y negocio. Una cuenta desactivada responde `401` |
+| `DELETE /api/v1/tokens/actual` | Cerrar la sesión en este dispositivo: revoca el token de la petición |
+| `DELETE /api/v1/tokens` | Cerrar la sesión en todos los dispositivos: revoca todos los tokens de la cuenta |
 | `GET /api/v1/negocio` | Perfil del negocio de la cuenta autenticada |
 | `GET /api/v1/productos` | Catálogo del negocio por páginas (`?buscar=`, `?pagina=`, `?por_pagina=`). Todo el personal |
 | `GET /api/v1/productos/{id}` | Un producto del negocio. Todo el personal |

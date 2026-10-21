@@ -30,6 +30,9 @@ final class ProblemResponsesTransformer implements DocumentTransformer
     /** Endpoints that need no token. */
     private const array PUBLIC_ENDPOINTS = ['GET /', 'GET /health', 'POST /tokens'];
 
+    /** Endpoints of the session itself: they need a token but no ability, so they never answer 403. */
+    private const array SESSION_ENDPOINTS = ['GET /usuario', 'DELETE /tokens', 'DELETE /tokens/actual'];
+
     /** Endpoints that can answer 409 because a rule of the business refuses the operation. */
     private const array CONFLICTS = [
         'POST /productos',
@@ -77,7 +80,10 @@ final class ProblemResponsesTransformer implements DocumentTransformer
             $errors[429] = 'Demasiados intentos de inicio de sesión; hay que esperar antes de volver a intentar.';
         } elseif (! in_array($endpoint, self::PUBLIC_ENDPOINTS, true)) {
             $errors[401] = 'No autenticado: falta el token o no es válido.';
-            $errors[403] = 'La cuenta no tiene el permiso (ability) que pide este endpoint.';
+
+            if (! in_array($endpoint, self::SESSION_ENDPOINTS, true)) {
+                $errors[403] = 'La cuenta no tiene el permiso (ability) que pide este endpoint.';
+            }
         }
 
         if (str_contains($path, '{')) {
