@@ -146,5 +146,6 @@ Este proyecto se desarrolla con asistencia de IA (Claude, de Anthropic). Su uso 
 | Documentación de la API con Scramble (#15) | Código, configuración y pruebas generados con asistencia de IA | Revisado en el PR por la otra integrante; pruebas en verde en CI; la revisora comprobó que `openapi.json` coincide con lo que genera Scramble |
 | Pruebas de caminos críticos (#16) | Pruebas generadas con asistencia de IA | Revisado en el PR por la otra integrante; pruebas en verde en CI |
 | Orden de bloqueo en entradas de mercadería (#70) | El problema se encontró y se corrigió con asistencia de IA al revisar las ventas | Revisado en el PR por la otra integrante; pruebas en verde en CI; probado con peticiones simultáneas contra un servidor real |
+| Horario de atención del negocio | Código y pruebas generados con asistencia de IA, a partir de los horarios reales del Minisúper Teresita que aportó la integrante | Revisado en el PR por la otra integrante; pruebas en verde en CI |
 
 Esta tabla se actualiza conforme avanza el proyecto. Cada integrante debe poder explicar y modificar cualquier parte del código.
