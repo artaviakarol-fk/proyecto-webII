@@ -2,6 +2,8 @@
 
 La API combina arquitectura hexagonal (puertos y adaptadores) con diseño guiado por el dominio, con la misma estructura del proyecto guía del curso, [SodaYa-Hexagonal](https://github.com/BryanChavesSalas/SodaYa-Hexagonal). El objetivo es que las reglas del negocio se puedan leer, probar y cambiar sin depender de Laravel.
 
+Las decisiones están en [`adr/`](adr/), las tablas en [`data-model.md`](data-model.md), las reglas de PostgreSQL en [`database.md`](database.md), los patrones en [`patterns.md`](patterns.md) y el vocabulario en [`ubiquitous-language.md`](ubiquitous-language.md).
+
 ## Estructura
 
 Todo el código del producto vive en `api/src/`, bajo el namespace `Src\`. La forma es siempre contexto, módulo y capa:
