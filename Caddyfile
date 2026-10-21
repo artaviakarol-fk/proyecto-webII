@@ -1,0 +1,6 @@
+# Caddy recibe las peticiones HTTPS y se las pasa a la API de Laravel.
+# El dominio sale de la variable DOMAIN del archivo .env (por ejemplo 51-79-10-20.sslip.io).
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy api:8000
+}

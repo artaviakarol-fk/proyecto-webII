@@ -12,6 +12,12 @@ Proyecto del curso **ISW-621 Web II**. API REST en **Laravel (PHP)** para la ges
 |---|---|
 | [`api/`](api/) | API REST en Laravel. El código del producto vive en `api/src/`. |
 | [`docs/architecture.md`](docs/architecture.md) | Estructura, capas, regla de dependencias, errores y rutas. |
+| [`docs/adr/`](docs/adr/) | Decisiones de arquitectura (ADR), una por archivo. |
+| [`docs/data-model.md`](docs/data-model.md) | Diagrama y detalle de cada tabla, formas normales y excepciones. |
+| [`docs/database.md`](docs/database.md) | Roles de PostgreSQL, migraciones, índices, convenciones y Row Level Security. |
+| [`docs/patterns.md`](docs/patterns.md) | Patrones de diseño adoptados, previstos y descartados. |
+| [`docs/ubiquitous-language.md`](docs/ubiquitous-language.md) | Glosario del negocio: el mismo término en el código, la base y la API. |
+| [`docs/despliegue.md`](docs/despliegue.md) | Despliegue en el VPS con Docker y Caddy. |
 
 ## Arquitectura
 
@@ -44,6 +50,16 @@ La primera vez tarda unos minutos: crea los roles de PostgreSQL, instala depende
 - PostgreSQL de Docker: `localhost:5433` (usa el 5433 para no chocar con un PostgreSQL instalado en la compu)
 
 Para detenerlo: `docker compose down`.
+
+### Despliegue
+
+El sistema se despliega en un VPS con Docker y Caddy (HTTPS automático). La guía paso a paso está en [docs/despliegue.md](docs/despliegue.md).
+
+**Sistema desplegado:**
+
+- API: https://15-235-92-245.sslip.io/api/v1
+- Documentación: https://15-235-92-245.sslip.io/docs/api
+- Salud: https://15-235-92-245.sslip.io/api/v1/health
 
 ### Ruta de salud
 
@@ -146,5 +162,8 @@ Este proyecto se desarrolla con asistencia de IA (Claude, de Anthropic). Su uso 
 | Documentación de la API con Scramble (#15) | Código, configuración y pruebas generados con asistencia de IA | Revisado en el PR por la otra integrante; pruebas en verde en CI; la revisora comprobó que `openapi.json` coincide con lo que genera Scramble |
 | Pruebas de caminos críticos (#16) | Pruebas generadas con asistencia de IA | Revisado en el PR por la otra integrante; pruebas en verde en CI |
 | Orden de bloqueo en entradas de mercadería (#70) | El problema se encontró y se corrigió con asistencia de IA al revisar las ventas | Revisado en el PR por la otra integrante; pruebas en verde en CI; probado con peticiones simultáneas contra un servidor real |
+| Horario de atención del negocio | Código y pruebas generados con asistencia de IA, a partir de los horarios reales del Minisúper Teresita que aportó la integrante | Revisado en el PR por la otra integrante; pruebas en verde en CI |
+| Despliegue en el VPS | Archivos de Docker Compose, Caddy y la guía generados con asistencia de IA; la integrante hizo el ingreso al servidor | Revisado en el PR por la otra integrante; la API responde en la URL pública |
+| Alineación con SodaYa-Hexagonal | Comparación con el proyecto guía, cambios de código, pruebas y documentos (`docs/adr`, modelo de datos, base de datos, patrones, lenguaje ubicuo) generados con asistencia de IA | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde en CI |
 
 Esta tabla se actualiza conforme avanza el proyecto. Cada integrante debe poder explicar y modificar cualquier parte del código.

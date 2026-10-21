@@ -2,6 +2,8 @@
 
 La API combina arquitectura hexagonal (puertos y adaptadores) con diseño guiado por el dominio, con la misma estructura del proyecto guía del curso, [SodaYa-Hexagonal](https://github.com/BryanChavesSalas/SodaYa-Hexagonal). El objetivo es que las reglas del negocio se puedan leer, probar y cambiar sin depender de Laravel.
 
+Las decisiones están en [`adr/`](adr/), las tablas en [`data-model.md`](data-model.md), las reglas de PostgreSQL en [`database.md`](database.md), los patrones en [`patterns.md`](patterns.md) y el vocabulario en [`ubiquitous-language.md`](ubiquitous-language.md).
+
 ## Estructura
 
 Todo el código del producto vive en `api/src/`, bajo el namespace `Src\`. La forma es siempre contexto, módulo y capa:
@@ -43,7 +45,7 @@ Propuesta a partir de la ficha del proyecto; cada uno se crea cuando llegue su p
 | `Sales` | `Sales`, `CashShifts` | Venta en caja, control de edad para licor, cierre y cuadre de caja |
 | `Credit` | `Customers` | Fiado con límite por cliente |
 | `Identity` | `Users` | Cuentas y roles: administrador, cajero y bodeguero. Login con tokens de Sanctum |
-| `Negocios` | `Profile` | El negocio (inquilino) al que pertenece cada cuenta y cada dato |
+| `Negocios` | `Profile`, `OpeningHours` | El negocio (inquilino) al que pertenece cada cuenta y cada dato, y su horario de atención semanal |
 
 ## Regla de dependencias
 
@@ -163,12 +165,15 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `GET /api/v1/productos/{id}/foto` | Descargar la foto del producto. Todo el personal |
 | `POST /api/v1/negocio/logo` | Subir o reemplazar el logo del negocio. Solo administración |
 | `GET /api/v1/negocio/logo` | Descargar el logo del negocio de la cuenta |
+| `GET /api/v1/negocio/horario` | Horario semanal del negocio y si está abierto ahora. Todo el personal |
+| `PUT /api/v1/negocio/horario` | Reemplazar el horario semanal completo. Solo administración |
 | `GET /api/v1/productos/{id}/disponibilidad` | Stock, unidades vencidas, stock vendible y si está agotado. Todo el personal |
 | `PATCH /api/v1/productos/{id}/precio` | Aceptar un nuevo precio de venta (`precio_venta`). Solo administración |
 | `GET /api/v1/productos/{id}/historial-precios` | Historial de costos y precios del producto, del más reciente al más antiguo. Solo administración |
 | `POST /api/v1/productos/{id}/vencidos` | Marcar unidades vencidas de un producto (`cantidad`, `motivo`). Siguen en el stock pero salen del stock vendible. Bodega y administración |
 | `POST /api/v1/entradas` | Registrar mercadería recibida: proveedor, fecha y líneas (producto existente o nuevo, cantidad, costo unitario). Bodega y administración |
 | `GET /api/v1/entradas/{id}` | Ver una entrada con sus líneas, quién la registró y cuándo. Bodega y administración |
+| `GET /api/v1/ventas` | Listar las ventas del negocio por páginas (`pagina`, `por_pagina`), de la más reciente a la más antigua, sin sus líneas. Filtros opcionales: `estado` y `fecha` (día en hora de Costa Rica). Caja y administración |
 | `POST /api/v1/ventas` | Abrir una venta en efectivo: líneas con producto y cantidad (el precio sale del catálogo). Descuenta el stock. Caja y administración |
 | `GET /api/v1/ventas/{id}` | Ver una venta con sus líneas, total, cajero y estado. Caja y administración |
 | `PUT /api/v1/ventas/{id}` | Reemplazar las líneas de una venta abierta; el stock se ajusta por la diferencia. Caja y administración |
@@ -197,6 +202,12 @@ Si alguna línea de una venta es de un producto con `es_licor = true`, la venta 
 
 `POST /productos/{id}/vencidos` guarda en `unidades_vencidas` la cantidad y el motivo, con quién la marcó, en estado `activa`. Las unidades marcadas siguen contando en el `stock`, pero salen del stock vendible (`stock - unidades vencidas activas`). No hace falta que el producto tenga fecha de vencimiento: la bodega marca lo que encuentra vencido en el estante. El repositorio bloquea la fila del producto (`FOR UPDATE`, el mismo bloqueo que usa una venta) y responde `409` si se intentan marcar más unidades de las que quedan sin marcar. Mientras la venta está abierta, su respuesta trae `advertencias`: un aviso `unidades_vencidas` por cada producto de las líneas que tenga unidades vencidas en el estante. El aviso no bloquea la venta: las demás unidades se pueden vender y solo se rechaza (`409`) pedir más de las vendibles.
 
+### Horario de atención del negocio
+
+El módulo `Negocios/OpeningHours` guarda cuándo atiende cada negocio. El horario se escribe por día (`lunes` … `domingo`) y cada día tiene hasta 3 tramos `{abre, cierra}` en formato `HH:MM`, así que un negocio puede cerrar al mediodía o un día completo (día sin tramos). Cada tramo es un registro de `horarios_negocio`, con Row Level Security y restricciones `CHECK` (día de 1 a 7 y cierre posterior a apertura). `PUT /negocio/horario` reemplaza el horario completo; un día que no se envía queda cerrado. La respuesta de ambas rutas trae los siete días, `abierto_ahora` y `zona_horaria`.
+
+Las reglas viven en el dominio (`WeeklySchedule`, `TimeSlot`, `TimeOfDay`, `Weekday`) y no usan Laravel: un tramo abre en su hora de apertura y cierra en su hora de cierre (a las 20:00 en punto ya está cerrado), los tramos de un mismo día no se traslapan y la hora se lee en `America/Costa_Rica`, sin importar la zona horaria del servidor. El instante actual entra como parámetro (`now()` del controlador), igual que en la ruta de salud, así las pruebas fijan la hora con `travelTo`. Los datos de demostración traen el horario real del Minisúper Teresita (lunes a viernes 7:00 a 20:00, sábado y domingo 7:00 a 18:00) y uno ficticio para La Esquina, que cierra los domingos. El horario del personal no se administra: la ficha del proyecto lo deja fuera.
+
 ### Archivos
 
 Las fotos y los logos se aceptan solo en JPG, PNG o WebP de hasta 2 MB. La regla `mimes` revisa el contenido real del archivo, no solo la extensión. Se guardan en el disco privado `local` (`storage/app/private`), nunca en `public/`, bajo `negocios/{id}/productos/{producto}/` y `negocios/{id}/logo/`. El nombre es el hash SHA-256 del contenido, nunca el nombre original. Cada producto tiene su propia carpeta, para que dos productos con la misma imagen no compartan el archivo y reemplazar la foto de uno no borre la del otro. Solo se descargan por las rutas de arriba, que exigen token y pasan por el aislamiento por negocio: la foto de un producto de otro negocio responde 404 aunque el archivo exista.
@@ -210,7 +221,7 @@ La API se documenta sola con [Scramble](https://scramble.dedoc.co) (`dedoc/scram
 |---|---|
 | Documentación interactiva | `GET /docs/api` (abre sin token; no tiene datos de ningún negocio) |
 | Documento OpenAPI en vivo | `GET /docs/api.json` |
-| Documento exportado | `api/openapi.json`, para generar los tipos de TypeScript del cliente web |
+| Documento exportado | `api/openapi/v1.json`, para generar los tipos de TypeScript del cliente web |
 
 Para volver a exportarlo después de cambiar endpoints:
 
@@ -219,10 +230,10 @@ docker compose exec api php artisan scramble:export
 ```
 
 - **Qué se documenta:** solo las rutas bajo `/api/v1` (`api_path` en `config/scramble.php`). La seguridad (bearer token) se deduce del middleware `auth:sanctum`.
-- **Errores:** Scramble infiere los `422` de los Form Requests, pero no sigue las excepciones de dominio que lanzan los casos de uso. `Src\Shared\Infrastructure\Http\Docs\ProblemResponses` agrega a cada endpoint los `401`, `403`, `404`, `409` y `429` que corresponden, con el esquema `Problema` (RFC 9457).
+- **Errores:** Scramble infiere los `422` de los Form Requests, pero no sigue las excepciones de dominio que lanzan los casos de uso. `Src\Shared\Infrastructure\OpenApi\ProblemResponsesTransformer` agrega a cada endpoint los `401`, `403`, `404`, `409` y `429` que corresponden, con el esquema `Problema` (RFC 9457).
 - **Tipos:** donde Scramble no puede inferir la forma de una respuesta (listas armadas con `array_map` o con `JsonResponse`), se declara con `@return` en `toArray()` de los Resources o con `@response` en el método del controlador.
 - **Advertencias conocidas de `scramble:analyze`:** tres reglas de validación consultan el negocio de la cuenta (`unique`/`exists` filtradas por `negocio_id`). Al generar la documentación no hay cuenta autenticada, así que Scramble salta esas reglas; las demás reglas del mismo campo y de la petición sí quedan documentadas.
-- **Prueba:** `DocumentacionApiTest` falla si una ruta de `/api/v1` queda fuera del documento.
+- **Prueba:** `OpenApiContractTest` falla si una ruta de `/api/v1` queda fuera del documento.
 
 ## Pruebas
 
@@ -239,6 +250,6 @@ Las pruebas de `tests/Feature` usan PostgreSQL (base `minisuper_testing`), porqu
 ### Pruebas de la ruta crítica
 
 - **Fábricas:** los negocios, usuarios y productos se arman con sus factories de Eloquent; las ventas, que no tienen modelo, con `tests/Support/Factories/SaleFactory.php` (`SaleFactory::new()->for($negocio, $cajero)->line($producto, 2)->paid()->create()`). La fábrica no toca el stock.
-- **Aislamiento:** `tests/Feature/Tenancy/AislamientoApiTest.php` recorre todos los endpoints que reciben un ID (productos, entradas, ventas y vencidos) con una cuenta administradora de otro negocio. Cada uno responde 404 y los datos del otro negocio quedan intactos. También comprueba las listas, el perfil y el camino inverso.
-- **Concurrencia:** `VentaConcurrenciaTest` cubre las ventas simultáneas y `VencidosConcurrenciaTest` el cruce entre marcar vencidos y vender: ambos bloquean la fila del producto con `FOR UPDATE`, así que lo vendido más lo marcado nunca supera el stock.
-- **Flujo completo:** `tests/Feature/Flujos/RutaCriticaTest.php` hace entrada de mercadería, marcado de vencidos, venta con advertencia, cobro y anulación, y comprueba la disponibilidad en cada paso. Incluye la venta de licor con cédula.
+- **Aislamiento:** `tests/Feature/Tenancy/StaffIsolationTest.php` recorre todos los endpoints que reciben un ID (productos, entradas, ventas y vencidos) con una cuenta administradora de otro negocio. Cada uno responde 404 y los datos del otro negocio quedan intactos. También comprueba las listas, el perfil y el camino inverso.
+- **Concurrencia:** `LastUnitRaceTest` cubre las ventas simultáneas y `ExpiredUnitsRaceTest` el cruce entre marcar vencidos y vender: ambos bloquean la fila del producto con `FOR UPDATE`, así que lo vendido más lo marcado nunca supera el stock.
+- **Flujo completo:** `tests/Feature/CriticalPathTest.php` hace entrada de mercadería, marcado de vencidos, venta con advertencia, cobro y anulación, y comprueba la disponibilidad en cada paso. Incluye la venta de licor con cédula.

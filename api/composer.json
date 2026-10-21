@@ -3,7 +3,10 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.4",
@@ -42,11 +45,10 @@
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
-            "@php artisan migrate --force"
+            "@php artisan migrate --database=pgsql_admin --force"
         ],
         "dev": [
-            "Composer\\Config::disableProcessTimeout",
-            "@php artisan serve"
+            "@php artisan migrate --force"
         ],
         "lint": [
             "pint --test"
@@ -75,9 +77,7 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
         ],
         "post-create-project-cmd": [
-            "@php artisan key:generate --ansi",
-            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
-            "@php artisan migrate --graceful --ansi"
+            "@php artisan key:generate --ansi"
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"

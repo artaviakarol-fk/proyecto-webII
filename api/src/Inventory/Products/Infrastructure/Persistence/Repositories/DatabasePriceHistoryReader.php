@@ -20,7 +20,7 @@ final readonly class DatabasePriceHistoryReader implements PriceHistoryReader
      */
     public function of(ProductId $productId, NegocioId $negocioId): array
     {
-        return DB::table('historial_precios as h')
+        $entries = DB::table('historial_precios as h')
             ->join('users as u', 'u.id', '=', 'h.usuario_id')
             ->where('h.negocio_id', $negocioId->value)
             ->where('h.producto_id', $productId->value)
@@ -36,7 +36,8 @@ final readonly class DatabasePriceHistoryReader implements PriceHistoryReader
                 (string) $row->usuario_nombre,
                 $row->referencia_id === null ? null : (string) $row->referencia_id,
             ))
-            ->values()
             ->all();
+
+        return array_values($entries);
     }
 }

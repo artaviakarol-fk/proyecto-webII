@@ -7,7 +7,7 @@ namespace Src\Inventory\Products\Application\UseCases;
 use Src\Inventory\Products\Domain\Contracts\ProductRepository;
 use Src\Inventory\Products\Domain\Entities\Product;
 use Src\Inventory\Products\Domain\ValueObjects\PriceChangeReason;
-use Src\Inventory\Shared\Domain\ValueObjects\Money;
+use Src\Shared\Domain\ValueObjects\Money;
 
 final readonly class ChangeSalePrice
 {
