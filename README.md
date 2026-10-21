@@ -126,6 +126,8 @@ curl -X POST http://localhost:8000/api/v1/tokens \
 curl http://localhost:8000/api/v1/negocio -H 'Authorization: Bearer <token>' -H 'Accept: application/json'
 ```
 
+Con el mismo token, `GET /api/v1/usuario` dice quién inició sesión, con su rol y sus permisos. Para cerrar la sesión, `DELETE /api/v1/tokens/actual` revoca el token de ese dispositivo y `DELETE /api/v1/tokens` revoca todos los de la cuenta. Desde ese momento el token responde `401`. El login permite 10 intentos por minuto.
+
 El negocio **siempre sale de la cuenta del token**, nunca del cuerpo ni de la URL, y PostgreSQL (Row Level Security) solo deja ver las filas de ese negocio. Un recurso de otro negocio responde `404`, igual que uno que no existe. El detalle está en [docs/architecture.md](docs/architecture.md#aislamiento-por-negocio).
 
 Cuentas de demostración (`php artisan db:seed`, contraseña `password`, datos ficticios):
@@ -182,5 +184,6 @@ Este proyecto se desarrolla con asistencia de IA (Claude, de Anthropic). Su uso 
 | Horario de atención del negocio | Código y pruebas generados con asistencia de IA, a partir de los horarios reales del Minisúper Teresita que aportó la integrante | Revisado en el PR por la otra integrante; pruebas en verde en CI |
 | Despliegue en el VPS | Archivos de Docker Compose, Caddy y la guía generados con asistencia de IA; la integrante hizo el ingreso al servidor | Revisado en el PR por la otra integrante; la API responde en la URL pública |
 | Alineación con SodaYa-Hexagonal | Comparación con el proyecto guía, cambios de código, pruebas y documentos (`docs/adr`, modelo de datos, base de datos, patrones, lenguaje ubicuo) generados con asistencia de IA | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde en CI |
+| Cierre de sesión y usuario actual | Código y pruebas generados con asistencia de IA, siguiendo el módulo `Identity/Users` del proyecto guía | Revisado en el PR por la otra integrante; pruebas en verde en CI |
 
 Esta tabla se actualiza conforme avanza el proyecto. Cada integrante debe poder explicar y modificar cualquier parte del código.
