@@ -1,0 +1,41 @@
+# Producción (VPS). Se usa encima de docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Diferencias con el ambiente local:
+#   - La API y PostgreSQL ya no publican puertos: solo Caddy recibe tráfico, por el 80 y el 443.
+#   - Caddy sirve la API por HTTPS con un certificado automático de Let's Encrypt.
+#   - Modo producción (sin debug) y reinicio automático si el servidor se reinicia.
+# La guía completa está en docs/despliegue.md.
+
+services:
+  api:
+    restart: unless-stopped
+    ports: !reset []
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: https://${DOMAIN:?Define DOMAIN en el archivo .env}
+      LOG_LEVEL: info
+
+  db:
+    restart: unless-stopped
+    ports: !reset []
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?Define DOMAIN en el archivo .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  caddy_data:
+  caddy_config:
