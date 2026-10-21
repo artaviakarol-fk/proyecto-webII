@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Src\Inventory\Products\Domain\ValueObjects;
 
-use Src\Inventory\Shared\Domain\ValueObjects\Money;
+use Src\Shared\Domain\ValueObjects\Money;
 use Src\Shared\Domain\Exceptions\InvalidValueException;
 
 /** The editable data of a product, validated together because the sale price may not be zero. */

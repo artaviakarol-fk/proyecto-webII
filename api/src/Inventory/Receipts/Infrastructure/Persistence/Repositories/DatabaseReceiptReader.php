@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Src\Inventory\Receipts\Application\Contracts\ReceiptReader;
 use Src\Inventory\Receipts\Application\DTOs\ReceiptDetails;
 use Src\Inventory\Receipts\Domain\ValueObjects\ReceiptId;
-use Src\Inventory\Shared\Domain\ValueObjects\Money;
+use Src\Shared\Domain\ValueObjects\Money;
 use Src\Shared\Domain\ValueObjects\NegocioId;
 
 final readonly class DatabaseReceiptReader implements ReceiptReader

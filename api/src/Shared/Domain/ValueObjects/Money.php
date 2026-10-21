@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Src\Inventory\Shared\Domain\ValueObjects;
+namespace Src\Shared\Domain\ValueObjects;
 
 use Src\Shared\Domain\Exceptions\InvalidValueException;
 
@@ -15,7 +15,7 @@ final readonly class Money
     public function __construct(public int $cents)
     {
         if ($cents < 0 || $cents > self::MAX_CENTS) {
-            throw new InvalidValueException('inventory.amount_out_of_range');
+            throw new InvalidValueException('shared.amount_out_of_range');
         }
     }
 
@@ -23,7 +23,7 @@ final readonly class Money
     public static function fromDecimal(string $amount): self
     {
         if (preg_match('/^(\d{1,10})(?:\.(\d{1,2}))?$/', trim($amount), $parts) !== 1) {
-            throw new InvalidValueException('inventory.amount_out_of_range');
+            throw new InvalidValueException('shared.amount_out_of_range');
         }
 
         return new self((int) $parts[1] * 100 + (int) str_pad($parts[2] ?? '0', 2, '0'));
@@ -39,5 +39,17 @@ final readonly class Money
     public function isZero(): bool
     {
         return $this->cents === 0;
+    }
+
+    /** The amount repeated for a number of units. */
+    public function times(int $units): self
+    {
+        return new self($this->cents * $units);
+    }
+
+    /** The sum of this amount and another one. */
+    public function plus(self $other): self
+    {
+        return new self($this->cents + $other->cents);
     }
 }

@@ -19,7 +19,7 @@ use Src\Inventory\Products\Domain\ValueObjects\ProductName;
 use Src\Inventory\Products\Domain\ValueObjects\ProductPage;
 use Src\Inventory\Products\Domain\ValueObjects\Stock;
 use Src\Inventory\Products\Infrastructure\Persistence\Models\ProductModel;
-use Src\Inventory\Shared\Domain\ValueObjects\Money;
+use Src\Shared\Domain\ValueObjects\Money;
 use Src\Inventory\Shared\Domain\ValueObjects\ProductId;
 use Src\Inventory\Shared\Infrastructure\Persistence\PriceHistory;
 use Src\Shared\Domain\Contracts\CurrentUser;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Src\Inventory\Receipts\Domain\ValueObjects;
 
-use Src\Inventory\Shared\Domain\ValueObjects\Money;
+use Src\Shared\Domain\ValueObjects\Money;
 use Src\Inventory\Shared\Domain\ValueObjects\ProductId;
 use Src\Shared\Domain\Exceptions\InvalidValueException;
 
