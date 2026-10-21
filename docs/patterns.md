@@ -8,7 +8,7 @@ Ningún patrón se usa por tenerlo. Cada uno resuelve un problema concreto del p
 | --- | --- | --- |
 | Puertos y adaptadores | `Domain/Contracts`, `Application/Contracts` e `Infrastructure` | El negocio no depende del framework ni de la base de datos |
 | Repository | Contrato en `Domain/Contracts`, adaptador en `Infrastructure/Persistence/Repositories` | Guardar y recuperar agregados sin exponer la persistencia |
-| Data Mapper | Dentro de cada repositorio (`toDomain()`) | Separar la entidad del dominio del modelo Eloquent |
+| Data Mapper | Dentro de los repositorios: `toDomain()` en productos y usuarios, `reconstitute()` directo en negocios y ventas | Separar la entidad del dominio del modelo Eloquent o de la fila |
 | Aggregate | `Domain/Entities` (`Product`, `GoodsReceipt`, `Sale`, `ExpiredUnits`) | Un solo punto de entrada para cambiar un conjunto de datos que se valida junto |
 | Value Object | `Domain/ValueObjects` y `src/Shared/Domain/ValueObjects` (`Money`, `Stock`, `ProductCode`, `BuyerIdNumber`, `WeeklySchedule`) | La regla de un dato vive en un solo lugar; es imposible crear uno inválido |
 | Factory Method | `create()` y `reconstitute()` en cada agregado | Distinguir el nacimiento de un agregado de su lectura desde la base |

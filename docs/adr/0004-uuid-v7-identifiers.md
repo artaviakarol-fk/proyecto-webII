@@ -8,7 +8,12 @@ Un identificador incremental revela cuántos productos o ventas tiene un negocio
 
 ## Decisión
 
-Toda llave primaria del negocio es `uuid` versión 7. La aplicación genera el identificador antes de guardar (`Str::uuid7()` en el método `nextId()` de cada repositorio), así el agregado tiene identidad desde que nace. Las rutas validan el formato con `whereUuid`, y un identificador inválido responde `404`.
+Toda llave primaria del negocio es `uuid` versión 7 y la genera la aplicación, nunca la base. Hay dos caminos, y los dos producen UUID v7:
+
+- Los agregados que nacen en la API (productos, entradas de mercadería, ventas y unidades vencidas) reciben el identificador de su repositorio, con `nextId()` y `Str::uuid7()`, antes de guardarse. Así el agregado tiene identidad desde que nace y el caso de uso la conoce antes de tocar la base.
+- Los modelos de negocios, usuarios y franjas del horario usan el trait `HasUuids` de Eloquent, que en Laravel 13 también llama a `Str::uuid7()`. Esos registros los crea un seeder o se reemplazan enteros (el horario), así que el dominio no necesita su identificador antes de guardar.
+
+Las rutas validan el formato con `whereUuid`, y un identificador inválido responde `404`.
 
 ## Alternativas descartadas
 
