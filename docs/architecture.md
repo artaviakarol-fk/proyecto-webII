@@ -171,6 +171,7 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `POST /api/v1/productos/{id}/vencidos` | Marcar unidades vencidas de un producto (`cantidad`, `motivo`). Siguen en el stock pero salen del stock vendible. Bodega y administración |
 | `POST /api/v1/entradas` | Registrar mercadería recibida: proveedor, fecha y líneas (producto existente o nuevo, cantidad, costo unitario). Bodega y administración |
 | `GET /api/v1/entradas/{id}` | Ver una entrada con sus líneas, quién la registró y cuándo. Bodega y administración |
+| `GET /api/v1/ventas` | Listar las ventas del negocio por páginas (`pagina`, `por_pagina`), de la más reciente a la más antigua, sin sus líneas. Filtros opcionales: `estado` y `fecha` (día en hora de Costa Rica). Caja y administración |
 | `POST /api/v1/ventas` | Abrir una venta en efectivo: líneas con producto y cantidad (el precio sale del catálogo). Descuenta el stock. Caja y administración |
 | `GET /api/v1/ventas/{id}` | Ver una venta con sus líneas, total, cajero y estado. Caja y administración |
 | `PUT /api/v1/ventas/{id}` | Reemplazar las líneas de una venta abierta; el stock se ajusta por la diferencia. Caja y administración |
@@ -248,5 +249,5 @@ Las pruebas de `tests/Feature` usan PostgreSQL (base `minisuper_testing`), porqu
 
 - **Fábricas:** los negocios, usuarios y productos se arman con sus factories de Eloquent; las ventas, que no tienen modelo, con `tests/Support/Factories/SaleFactory.php` (`SaleFactory::new()->for($negocio, $cajero)->line($producto, 2)->paid()->create()`). La fábrica no toca el stock.
 - **Aislamiento:** `tests/Feature/Tenancy/StaffIsolationTest.php` recorre todos los endpoints que reciben un ID (productos, entradas, ventas y vencidos) con una cuenta administradora de otro negocio. Cada uno responde 404 y los datos del otro negocio quedan intactos. También comprueba las listas, el perfil y el camino inverso.
-- **Concurrencia:** `VentaConcurrenciaTest` cubre las ventas simultáneas y `VencidosConcurrenciaTest` el cruce entre marcar vencidos y vender: ambos bloquean la fila del producto con `FOR UPDATE`, así que lo vendido más lo marcado nunca supera el stock.
+- **Concurrencia:** `LastUnitRaceTest` cubre las ventas simultáneas y `ExpiredUnitsRaceTest` el cruce entre marcar vencidos y vender: ambos bloquean la fila del producto con `FOR UPDATE`, así que lo vendido más lo marcado nunca supera el stock.
 - **Flujo completo:** `tests/Feature/CriticalPathTest.php` hace entrada de mercadería, marcado de vencidos, venta con advertencia, cobro y anulación, y comprueba la disponibilidad en cada paso. Incluye la venta de licor con cédula.

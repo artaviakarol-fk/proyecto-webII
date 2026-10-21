@@ -8,9 +8,13 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Src\Sales\Sales\Application\Contracts\SaleReader;
 use Src\Sales\Sales\Application\DTOs\SaleDetails;
+use Src\Sales\Sales\Application\DTOs\SaleFilter;
+use Src\Sales\Sales\Application\DTOs\SaleSummary;
 use Src\Sales\Sales\Domain\ValueObjects\SaleId;
 use Src\Sales\Sales\Domain\ValueObjects\SaleStatus;
 use Src\Shared\Domain\ValueObjects\NegocioId;
+use Src\Shared\Domain\ValueObjects\Page;
+use Src\Shared\Domain\ValueObjects\PageRequest;
 
 final readonly class DatabaseSaleReader implements SaleReader
 {
@@ -61,6 +65,62 @@ final readonly class DatabaseSaleReader implements SaleReader
             (string) $sale->total,
             $sale->estado === SaleStatus::Open->value ? $this->expiredWarnings($negocioId, $rows) : [],
         );
+    }
+
+    /**
+     * One page of the sales of the negocio, newest first, with the number of lines of each one.
+     *
+     * @return Page<SaleSummary>
+     */
+    public function list(NegocioId $negocioId, SaleFilter $filter, PageRequest $page): Page
+    {
+        $query = DB::table('ventas as v')
+            ->join('users as u', 'u.id', '=', 'v.cajero_id')
+            ->where('v.negocio_id', $negocioId->value);
+
+        if ($filter->status !== null) {
+            $query->where('v.estado', $filter->status->value);
+        }
+
+        if ($filter->day !== null) {
+            $start = CarbonImmutable::instance($filter->day)->startOfDay();
+            $query->where('v.created_at', '>=', $start)->where('v.created_at', '<', $start->addDay());
+        }
+
+        $total = $query->getCountForPagination();
+
+        $rows = $total > $page->offset()
+            ? $query
+                ->orderByDesc('v.created_at')
+                ->orderByDesc('v.id')
+                ->forPage($page->number, $page->size)
+                ->selectSub(
+                    DB::table('venta_lineas as l')->whereColumn('l.venta_id', 'v.id')->whereColumn('l.negocio_id', 'v.negocio_id')->selectRaw('count(*)'),
+                    'cantidad_lineas',
+                )
+                ->addSelect(['v.id', 'v.estado', 'v.metodo_pago', 'v.total', 'v.created_at', 'v.cobrada_at', 'v.anulada_at', 'u.id as cajero_id', 'u.nombre as cajero_nombre'])
+                ->get()
+                ->all()
+            : [];
+
+        $sales = [];
+
+        foreach ($rows as $sale) {
+            $sales[] = new SaleSummary(
+                (string) $sale->id,
+                (string) $sale->estado,
+                (string) $sale->metodo_pago,
+                (string) $sale->cajero_id,
+                (string) $sale->cajero_nombre,
+                (int) $sale->cantidad_lineas,
+                (string) $sale->total,
+                $this->moment((string) $sale->created_at),
+                $sale->cobrada_at === null ? null : $this->moment((string) $sale->cobrada_at),
+                $sale->anulada_at === null ? null : $this->moment((string) $sale->anulada_at),
+            );
+        }
+
+        return new Page($sales, $total, $page);
     }
 
     /**

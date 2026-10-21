@@ -712,19 +712,9 @@
                 ],
                 "parameters": [
                     {
-                        "name": "buscar",
-                        "in": "query",
-                        "schema": {
-                            "type": [
-                                "string",
-                                "null"
-                            ],
-                            "maxLength": 120
-                        }
-                    },
-                    {
                         "name": "pagina",
                         "in": "query",
+                        "description": "N\u00famero de p\u00e1gina, desde 1.",
                         "schema": {
                             "type": "integer",
                             "minimum": 1
@@ -733,10 +723,23 @@
                     {
                         "name": "por_pagina",
                         "in": "query",
+                        "description": "Elementos por p\u00e1gina, de 1 a 50. Por defecto, 15.",
                         "schema": {
                             "type": "integer",
                             "minimum": 1,
-                            "maximum": 100
+                            "maximum": 50
+                        }
+                    },
+                    {
+                        "name": "buscar",
+                        "in": "query",
+                        "description": "Texto que se busca en el nombre o el c\u00f3digo.",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 120
                         }
                     }
                 ],
@@ -1477,6 +1480,124 @@
             }
         },
         "/ventas": {
+            "get": {
+                "operationId": "sales.index",
+                "summary": "List the sales of the negocio by pages, newest first, optionally by status and day",
+                "tags": [
+                    "Sale"
+                ],
+                "parameters": [
+                    {
+                        "name": "pagina",
+                        "in": "query",
+                        "description": "N\u00famero de p\u00e1gina, desde 1.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "por_pagina",
+                        "in": "query",
+                        "description": "Elementos por p\u00e1gina, de 1 a 50. Por defecto, 15.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 50
+                        }
+                    },
+                    {
+                        "name": "estado",
+                        "in": "query",
+                        "description": "Estado de la venta: abierta, cobrada o anulada.",
+                        "schema": {
+                            "$ref": "#/components/schemas/SaleStatus"
+                        }
+                    },
+                    {
+                        "name": "fecha",
+                        "in": "query",
+                        "description": "D\u00eda en que se abri\u00f3 la venta, en hora de Costa Rica (AAAA-MM-DD).",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SaleSummaryResource"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "pagina": {
+                                                    "type": "integer"
+                                                },
+                                                "por_pagina": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "ultima_pagina": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "pagina",
+                                                "por_pagina",
+                                                "total",
+                                                "ultima_pagina"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "caja"
+                ]
+            },
             "post": {
                 "operationId": "sales.store",
                 "summary": "Open a cash sale and take its units out of the stock",
@@ -2679,6 +2800,77 @@
                     "advertencias"
                 ],
                 "title": "SaleResource"
+            },
+            "SaleStatus": {
+                "type": "string",
+                "enum": [
+                    "abierta",
+                    "cobrada",
+                    "anulada"
+                ],
+                "title": "SaleStatus"
+            },
+            "SaleSummaryResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "estado": {
+                        "type": "string"
+                    },
+                    "metodo_pago": {
+                        "type": "string"
+                    },
+                    "cajero": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "nombre": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "nombre"
+                        ]
+                    },
+                    "cantidad_lineas": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "number"
+                    },
+                    "creada_en": {
+                        "type": "string"
+                    },
+                    "cobrada_en": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "anulada_en": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "estado",
+                    "metodo_pago",
+                    "cajero",
+                    "cantidad_lineas",
+                    "total",
+                    "creada_en",
+                    "cobrada_en",
+                    "anulada_en"
+                ],
+                "title": "SaleSummaryResource"
             },
             "TokenResource": {
                 "type": "object",
