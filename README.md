@@ -29,6 +29,23 @@ Infrastructure  ──▶  Application  ──▶  Domain
 
 El dominio no depende de Laravel y la prueba `tests/Architecture/LayerDependencyTest.php` lo verifica en cada cambio. El detalle está en [docs/architecture.md](docs/architecture.md).
 
+## Avance 1: qué entregamos y cómo se relaciona con el enunciado
+
+El enunciado está pensado para un sistema de reservas de servicios, pero nuestro proyecto es un minisúper real (lo definimos en la ficha y lo hablamos con el dueño). Por eso adaptamos cada punto del Avance 1 a lo que hace un minisúper:
+
+| El enunciado pide | Lo que hicimos en el Minisúper Teresita | Dónde verlo |
+|---|---|---|
+| Catálogo con su precio | Catálogo de productos con código, categoría, precio de venta, costo y foto | `GET/POST/PUT/DELETE /productos` |
+| Horarios de atención del negocio | El horario de la semana, por día y con hasta 3 tramos (por ejemplo, cerrar al mediodía). También dice si el negocio está abierto ahora, en hora de Costa Rica | `GET/PUT /negocio/horario` |
+| Horarios de cada colaborador | No lo hicimos: en la ficha dijimos que el sistema no administra horarios de empleados | — |
+| Disponibilidad real | El stock vendible (el stock menos las unidades vencidas) y si el producto está agotado | `GET /productos/{id}/disponibilidad` |
+| Reservas con CRUD | Para nosotras las reservas son las **ventas**: se crean (las unidades salen del stock), se listan, se consultan, se modifican mientras están abiertas, se cobran y se anulan (las unidades vuelven al stock) | `/ventas` |
+| Control de concurrencia en la reserva | Si dos cajas venden la última unidad al mismo tiempo, una la consigue y la otra recibe un `409`. Para eso bloqueamos el producto en la base de datos | `LastUnitRaceTest` |
+| Datos aislados por negocio | El negocio sale del token y PostgreSQL filtra las filas con Row Level Security. Si piden algo de otro negocio, responde `404` | [Sesión y aislamiento](#sesión-y-aislamiento-por-negocio) |
+| Documentación con Scramble | Documentación interactiva y el contrato OpenAPI | `/docs/api` y `api/openapi/v1.json` |
+| Pruebas con Pest y CI en verde | Pint, Larastan (nivel 8) y Pest corren en cada pull request | `.github/workflows/ci.yml` |
+| Sistema desplegado | Un VPS con Docker y Caddy, con HTTPS automático | [Despliegue](#despliegue) |
+
 ## Puesta en marcha
 
 Por ahora la API se ejecuta **en local con Docker** (API + PostgreSQL). El frontend se publicará más adelante en GitHub Pages.
