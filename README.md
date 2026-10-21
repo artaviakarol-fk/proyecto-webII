@@ -45,6 +45,10 @@ La primera vez tarda unos minutos: crea los roles de PostgreSQL, instala depende
 
 Para detenerlo: `docker compose down`.
 
+### Despliegue
+
+El sistema se despliega en un VPS con Docker y Caddy (HTTPS automático). La guía paso a paso está en [docs/despliegue.md](docs/despliegue.md).
+
 ### Ruta de salud
 
 `GET /api/v1/health` siempre responde `200` e indica el estado de la aplicación y de la base de datos:
