@@ -100,8 +100,8 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            // Same time zone as the app, so timestamps are stored and read back without shifting.
-            'timezone' => 'UTC',
+            // Misma zona horaria que la aplicación, para guardar y leer las fechas sin desfase.
+            'timezone' => env('APP_TIMEZONE', 'America/Costa_Rica'),
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
@@ -117,8 +117,8 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            // Same time zone as the app, so timestamps are stored and read back without shifting.
-            'timezone' => 'UTC',
+            // Misma zona horaria que la aplicación, para guardar y leer las fechas sin desfase.
+            'timezone' => env('APP_TIMEZONE', 'America/Costa_Rica'),
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
