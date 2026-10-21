@@ -49,6 +49,12 @@ Para detenerlo: `docker compose down`.
 
 El sistema se despliega en un VPS con Docker y Caddy (HTTPS automático). La guía paso a paso está en [docs/despliegue.md](docs/despliegue.md).
 
+**Sistema desplegado:**
+
+- API: https://15-235-92-245.sslip.io/api/v1
+- Documentación: https://15-235-92-245.sslip.io/docs/api
+- Salud: https://15-235-92-245.sslip.io/api/v1/health
+
 ### Ruta de salud
 
 `GET /api/v1/health` siempre responde `200` e indica el estado de la aplicación y de la base de datos:
