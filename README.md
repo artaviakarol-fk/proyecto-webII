@@ -186,5 +186,6 @@ Este proyecto se desarrolla con asistencia de IA (Claude, de Anthropic). Su uso 
 | Alineación con SodaYa-Hexagonal | Comparación con el proyecto guía, cambios de código, pruebas y documentos (`docs/adr`, modelo de datos, base de datos, patrones, lenguaje ubicuo) generados con asistencia de IA | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde en CI |
 | Cierre de sesión y usuario actual | Código y pruebas generados con asistencia de IA, siguiendo el módulo `Identity/Users` del proyecto guía | Revisado en el PR por la otra integrante; pruebas en verde en CI |
 | Cobro con ONVO Pay, tarjeta y SINPE Móvil (#17) | Código, pruebas y documentos (`docs/adr/0010`) generados con asistencia de IA, siguiendo el módulo `Billing/Payments` del proyecto guía | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde; probado en el sandbox de ONVO con llaves de prueba |
+| Cobro con PayPal intercambiable por configuración (#18) | Código y pruebas generados con asistencia de IA, siguiendo el puerto `PaymentGateway` del #17 | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde; PayPal se probó con respuestas simuladas |
 
 Esta tabla se actualiza conforme avanza el proyecto. Cada integrante debe poder explicar y modificar cualquier parte del código.

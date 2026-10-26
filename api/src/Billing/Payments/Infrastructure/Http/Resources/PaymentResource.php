@@ -25,7 +25,7 @@ final class PaymentResource extends JsonResource
 
     /**
      * Expose the payment; the amount is in colones with two decimals. A pending SINPE Móvil payment also
-     * tells the buyer where to transfer and how much.
+     * tells the buyer where to transfer and how much, and a pending PayPal one gives the address where the buyer approves it.
      *
      * @return array<string, mixed>
      */
@@ -44,6 +44,7 @@ final class PaymentResource extends JsonResource
             'creado_en' => $this->atom($this->payment->createdAt),
             'resuelto_en' => $this->payment->settledAt === null ? null : $this->atom($this->payment->settledAt),
             'instrucciones' => $this->instructions(),
+            'url_aprobacion' => $this->payment->status === PaymentStatus::Pending->value ? $this->payment->approvalUrl : null,
         ];
     }
 

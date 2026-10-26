@@ -30,6 +30,19 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // PayPal: only the sandbox (api-m.sandbox.paypal.com) is accepted while the course lasts.
+    'paypal' => [
+        'client_id' => env('PAYPAL_CLIENT_ID'),
+        'client_secret' => env('PAYPAL_CLIENT_SECRET'),
+        'webhook_id' => env('PAYPAL_WEBHOOK_ID'),
+        'base_url' => env('PAYPAL_BASE_URL', 'https://api-m.sandbox.paypal.com'),
+        // PayPal does not charge colones: the total of the sale is converted to dollars with this rate.
+        'colones_per_dollar' => (float) env('PAYPAL_COLONES_PER_DOLLAR', 500),
+        // Pages of the front end where PayPal sends the buyer after approving or cancelling.
+        'return_url' => env('PAYPAL_RETURN_URL'),
+        'cancel_url' => env('PAYPAL_CANCEL_URL'),
+    ],
+
     // ONVO Pay: only test keys (onvo_test_...) are accepted while the course lasts.
     'onvo' => [
         'secret' => env('ONVO_SECRET_KEY'),

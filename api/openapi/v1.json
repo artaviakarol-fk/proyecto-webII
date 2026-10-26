@@ -2647,6 +2647,12 @@
                             "monto",
                             "mensaje"
                         ]
+                    },
+                    "url_aprobacion": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     }
                 },
                 "required": [
@@ -2661,7 +2667,8 @@
                     "codigo_rechazo",
                     "creado_en",
                     "resuelto_en",
-                    "instrucciones"
+                    "instrucciones",
+                    "url_aprobacion"
                 ],
                 "title": "PaymentResource"
             },
@@ -3272,7 +3279,7 @@
             },
             "StartPaymentRequest": {
                 "type": "object",
-                "description": "How the sale is paid and the id of the payment method that the client created with the provider.\nCard data never reaches this API: the client sends it to the provider with its publishable key.",
+                "description": "How the sale is paid and the id of the payment method that the client created with the provider.\nCard data never reaches this API: the client sends it to the provider with its publishable key. PayPal needs\nno payment method from the client: the buyer chooses how to pay on the page of PayPal.",
                 "properties": {
                     "metodo_pago": {
                         "type": "string",
@@ -3282,14 +3289,16 @@
                         ]
                     },
                     "metodo_proveedor_id": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "pattern": "^[A-Za-z0-9_-]+$",
                         "maxLength": 100
                     }
                 },
                 "required": [
-                    "metodo_pago",
-                    "metodo_proveedor_id"
+                    "metodo_pago"
                 ],
                 "title": "StartPaymentRequest"
             },

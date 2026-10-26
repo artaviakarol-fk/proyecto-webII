@@ -10,7 +10,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Provider that charges the payments: "onvo" (ONVO Pay, with card and SINPE
-    | Móvil). Changing it only needs this variable: no code changes.
+    | Móvil) or "paypal" (PayPal, with card or account). Changing it only needs this variable: no code changes.
     |
     */
 

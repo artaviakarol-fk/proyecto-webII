@@ -23,6 +23,7 @@ final readonly class PaymentDetails
         public ?string $declineCode,
         public DateTimeImmutable $createdAt,
         public ?DateTimeImmutable $settledAt,
+        public ?string $approvalUrl = null,
     ) {}
 
     /** Show a payment. */
@@ -40,6 +41,7 @@ final readonly class PaymentDetails
             $payment->declineCode,
             $payment->createdAt,
             $payment->settledAt,
+            is_string($payment->payload['approval_url'] ?? null) ? $payment->payload['approval_url'] : null,
         );
     }
 }

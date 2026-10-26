@@ -246,6 +246,65 @@ final class SalePaymentTest extends TestCase
         Http::assertNothingSent();
     }
 
+    /** Changing only PAYMENT_GATEWAY the same endpoint charges with PayPal: it waits for the buyer and gives the address to approve. */
+    public function test_with_paypal_the_payment_waits_for_the_buyer_and_is_captured_after_the_approval(): void
+    {
+        $this->usePaypal();
+        Http::fake([
+            'api-m.sandbox.paypal.com/v1/oauth2/token' => Http::response(['access_token' => 'access_token_1']),
+            'api-m.sandbox.paypal.com/v2/checkout/orders' => Http::response(['id' => 'ORDER1', 'status' => 'PAYER_ACTION_REQUIRED', 'links' => [['rel' => 'payer-action', 'href' => 'https://www.sandbox.paypal.com/checkoutnow?token=ORDER1']]], 201),
+        ]);
+
+        $this->postJson($this->endpoint($this->saleId), ['metodo_pago' => 'tarjeta'])
+            ->assertCreated()
+            ->assertJsonPath('data.proveedor', 'paypal')
+            ->assertJsonPath('data.estado', 'pendiente')
+            ->assertJsonPath('data.referencia', 'ORDER1')
+            ->assertJsonPath('data.url_aprobacion', 'https://www.sandbox.paypal.com/checkoutnow?token=ORDER1')
+            ->assertJsonPath('data.instrucciones', null);
+
+        Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/v2/checkout/orders')
+            && $request->data()['purchase_units'][0]['amount']['value'] === '6.00');
+
+        Http::fake([
+            'api-m.sandbox.paypal.com/v2/checkout/orders/ORDER1/capture' => Http::response(['id' => 'ORDER1', 'status' => 'COMPLETED', 'purchase_units' => [['payments' => ['captures' => [['status' => 'COMPLETED']]]]]], 201),
+            'api-m.sandbox.paypal.com/v2/checkout/orders/ORDER1' => Http::response(['id' => 'ORDER1', 'status' => 'APPROVED']),
+        ]);
+
+        $this->getJson($this->endpoint($this->saleId))
+            ->assertOk()
+            ->assertJsonPath('data.estado', 'pagado')
+            ->assertJsonPath('data.url_aprobacion', null);
+    }
+
+    /** PayPal has no SINPE Móvil: the request is refused with the reason and nothing is stored. */
+    public function test_paypal_refuses_sinpe_movil(): void
+    {
+        $this->usePaypal();
+        Http::fake();
+
+        $this->postJson($this->endpoint($this->saleId), ['metodo_pago' => 'sinpe_movil'])
+            ->assertConflict()
+            ->assertJsonPath('detail', 'El pago fue rechazado (código: metodo_no_soportado). Intente con otro medio de pago.');
+
+        Http::assertNothingSent();
+        $this->scopeQueriesTo($this->negocio->id);
+        $this->assertDatabaseCount('pagos', 0);
+    }
+
+    /** Configure PayPal as the gateway with sandbox credentials. */
+    private function usePaypal(): void
+    {
+        config([
+            'payments.default' => 'paypal',
+            'services.paypal.client_id' => 'client',
+            'services.paypal.client_secret' => 'secret',
+            'services.paypal.base_url' => 'https://api-m.sandbox.paypal.com',
+            'services.paypal.colones_per_dollar' => 500.0,
+            'services.paypal.return_url' => 'https://app.test/pago/ok',
+        ]);
+    }
+
     /** Answer the creation of the intent and its confirmation with the given status. */
     private function fakeOnvo(string $status): void
     {
