@@ -173,14 +173,15 @@ Una fila por cada cambio del stock, para la trazabilidad.
 | `metodo_pago` | `varchar(20)` | `tarjeta` o `sinpe_movil` |
 | `moneda` | `char(3)` | `CRC` |
 | `monto` | `numeric(12,2)` | Mayor que cero |
-| `estado` | `varchar(20)` | `pendiente`, `pagado` o `fallido` |
+| `estado` | `varchar(20)` | `pendiente`, `pagado`, `fallido` o `reembolsado` |
 | `referencia_externa` | `varchar(255)` | Identificador del cobro en el proveedor; único junto con `proveedor` |
+| `referencia_reembolso` | `varchar(255)` | Identificador del reembolso en el proveedor; existe si y solo si el estado es `reembolsado` |
 | `codigo_rechazo` | `varchar(100)` | Solo si el estado es `fallido` |
 | `payload` | `jsonb` | Respuesta reducida del proveedor, sin datos de tarjeta |
 | `resuelto_at` | `timestamptz` | Solo si el pago ya no está pendiente |
 | `created_at`, `updated_at` | `timestamptz` | |
 
-Un índice único parcial `pagos_venta_viva_unique` impide dos pagos pendientes o pagados para la misma venta. Tiene aislamiento por negocio con Row Level Security.
+Un índice único parcial `pagos_venta_viva_unique` impide dos pagos pendientes o pagados para la misma venta; un pago fallido o reembolsado deja cobrarla de nuevo. Tiene aislamiento por negocio con Row Level Security.
 
 ## Tablas de identidad
 

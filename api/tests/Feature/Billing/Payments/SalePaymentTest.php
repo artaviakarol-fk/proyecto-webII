@@ -23,6 +23,8 @@ final class SalePaymentTest extends TestCase
 
     private const string INTENTS = 'api.onvopay.com/v1/payment-intents';
 
+    private const string REFUNDS = 'api.onvopay.com/v1/refunds';
+
     private NegocioModel $negocio;
 
     private NegocioModel $otherNegocio;
@@ -277,19 +279,131 @@ final class SalePaymentTest extends TestCase
             ->assertJsonPath('data.url_aprobacion', null);
     }
 
-    /** PayPal has no SINPE Móvil: the request is refused with the reason and nothing is stored. */
+    /** PayPal declares that it has no SINPE Móvil: the request is refused before calling it, and nothing is stored. */
     public function test_paypal_refuses_sinpe_movil(): void
     {
         $this->usePaypal();
         Http::fake();
 
         $this->postJson($this->endpoint($this->saleId), ['metodo_pago' => 'sinpe_movil'])
-            ->assertConflict()
-            ->assertJsonPath('detail', 'El pago fue rechazado (código: metodo_no_soportado). Intente con otro medio de pago.');
+            ->assertUnprocessable()
+            ->assertJsonPath('type', 'http://localhost/problemas/datos-invalidos')
+            ->assertJsonPath('detail', 'La pasarela paypal no admite el método de pago sinpe_movil.');
 
         Http::assertNothingSent();
         $this->scopeQueriesTo($this->negocio->id);
         $this->assertDatabaseCount('pagos', 0);
+    }
+
+    /** The administration refunds a paid card payment: ONVO gives back the whole amount in céntimos and the payment is refunded. */
+    public function test_the_administration_refunds_a_paid_payment(): void
+    {
+        $this->payWithOnvo();
+        Http::fake([self::REFUNDS => Http::response(['id' => 'refund_1', 'status' => 'succeeded', 'amount' => 300000, 'currency' => 'CRC', 'paymentIntentId' => 'intent_1'], 201)]);
+
+        $this->actingAsAdministration();
+        $this->postJson($this->endpoint($this->saleId).'/reembolso')
+            ->assertOk()
+            ->assertJsonPath('data.estado', 'reembolsado')
+            ->assertJsonPath('data.referencia', 'intent_1')
+            ->assertJsonPath('data.referencia_reembolso', 'refund_1');
+
+        Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/refunds')
+            && $request->data()['paymentIntentId'] === 'intent_1'
+            && $request->data()['amount'] === 300000);
+
+        $this->scopeQueriesTo($this->negocio->id);
+        $this->assertDatabaseHas('pagos', ['venta_id' => $this->saleId, 'estado' => 'reembolsado', 'referencia_reembolso' => 'refund_1']);
+    }
+
+    /** Refunding is only for the administration: the cashier is refused and ONVO is not called. */
+    public function test_a_cashier_cannot_refund(): void
+    {
+        $this->payWithOnvo();
+        Http::fake();
+
+        $this->postJson($this->endpoint($this->saleId).'/reembolso')->assertForbidden();
+
+        Http::assertNothingSent();
+    }
+
+    /** A payment can be refunded only once, and only when it is paid. */
+    public function test_a_payment_is_refunded_once_and_only_when_paid(): void
+    {
+        $this->fakeOnvo('processing');
+        $this->postJson($this->endpoint($this->saleId), $this->body('sinpe_movil'))->assertCreated();
+
+        Http::fake([self::INTENTS.'/intent_1' => Http::response(['id' => 'intent_1', 'status' => 'processing'])]);
+        $this->actingAsAdministration();
+        $this->postJson($this->endpoint($this->saleId).'/reembolso')
+            ->assertConflict()
+            ->assertJsonPath('detail', 'Solo se puede reembolsar un pago pagado, y una sola vez.');
+        Http::assertNotSent(fn (Request $request): bool => str_ends_with($request->url(), '/refunds'));
+    }
+
+    /** When ONVO refuses the refund, the problem says why and the payment stays paid. */
+    public function test_a_refused_refund_keeps_the_payment_paid(): void
+    {
+        $this->payWithOnvo();
+        Http::fake([self::REFUNDS => Http::response(['code' => 'refunds.intent_not_refundable'], 400)]);
+
+        $this->actingAsAdministration();
+        $this->postJson($this->endpoint($this->saleId).'/reembolso')
+            ->assertConflict()
+            ->assertJsonPath('detail', 'La pasarela rechazó el reembolso (motivo: refunds.intent_not_refundable).');
+
+        $this->scopeQueriesTo($this->negocio->id);
+        $this->assertDatabaseHas('pagos', ['venta_id' => $this->saleId, 'estado' => 'pagado', 'referencia_reembolso' => null]);
+    }
+
+    /** A payment charged by ONVO is not refunded through PayPal after PAYMENT_GATEWAY changed: nobody is called. */
+    public function test_a_payment_is_refunded_by_the_provider_that_charged_it(): void
+    {
+        $this->payWithOnvo();
+        $this->usePaypal();
+        Http::fake();
+
+        $this->actingAsAdministration();
+        $this->postJson($this->endpoint($this->saleId).'/reembolso')
+            ->assertConflict()
+            ->assertJsonPath('detail', 'El pago se cobró con onvo y la pasarela configurada es paypal: el reembolso debe hacerse con la misma pasarela que cobró.');
+
+        Http::assertNothingSent();
+    }
+
+    /** A refunded sale can be paid again, because the refunded payment no longer blocks it. */
+    public function test_a_refunded_sale_can_be_paid_again(): void
+    {
+        Http::fake([
+            self::INTENTS => Http::sequence()
+                ->push(['id' => 'intent_1', 'status' => 'requires_payment_method'], 201)
+                ->push(['id' => 'intent_2', 'status' => 'requires_payment_method'], 201),
+            self::INTENTS.'/intent_1/confirm' => Http::response(['id' => 'intent_1', 'status' => 'succeeded'], 201),
+            self::INTENTS.'/intent_2/confirm' => Http::response(['id' => 'intent_2', 'status' => 'succeeded'], 201),
+            self::REFUNDS => Http::response(['id' => 'refund_1', 'status' => 'succeeded'], 201),
+        ]);
+        $this->actingAsAdministration();
+
+        $this->postJson($this->endpoint($this->saleId), $this->body('tarjeta'))->assertCreated();
+        $this->postJson($this->endpoint($this->saleId).'/reembolso')->assertOk();
+        $this->postJson($this->endpoint($this->saleId), $this->body('tarjeta'))
+            ->assertCreated()
+            ->assertJsonPath('data.referencia', 'intent_2')
+            ->assertJsonPath('data.estado', 'pagado');
+    }
+
+    /** Pay the sale with a card that ONVO takes at once (intent_1). */
+    private function payWithOnvo(): void
+    {
+        $this->fakeOnvo('succeeded');
+        $this->postJson($this->endpoint($this->saleId), $this->body('tarjeta'))->assertCreated();
+    }
+
+    /** Act as an administrator of the same negocio, who may refund. */
+    private function actingAsAdministration(): void
+    {
+        $admin = UserModel::factory()->role(Role::Administrador)->create(['negocio_id' => $this->negocio->id]);
+        Sanctum::actingAs($admin, Role::Administrador->abilities());
     }
 
     /** Configure PayPal as the gateway with sandbox credentials. */

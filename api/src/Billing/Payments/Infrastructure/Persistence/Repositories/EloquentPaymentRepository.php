@@ -77,6 +77,7 @@ final readonly class EloquentPaymentRepository implements PaymentRepository
                 'codigo_rechazo' => $payment->declineCode,
                 'payload' => $payment->payload === [] ? null : $payment->payload,
                 'resuelto_at' => $payment->settledAt,
+                'referencia_reembolso' => $payment->refundReference,
                 'created_at' => $payment->createdAt,
             ]);
         } catch (UniqueConstraintViolationException $violation) {
@@ -100,6 +101,7 @@ final readonly class EloquentPaymentRepository implements PaymentRepository
             $model->payload ?? [],
             $model->created_at->toDateTimeImmutable(),
             $model->resuelto_at?->toDateTimeImmutable(),
+            $model->referencia_reembolso,
         );
     }
 }

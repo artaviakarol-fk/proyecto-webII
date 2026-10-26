@@ -8,8 +8,8 @@ La Investigación 1 pide cobrar ventas con ONVO Pay (tarjeta y SINPE Móvil) y c
 
 ## Decisión
 
-- Nuevo módulo `Billing/Payments`. El dominio solo conoce `Payment`, `PaymentStatus` (`pendiente`, `pagado`, `fallido`), `PaymentMethod` y `ChargeResult`.
-- El puerto `PaymentGateway` (`provider()`, `charge()`, `status()`, `verifyWebhook()`) vive en `Application/Contracts`. Cada proveedor es un adaptador en `Infrastructure/Gateways` que traduce su API a `ChargeResult` (capa anticorrupción). Es el patrón Strategy.
+- Nuevo módulo `Billing/Payments`. El dominio solo conoce `Payment`, `PaymentStatus` (`pendiente`, `pagado`, `fallido`, `reembolsado`), `PaymentMethod`, `ChargeResult` y `RefundResult`.
+- El puerto `PaymentGateway` (`provider()`, `supportedMethods()`, `charge()`, `status()`, `refund()`, `verifyWebhook()`) vive en `Application/Contracts`. Cada proveedor es un adaptador en `Infrastructure/Gateways` que traduce su API a `ChargeResult` (capa anticorrupción). Es el patrón Strategy.
 - `PAYMENT_GATEWAY` (`onvo` por defecto, o `paypal`) elige el adaptador en `PaymentsServiceProvider`. Un valor desconocido es un error de configuración, no un silencio.
 - Los adaptadores usan el cliente HTTP de Laravel directamente, sin SDK: la API es corta, se prueba con `Http::fake()` y no se agrega una dependencia que el equipo no controla. `Http::preventStrayRequests()` en `TestCase` garantiza que ninguna prueba llegue a un proveedor real.
 - Solo se aceptan llaves de pruebas (`onvo_test_...`). Ninguna llave real se puede cargar por error en este avance.
@@ -21,5 +21,7 @@ La Investigación 1 pide cobrar ventas con ONVO Pay (tarjeta y SINPE Móvil) y c
 
 - PayPal (`PaypalGateway`) usa Orders v2: crea la orden en dólares con el tipo de cambio `PAYPAL_COLONES_PER_DOLLAR` (PayPal no cobra colones), el pago queda pendiente con `url_aprobacion` y la orden se captura al consultar el pago después de que el comprador la aprueba. No acepta SINPE Móvil y solo acepta el sandbox.
 - Agregar un proveedor es una clase nueva y una línea en el `match` del provider.
+- Cada pasarela declara sus medios con `supportedMethods()`. `StartPayment` lo consulta antes de guardar o llamar al proveedor, así SINPE Móvil con PayPal se rechaza con 422 y un mensaje claro en lugar de un error del proveedor.
+- El reembolso (`POST /ventas/{venta}/pago/reembolso`, solo administración) devuelve el monto total. Con ONVO va a `POST /refunds` en céntimos y sin reintentos, para no reembolsar dos veces. Con PayPal lanza `RefundNotSupportedException`: haría falta guardar el id de la captura y el monto volvería en dólares con otro tipo de cambio, así que se documenta y se hace desde el panel. Un pago solo se reembolsa con el proveedor que lo cobró: si `PAYMENT_GATEWAY` cambió, se responde 409 sin llamar a nadie.
 - El webhook y la marca de la venta como cobrada quedan para el Avance 2; mientras tanto el pago pendiente de SINPE se consulta con `GET /ventas/{venta}/pago`.
 - El pago es responsabilidad de `Billing`; para leer la venta usa el caso de uso `GetSale` de `Sales` mediante un puerto propio, sin tocar su dominio.

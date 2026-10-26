@@ -14,10 +14,15 @@ use InvalidArgumentException;
 use Src\Billing\Payments\Application\Contracts\PaymentGateway;
 use Src\Billing\Payments\Domain\Exceptions\GatewayUnavailableException;
 use Src\Billing\Payments\Domain\Exceptions\PaymentRejectedException;
+use Src\Billing\Payments\Domain\Exceptions\RefundRejectedException;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeReference;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeRequest;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeResult;
+use Src\Billing\Payments\Domain\ValueObjects\PaymentMethod;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentStatus;
+use Src\Billing\Payments\Domain\ValueObjects\RefundResult;
+use Src\Billing\Payments\Domain\ValueObjects\RefundStatus;
+use Src\Shared\Domain\ValueObjects\Money;
 use Throwable;
 
 /**
@@ -25,7 +30,7 @@ use Throwable;
  *
  * Both ways of paying (card and SINPE Móvil) follow the same flow: the client creates the payment method with the
  * publishable key, and this adapter creates the payment intent and confirms it with the secret key. A card payment
- * ends at once; a SINPE Móvil one stays in processing until the transfer arrives.
+ * ends at once; a SINPE Móvil one stays in processing until the transfer arrives. A paid charge can be refunded.
  */
 final readonly class OnvoGateway implements PaymentGateway
 {
@@ -39,6 +44,12 @@ final readonly class OnvoGateway implements PaymentGateway
 
     /** Only test keys are accepted while the course lasts: no real money is ever charged. */
     private const string TEST_KEY_PREFIX = 'onvo_test_';
+
+    /** Answers of ONVO to a refund that mean it refuses it (the intent cannot be refunded, or the data is wrong). */
+    private const array REFUND_REFUSALS = [400, 404, 409, 422];
+
+    /** Fields of the refund that are kept. */
+    private const array KEPT_REFUND_FIELDS = ['id', 'status', 'amount', 'currency', 'paymentIntentId', 'reason', 'createdAt'];
 
     /** Fields of the intent that are kept; the payment method, the charges and the customer carry personal data and are left out. */
     private const array KEPT_FIELDS = ['id', 'status', 'amount', 'currency', 'description', 'metadata', 'createdAt'];
@@ -58,6 +69,12 @@ final readonly class OnvoGateway implements PaymentGateway
     public function provider(): string
     {
         return self::PROVIDER;
+    }
+
+    /** ONVO charges cards and SINPE Móvil transfers. */
+    public function supportedMethods(): array
+    {
+        return [PaymentMethod::Card, PaymentMethod::SinpeMovil];
     }
 
     /**
@@ -111,6 +128,40 @@ final readonly class OnvoGateway implements PaymentGateway
         return $this->resultOf($this->send(fn (PendingRequest $http): Response => $http
             ->retry(self::STATUS_ATTEMPTS, self::STATUS_PAUSE_MILLISECONDS, fn (Throwable $error): bool => $error instanceof ConnectionException)
             ->get('/payment-intents/'.rawurlencode($reference->value))));
+    }
+
+    /**
+     * Refund the whole amount of a paid intent. Like the charge, the amount goes in céntimos (₡3.000 is 300000) and the
+     * call is not repeated when the connection fails, because ONVO may have taken it and a repeat would refund twice.
+     */
+    public function refund(ChargeReference $reference, Money $amount): RefundResult
+    {
+        try {
+            $response = $this->http()->post('/refunds', [
+                'paymentIntentId' => $reference->value,
+                'amount' => $amount->cents,
+                'reason' => 'requested_by_customer',
+            ]);
+        } catch (ConnectionException) {
+            Log::warning('ONVO did not answer the refund.');
+
+            throw GatewayUnavailableException::create();
+        }
+
+        $body = $response->json();
+        $body = is_array($body) ? $body : [];
+
+        if (in_array($response->status(), self::REFUND_REFUSALS, true)) {
+            Log::warning('ONVO refused the refund.', ['status' => $response->status(), 'code' => $this->text($body['code'] ?? null)]);
+
+            throw RefundRejectedException::create($this->text($body['code'] ?? null) ?? $this->text($body['message'] ?? null));
+        }
+
+        if (! $response->successful()) {
+            throw $this->failure($response);
+        }
+
+        return $this->refundResultOf($body);
     }
 
     /** ONVO sends the secret of the webhook in the X-Webhook-Secret header; it is compared in constant time. */
@@ -193,6 +244,29 @@ final readonly class OnvoGateway implements PaymentGateway
         };
 
         return new ChargeResult($status, new ChargeReference($id), $status === PaymentStatus::Failed ? $this->declineCodeOf($intent) ?? $state : null, array_intersect_key($intent, array_flip(self::KEPT_FIELDS)));
+    }
+
+    /**
+     * Translate a refund of ONVO: succeeded is done, failed could not be made and pending is still in course.
+     *
+     * @param  array<string, mixed>  $refund
+     */
+    private function refundResultOf(array $refund): RefundResult
+    {
+        $id = $this->text($refund['id'] ?? null) ?? throw GatewayUnavailableException::create();
+
+        $status = match ($this->text($refund['status'] ?? null)) {
+            'succeeded' => RefundStatus::Succeeded,
+            'failed' => RefundStatus::Failed,
+            default => RefundStatus::Pending,
+        };
+
+        return new RefundResult(
+            $status,
+            $id,
+            $status === RefundStatus::Failed ? $this->text($refund['failureReason'] ?? null) ?? 'failed' : null,
+            array_intersect_key($refund, array_flip(self::KEPT_REFUND_FIELDS)),
+        );
     }
 
     /**

@@ -2156,6 +2156,79 @@
                 ]
             }
         },
+        "/ventas/{venta}/pago/reembolso": {
+            "post": {
+                "operationId": "billing.payments.refund",
+                "summary": "Give back the whole amount of the paid payment of a sale, with the provider that charged it",
+                "tags": [
+                    "SalePayment"
+                ],
+                "parameters": [
+                    {
+                        "name": "venta",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`PaymentResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PaymentResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "caja",
+                    "administrar"
+                ]
+            }
+        },
         "/tokens": {
             "post": {
                 "operationId": "identity.tokens.store",
@@ -2653,6 +2726,12 @@
                             "string",
                             "null"
                         ]
+                    },
+                    "referencia_reembolso": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     }
                 },
                 "required": [
@@ -2668,7 +2747,8 @@
                     "creado_en",
                     "resuelto_en",
                     "instrucciones",
-                    "url_aprobacion"
+                    "url_aprobacion",
+                    "referencia_reembolso"
                 ],
                 "title": "PaymentResource"
             },

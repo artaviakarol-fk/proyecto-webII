@@ -6,20 +6,29 @@ namespace Tests\Unit\Billing\Payments\Application;
 
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Src\Billing\Payments\Application\DTOs\PayableSale;
 use Src\Billing\Payments\Application\DTOs\StartPaymentCommand;
 use Src\Billing\Payments\Application\UseCases\GetPayment;
+use Src\Billing\Payments\Application\UseCases\RefundPayment;
 use Src\Billing\Payments\Application\UseCases\StartPayment;
+use Src\Billing\Payments\Domain\Entities\Payment;
 use Src\Billing\Payments\Domain\Exceptions\GatewayUnavailableException;
 use Src\Billing\Payments\Domain\Exceptions\PaymentAlreadyStartedException;
+use Src\Billing\Payments\Domain\Exceptions\PaymentMethodNotSupportedException;
 use Src\Billing\Payments\Domain\Exceptions\PaymentNotFoundException;
+use Src\Billing\Payments\Domain\Exceptions\PaymentNotRefundableException;
+use Src\Billing\Payments\Domain\Exceptions\PaymentProviderMismatchException;
 use Src\Billing\Payments\Domain\Exceptions\PaymentRejectedException;
+use Src\Billing\Payments\Domain\Exceptions\RefundRejectedException;
 use Src\Billing\Payments\Domain\Exceptions\SaleNotFoundException;
 use Src\Billing\Payments\Domain\Exceptions\SaleNotPayableException;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeReference;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeResult;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentMethod;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentStatus;
+use Src\Billing\Payments\Domain\ValueObjects\RefundResult;
+use Src\Billing\Payments\Domain\ValueObjects\RefundStatus;
 use Src\Billing\Payments\Domain\ValueObjects\SaleId;
 use Src\Shared\Domain\Exceptions\InvalidValueException;
 use Src\Shared\Domain\ValueObjects\Money;
@@ -50,6 +59,8 @@ final class PaymentUseCasesTest extends TestCase
 
     private GetPayment $get;
 
+    private RefundPayment $refund;
+
     /** An open sale of 3000 colones and a paid one, with a gateway that is told what to answer. */
     protected function setUp(): void
     {
@@ -64,6 +75,7 @@ final class PaymentUseCasesTest extends TestCase
 
         $this->start = new StartPayment($context, $transaction, $sales, $this->payments, $this->gateway);
         $this->get = new GetPayment($context, $transaction, $this->payments, $this->gateway);
+        $this->refund = new RefundPayment($context, $transaction, $this->payments, $this->gateway);
     }
 
     /** The payment is pending until the provider says otherwise, and the charge carries the total of the sale. */
@@ -198,6 +210,120 @@ final class PaymentUseCasesTest extends TestCase
     }
 
     /** The request to pay a sale. */
+    /** A way of paying that the provider does not offer is refused before anything is stored or sent. */
+    public function test_a_method_that_the_provider_does_not_offer_is_refused(): void
+    {
+        $this->gateway->actAs('paypal', [PaymentMethod::Card]);
+
+        try {
+            $this->start->execute($this->command(PaymentMethod::SinpeMovil), $this->now());
+            $this->fail('SINPE Móvil should be refused with PayPal.');
+        } catch (PaymentMethodNotSupportedException $refusal) {
+            $this->assertSame(['method' => 'sinpe_movil', 'provider' => 'paypal'], $refusal->parameters());
+        }
+
+        $this->assertSame([], $this->gateway->charges);
+        $this->assertNull($this->payments->findLatestForSale(new SaleId(self::OPEN_SALE), new NegocioId(self::NEGOCIO_ID)));
+    }
+
+    /** A paid payment is refunded for its whole amount with the reference of its charge. */
+    public function test_a_paid_payment_is_refunded_for_its_whole_amount(): void
+    {
+        $this->payWithCard();
+
+        $payment = $this->refund->execute(self::OPEN_SALE);
+
+        $this->assertSame('reembolsado', $payment->status);
+        $this->assertSame('refund_fake_1', $payment->refundReference);
+        $this->assertCount(1, $this->gateway->refunds);
+        $this->assertSame('intent_fake_1', $this->gateway->refunds[0]['reference']->value);
+        $this->assertSame(300000, $this->gateway->refunds[0]['amount']->cents);
+        $this->assertSame('reembolsado', $this->stored()->status->value);
+    }
+
+    /** A second refund is refused without calling the provider again. */
+    public function test_a_payment_is_refunded_only_once(): void
+    {
+        $this->payWithCard();
+        $this->refund->execute(self::OPEN_SALE);
+
+        $this->expectException(PaymentNotRefundableException::class);
+
+        try {
+            $this->refund->execute(self::OPEN_SALE);
+        } finally {
+            $this->assertCount(1, $this->gateway->refunds);
+        }
+    }
+
+    /** A pending payment cannot be refunded, and a sale without payment is not found. */
+    public function test_only_a_paid_payment_is_refunded(): void
+    {
+        $this->start->execute($this->command(PaymentMethod::SinpeMovil), $this->now());
+
+        try {
+            $this->refund->execute(self::OPEN_SALE);
+            $this->fail('A pending payment should not be refunded.');
+        } catch (PaymentNotRefundableException) {
+            $this->assertSame([], $this->gateway->refunds);
+        }
+
+        $this->expectException(PaymentNotFoundException::class);
+        $this->refund->execute(self::PAID_SALE);
+    }
+
+    /** A payment charged by ONVO is not refunded through PayPal after the configuration changed. */
+    public function test_a_payment_is_refunded_only_by_the_provider_that_charged_it(): void
+    {
+        $this->payWithCard();
+        $this->gateway->actAs('paypal', [PaymentMethod::Card]);
+
+        try {
+            $this->refund->execute(self::OPEN_SALE);
+            $this->fail('The provider should be the same that charged.');
+        } catch (PaymentProviderMismatchException $mismatch) {
+            $this->assertSame(['charged' => 'onvo', 'configured' => 'paypal'], $mismatch->parameters());
+        }
+
+        $this->assertSame([], $this->gateway->refunds);
+        $this->assertSame('pagado', $this->stored()->status->value);
+    }
+
+    /** If the provider refuses or does not answer, the payment stays paid. */
+    public function test_a_failed_refund_keeps_the_payment_paid(): void
+    {
+        $this->payWithCard();
+
+        $this->gateway->refundWith(new RefundResult(RefundStatus::Failed, 'refund_1', 'expired_card'));
+        try {
+            $this->refund->execute(self::OPEN_SALE);
+            $this->fail('A refused refund should be an error.');
+        } catch (RefundRejectedException) {
+            $this->assertSame('pagado', $this->stored()->status->value);
+        }
+
+        $this->gateway->failRefundWith(GatewayUnavailableException::create());
+        try {
+            $this->refund->execute(self::OPEN_SALE);
+            $this->fail('An unavailable provider should be an error.');
+        } catch (GatewayUnavailableException) {
+            $this->assertSame('pagado', $this->stored()->status->value);
+        }
+    }
+
+    /** Pay the open sale with a card that the provider takes at once. */
+    private function payWithCard(): void
+    {
+        $this->gateway->answerWith(new ChargeResult(PaymentStatus::Paid, new ChargeReference('intent_fake_1')));
+        $this->start->execute($this->command(), $this->now());
+    }
+
+    /** The newest stored payment of the open sale. */
+    private function stored(): Payment
+    {
+        return $this->payments->findLatestForSale(new SaleId(self::OPEN_SALE), new NegocioId(self::NEGOCIO_ID)) ?? throw new RuntimeException('No payment.');
+    }
+
     private function command(PaymentMethod $method = PaymentMethod::Card, string $saleId = self::OPEN_SALE): StartPaymentCommand
     {
         return new StartPaymentCommand($saleId, $method->value, 'tok_123');

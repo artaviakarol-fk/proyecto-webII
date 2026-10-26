@@ -100,7 +100,9 @@ Los términos de los contextos que aún no existen (fiado, abono, cobro con tarj
 
 | Término | Significado |
 | --- | --- |
-| Pago | Intento de cobrar una venta con un proveedor. Está `pendiente`, `pagado` o `fallido` |
+| Pago | Intento de cobrar una venta con un proveedor. Está `pendiente`, `pagado`, `fallido` o `reembolsado` |
+| Reembolso | Devolución del monto total de un pago pagado, con el mismo proveedor que lo cobró. Solo la administración lo hace |
+| Medios soportados | Métodos de pago que una pasarela declara (`supportedMethods()`); ONVO: tarjeta y SINPE Móvil, PayPal: solo tarjeta |
 | Pasarela | Servicio externo que mueve el dinero (ONVO Pay, PayPal). El sistema la usa a través del puerto `PaymentGateway` |
 | Método de pago del proveedor | Identificador que el cliente crea directamente con el proveedor para la tarjeta; la API nunca ve el número |
 | SINPE Móvil | Transferencia que el comprador hace al número del negocio; el pago queda pendiente hasta que el proveedor la confirma |

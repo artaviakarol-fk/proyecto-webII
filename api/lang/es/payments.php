@@ -14,6 +14,11 @@ return [
     'invalid_charge_reference' => 'La referencia del cobro no es válida.',
     'amount_must_be_positive' => 'El monto del pago debe ser mayor que cero.',
     'method_invalid' => 'El método de pago no es válido.',
+    'method_not_supported' => 'La pasarela :provider no admite el método de pago :method.',
+    'payment_not_refundable' => 'Solo se puede reembolsar un pago pagado, y una sola vez.',
+    'provider_mismatch' => 'El pago se cobró con :charged y la pasarela configurada es :configured: el reembolso debe hacerse con la misma pasarela que cobró.',
+    'refund_rejected' => 'La pasarela rechazó el reembolso (motivo: :reason).',
+    'refund_not_supported' => 'La pasarela :provider no permite reembolsos desde este sistema; hágalo desde su panel.',
     'sinpe_instructions' => 'Transfiera por SINPE Móvil al número :number el monto exacto de ₡:amount, desde la cuenta con la identificación registrada.',
 
 ];

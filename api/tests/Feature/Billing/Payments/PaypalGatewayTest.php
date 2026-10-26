@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
 use Src\Billing\Payments\Domain\Exceptions\GatewayUnavailableException;
 use Src\Billing\Payments\Domain\Exceptions\PaymentRejectedException;
+use Src\Billing\Payments\Domain\Exceptions\RefundNotSupportedException;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeReference;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeRequest;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentId;
@@ -281,6 +282,27 @@ final class PaypalGatewayTest extends TestCase
     public function test_the_provider_name(): void
     {
         $this->assertSame('paypal', $this->gateway()->provider());
+    }
+
+    /** PayPal offers only card (or the PayPal account): it has no SINPE Móvil. */
+    public function test_it_offers_only_card(): void
+    {
+        $this->assertSame([PaymentMethod::Card], $this->gateway()->supportedMethods());
+    }
+
+    /** Refunds are not made from the system with PayPal: it says so without calling PayPal. */
+    public function test_a_refund_is_not_supported_and_nothing_is_sent(): void
+    {
+        Http::fake();
+
+        try {
+            $this->gateway()->refund(new ChargeReference('ORDER1'), new Money(300000));
+            $this->fail('PayPal should not refund from the system.');
+        } catch (RefundNotSupportedException $refusal) {
+            $this->assertSame(['provider' => 'paypal'], $refusal->parameters());
+        }
+
+        Http::assertNothingSent();
     }
 
     /** Answer the request of the token. */

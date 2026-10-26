@@ -14,11 +14,14 @@ use InvalidArgumentException;
 use Src\Billing\Payments\Application\Contracts\PaymentGateway;
 use Src\Billing\Payments\Domain\Exceptions\GatewayUnavailableException;
 use Src\Billing\Payments\Domain\Exceptions\PaymentRejectedException;
+use Src\Billing\Payments\Domain\Exceptions\RefundNotSupportedException;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeReference;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeRequest;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeResult;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentMethod;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentStatus;
+use Src\Billing\Payments\Domain\ValueObjects\RefundResult;
+use Src\Shared\Domain\ValueObjects\Money;
 use Throwable;
 
 /**
@@ -70,6 +73,23 @@ final readonly class PaypalGateway implements PaymentGateway
     public function provider(): string
     {
         return self::PROVIDER;
+    }
+
+    /** PayPal charges a card or the PayPal account on its own page; it has no SINPE Móvil. */
+    public function supportedMethods(): array
+    {
+        return [PaymentMethod::Card];
+    }
+
+    /**
+     * Refunds are not made from this system with PayPal. The way would be POST /v2/payments/captures/{capture_id}/refund
+     * with the id of the capture (not of the order) and a PayPal-Request-Id; it was left out because the capture id is
+     * not stored yet, the amount would come back in dollars converted with a rate that changes, and the enunciado only
+     * asks for it with ONVO. The refund is made from the PayPal dashboard, and the reason is in docs/investigacion-1.md.
+     */
+    public function refund(ChargeReference $reference, Money $amount): RefundResult
+    {
+        throw RefundNotSupportedException::for(self::PROVIDER);
     }
 
     /**

@@ -10,11 +10,13 @@ use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
 use Src\Billing\Payments\Domain\Exceptions\GatewayUnavailableException;
 use Src\Billing\Payments\Domain\Exceptions\PaymentRejectedException;
+use Src\Billing\Payments\Domain\Exceptions\RefundRejectedException;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeReference;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeRequest;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentId;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentMethod;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentStatus;
+use Src\Billing\Payments\Domain\ValueObjects\RefundStatus;
 use Src\Billing\Payments\Domain\ValueObjects\SaleId;
 use Src\Billing\Payments\Infrastructure\Gateways\OnvoGateway;
 use Src\Shared\Domain\ValueObjects\Money;
@@ -198,6 +200,86 @@ final class OnvoGatewayTest extends TestCase
     public function test_it_names_its_provider(): void
     {
         $this->assertSame('onvo', $this->gateway()->provider());
+    }
+
+    /** ONVO offers card and SINPE Móvil. */
+    public function test_it_offers_card_and_sinpe_movil(): void
+    {
+        $this->assertSame([PaymentMethod::Card, PaymentMethod::SinpeMovil], $this->gateway()->supportedMethods());
+    }
+
+    /** A refund goes to /refunds with the intent and the whole amount in céntimos (₡3.000 is 300000), and is done. */
+    public function test_a_refund_gives_back_the_whole_amount_in_centimos(): void
+    {
+        Http::fake(['api.onvopay.com/v1/refunds' => Http::response([
+            'id' => 'refund_1',
+            'status' => 'succeeded',
+            'amount' => 300000,
+            'currency' => 'CRC',
+            'paymentIntentId' => 'intent_1',
+            'mode' => 'test',
+        ], 201)]);
+
+        $result = $this->gateway()->refund(new ChargeReference('intent_1'), new Money(300000));
+
+        $this->assertSame(RefundStatus::Succeeded, $result->status);
+        $this->assertSame('refund_1', $result->reference);
+        $this->assertNull($result->failureReason);
+        $this->assertArrayNotHasKey('mode', $result->payload);
+        Http::assertSent(fn (Request $request): bool => $request->url() === self::BASE.'/refunds'
+            && $request->method() === 'POST'
+            && $request->hasHeader('Authorization', 'Bearer '.self::KEY)
+            && $request->data() === ['paymentIntentId' => 'intent_1', 'amount' => 300000, 'reason' => 'requested_by_customer']);
+        Http::assertSentCount(1);
+    }
+
+    /** A refund in course is pending, and a failed one carries its reason. */
+    public function test_pending_and_failed_refunds(): void
+    {
+        Http::fake(['api.onvopay.com/v1/refunds' => Http::sequence()
+            ->push(['id' => 'refund_1', 'status' => 'pending'], 201)
+            ->push(['id' => 'refund_2', 'status' => 'failed', 'failureReason' => 'expired_or_canceled_card'], 201)]);
+
+        $this->assertSame(RefundStatus::Pending, $this->gateway()->refund(new ChargeReference('intent_1'), new Money(300000))->status);
+
+        $failed = $this->gateway()->refund(new ChargeReference('intent_1'), new Money(300000));
+        $this->assertSame(RefundStatus::Failed, $failed->status);
+        $this->assertSame('expired_or_canceled_card', $failed->failureReason);
+    }
+
+    /** ONVO refusing the refund (the intent cannot be refunded) is a rejection with its code. */
+    public function test_a_refused_refund_is_a_rejection(): void
+    {
+        Http::fake(['api.onvopay.com/v1/refunds' => Http::response(['code' => 'refunds.intent_not_refundable', 'message' => 'Not refundable'], 400)]);
+
+        try {
+            $this->gateway()->refund(new ChargeReference('intent_1'), new Money(300000));
+            $this->fail('The refund should be refused.');
+        } catch (RefundRejectedException $rejection) {
+            $this->assertSame('refunds.intent_not_refundable', $rejection->parameters()['reason']);
+        }
+    }
+
+    /** A server error of ONVO on a refund is unavailability. */
+    public function test_a_server_error_on_a_refund_is_unavailability(): void
+    {
+        Http::fake(['api.onvopay.com/v1/refunds' => Http::response(['message' => 'boom'], 500)]);
+        $this->assertUnavailable(fn () => $this->gateway()->refund(new ChargeReference('intent_1'), new Money(300000)));
+
+    }
+
+    /** A lost connection is unavailability and the refund is not sent again, because ONVO may have taken it. */
+    public function test_a_lost_connection_on_a_refund_is_not_repeated(): void
+    {
+        $calls = 0;
+        Http::fake(function () use (&$calls): never {
+            $calls++;
+
+            throw new ConnectionException('timeout');
+        });
+
+        $this->assertUnavailable(fn () => $this->gateway()->refund(new ChargeReference('intent_1'), new Money(300000)));
+        $this->assertSame(1, $calls);
     }
 
     /** Answer the creation and the confirmation of an intent with a status. */

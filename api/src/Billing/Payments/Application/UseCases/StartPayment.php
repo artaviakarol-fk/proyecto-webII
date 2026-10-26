@@ -12,6 +12,7 @@ use Src\Billing\Payments\Application\DTOs\StartPaymentCommand;
 use Src\Billing\Payments\Domain\Contracts\PaymentRepository;
 use Src\Billing\Payments\Domain\Entities\Payment;
 use Src\Billing\Payments\Domain\Exceptions\PaymentAlreadyStartedException;
+use Src\Billing\Payments\Domain\Exceptions\PaymentMethodNotSupportedException;
 use Src\Billing\Payments\Domain\Exceptions\SaleNotFoundException;
 use Src\Billing\Payments\Domain\Exceptions\SaleNotPayableException;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeRequest;
@@ -34,13 +35,18 @@ final readonly class StartPayment
 
     /**
      * Start the payment of an open sale: it is stored as pending, the provider is asked to charge it and the
-     * answer is stored. If the provider refuses or does not answer, nothing is stored.
+     * answer is stored. If the provider refuses or does not answer, nothing is stored. A way of paying that the
+     * configured provider does not offer (SINPE Móvil with PayPal) is refused before anything is stored or sent.
      */
     public function execute(StartPaymentCommand $command, DateTimeImmutable $now): PaymentDetails
     {
         $negocioId = $this->context->current();
         $saleId = new SaleId($command->saleId);
         $method = PaymentMethod::tryFrom($command->method) ?? throw new InvalidValueException('payments.method_invalid');
+
+        if (! in_array($method, $this->gateway->supportedMethods(), true)) {
+            throw PaymentMethodNotSupportedException::create($method->value, $this->gateway->provider());
+        }
 
         $payment = $this->transaction->run(function () use ($command, $negocioId, $saleId, $method, $now): Payment {
             $sale = $this->sales->find($saleId) ?? throw SaleNotFoundException::create();

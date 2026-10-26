@@ -45,6 +45,7 @@ final class PaymentResource extends JsonResource
             'resuelto_en' => $this->payment->settledAt === null ? null : $this->atom($this->payment->settledAt),
             'instrucciones' => $this->instructions(),
             'url_aprobacion' => $this->payment->status === PaymentStatus::Pending->value ? $this->payment->approvalUrl : null,
+            'referencia_reembolso' => $this->payment->refundReference,
         ];
     }
 
