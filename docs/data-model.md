@@ -159,6 +159,29 @@ Una fila por cada cambio del stock, para la trazabilidad.
 | `subtotal` | `numeric(12,2)` | |
 | `created_at`, `updated_at` | `timestamptz` | |
 
+## Tablas de cobros
+
+### pagos
+
+| Columna | Tipo | Detalle |
+| --- | --- | --- |
+| `id` | `uuid` | Llave primaria |
+| `negocio_id` | `uuid` | Llave foránea a `negocios` |
+| `venta_id` | `uuid` | Llave foránea compuesta `(venta_id, negocio_id)` a `ventas` |
+| `abono_id` | `uuid` | Opcional; reservado para abonos de fiado (el pago es de una venta o de un abono, nunca de ambos) |
+| `proveedor` | `varchar(20)` | `onvo` o `paypal` |
+| `metodo_pago` | `varchar(20)` | `tarjeta` o `sinpe_movil` |
+| `moneda` | `char(3)` | `CRC` |
+| `monto` | `numeric(12,2)` | Mayor que cero |
+| `estado` | `varchar(20)` | `pendiente`, `pagado` o `fallido` |
+| `referencia_externa` | `varchar(255)` | Identificador del cobro en el proveedor; único junto con `proveedor` |
+| `codigo_rechazo` | `varchar(100)` | Solo si el estado es `fallido` |
+| `payload` | `jsonb` | Respuesta reducida del proveedor, sin datos de tarjeta |
+| `resuelto_at` | `timestamptz` | Solo si el pago ya no está pendiente |
+| `created_at`, `updated_at` | `timestamptz` | |
+
+Un índice único parcial `pagos_venta_viva_unique` impide dos pagos pendientes o pagados para la misma venta. Tiene aislamiento por negocio con Row Level Security.
+
 ## Tablas de identidad
 
 ### users

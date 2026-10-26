@@ -95,3 +95,12 @@ Los términos de los contextos que aún no existen (fiado, abono, cobro con tarj
 
 - Los montos son colones con dos decimales. En el dominio son céntimos enteros (`Money`) y en la base `numeric(12,2)`.
 - Las fechas se muestran en ISO 8601 con el desfase de Costa Rica (`-06:00`). Un filtro por `fecha` se entiende como el día en Costa Rica.
+
+## Cobros
+
+| Término | Significado |
+| --- | --- |
+| Pago | Intento de cobrar una venta con un proveedor. Está `pendiente`, `pagado` o `fallido` |
+| Pasarela | Servicio externo que mueve el dinero (ONVO Pay, PayPal). El sistema la usa a través del puerto `PaymentGateway` |
+| Método de pago del proveedor | Identificador que el cliente crea directamente con el proveedor para la tarjeta; la API nunca ve el número |
+| SINPE Móvil | Transferencia que el comprador hace al número del negocio; el pago queda pendiente hasta que el proveedor la confirma |

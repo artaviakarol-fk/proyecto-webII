@@ -30,6 +30,16 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // ONVO Pay: only test keys (onvo_test_...) are accepted while the course lasts.
+    'onvo' => [
+        'secret' => env('ONVO_SECRET_KEY'),
+        'publishable' => env('ONVO_PUBLISHABLE_KEY'),
+        'webhook_secret' => env('ONVO_WEBHOOK_SECRET'),
+        'base_url' => env('ONVO_BASE_URL', 'https://api.onvopay.com/v1'),
+        // Number that receives the SINPE Móvil transfers unless the merchant has its own.
+        'sinpe_number' => env('ONVO_SINPE_NUMBER', '+50670196686'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

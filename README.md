@@ -185,5 +185,6 @@ Este proyecto se desarrolla con asistencia de IA (Claude, de Anthropic). Su uso 
 | Despliegue en el VPS | Archivos de Docker Compose, Caddy y la guía generados con asistencia de IA; la integrante hizo el ingreso al servidor | Revisado en el PR por la otra integrante; la API responde en la URL pública |
 | Alineación con SodaYa-Hexagonal | Comparación con el proyecto guía, cambios de código, pruebas y documentos (`docs/adr`, modelo de datos, base de datos, patrones, lenguaje ubicuo) generados con asistencia de IA | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde en CI |
 | Cierre de sesión y usuario actual | Código y pruebas generados con asistencia de IA, siguiendo el módulo `Identity/Users` del proyecto guía | Revisado en el PR por la otra integrante; pruebas en verde en CI |
+| Cobro con ONVO Pay, tarjeta y SINPE Móvil (#17) | Código, pruebas y documentos (`docs/adr/0010`) generados con asistencia de IA, siguiendo el módulo `Billing/Payments` del proyecto guía | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde; probado en el sandbox de ONVO con llaves de prueba |
 
 Esta tabla se actualiza conforme avanza el proyecto. Cada integrante debe poder explicar y modificar cualquier parte del código.
