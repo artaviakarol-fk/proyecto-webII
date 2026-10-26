@@ -18,6 +18,7 @@ Proyecto del curso **ISW-621 Web II**. API REST en **Laravel (PHP)** para la ges
 | [`docs/patterns.md`](docs/patterns.md) | Patrones de diseño adoptados, previstos y descartados. |
 | [`docs/ubiquitous-language.md`](docs/ubiquitous-language.md) | Glosario del negocio: el mismo término en el código, la base y la API. |
 | [`docs/despliegue.md`](docs/despliegue.md) | Despliegue en el VPS con Docker y Caddy. |
+| [`docs/informe-proveedores-pago.md`](docs/informe-proveedores-pago.md) | Informe comparativo de ONVO Pay y PayPal: comisiones, métodos, integración, webhooks, seguridad y disponibilidad en Costa Rica. |
 
 ## Arquitectura
 
@@ -185,5 +186,6 @@ Este proyecto se desarrolla con asistencia de IA (Claude, de Anthropic). Su uso 
 | Despliegue en el VPS | Archivos de Docker Compose, Caddy y la guía generados con asistencia de IA; la integrante hizo el ingreso al servidor | Revisado en el PR por la otra integrante; la API responde en la URL pública |
 | Alineación con SodaYa-Hexagonal | Comparación con el proyecto guía, cambios de código, pruebas y documentos (`docs/adr`, modelo de datos, base de datos, patrones, lenguaje ubicuo) generados con asistencia de IA | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde en CI |
 | Cierre de sesión y usuario actual | Código y pruebas generados con asistencia de IA, siguiendo el módulo `Identity/Users` del proyecto guía | Revisado en el PR por la otra integrante; pruebas en verde en CI |
+| Informe comparativo de proveedores de pago (#19) | Búsqueda en la documentación oficial y borrador del informe generados con asistencia de IA | Revisado en el PR por la otra integrante; lo que la documentación no confirma quedó marcado como por confirmar |
 
 Esta tabla se actualiza conforme avanza el proyecto. Cada integrante debe poder explicar y modificar cualquier parte del código.
