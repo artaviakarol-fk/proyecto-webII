@@ -2,7 +2,7 @@
 
 Investigación 1 del proyecto Minisúper Teresita (ISW-621 Web II). Comparamos las dos pasarelas que integramos en la API, para justificar cuál usamos por defecto y por qué el sistema las deja intercambiables con la variable `PAYMENT_GATEWAY`.
 
-Todo lo que dice este informe sale de la documentación oficial de cada proveedor, consultada el 25/10/2026. Lo que la documentación no dice lo marcamos como **por confirmar** y no lo damos por cierto. En ningún momento se procesa dinero real: usamos solo llaves y cuentas de prueba.
+Todo lo que dice este informe, salvo la sección 9, sale de la documentación oficial de cada proveedor, consultada el 25/10/2026. La sección 9 cuenta lo que vimos al integrar. Lo que la documentación no dice lo marcamos como **por confirmar** y no lo damos por cierto. En ningún momento se procesa dinero real: usamos solo llaves y cuentas de prueba.
 
 ## 1. Resumen
 
@@ -101,10 +101,41 @@ Mantenemos **PayPal como alternativa** por tres razones: su verificación de web
 | Reintentos del webhook de ONVO | Cantidad y espaciado | ONVO |
 | Vencimiento de un SINPE en `processing` | Cuánto espera ONVO la transferencia | ONVO |
 | Moneda en PayPal | Si acepta `CRC` en una cuenta de Costa Rica | PayPal |
+| PayPal contra el sandbox real | No se pudo probar: la cuenta de desarrollador pidió una tarjeta (ver sección 9) | Equipo |
 
 ## 9. Experiencia real de la integración
 
-> Esta sección se completa al terminar US-201 y US-202 con lo que encontremos al integrar: errores de cada proveedor, diferencias entre la documentación y el comportamiento real, y tiempos de respuesta en sandbox.
+Pruebas hechas el 26/10/2026 con llaves de prueba, sin dinero real. Usamos nuestro propio adaptador (`OnvoGateway`) contra el sandbox de ONVO. Cada medida es de una sola ejecución, desde una computadora en Costa Rica, y sirve solo como orden de magnitud.
+
+### ONVO Pay (probado en el sandbox real)
+
+| Prueba | Resultado |
+| --- | --- |
+| Crear el método de pago con la llave pública y la tarjeta `4242 4242 4242 4242` | HTTP 201. Bastaron número, vencimiento, CVV y nombre del titular; no pidió datos de facturación |
+| Crear la intención de cobro por ₡1 500 (`amount: 150000`) y confirmarla | Estado `succeeded`; ONVO devolvió el mismo monto y `CRC`. Tardó unos 1,9 s en total (dos llamadas) |
+| Consultar el estado después | `succeeded`, igual que en la confirmación |
+| Cobro con la tarjeta de rechazo `4000 0000 0000 0002` | Ver el hallazgo siguiente. Tardó unos 1,4 s |
+
+**Diferencias entre la documentación y el comportamiento real**
+
+1. **Un rechazo no es un error HTTP.** Esperábamos un 400 con un código `cards.*`. En el sandbox, confirmar con la tarjeta de rechazo respondió **HTTP 201** y dejó la intención en `requires_payment_method`. Nuestro adaptador trata ese estado como pago fallido, y además conserva el manejo del 400 `cards.*` que describe la documentación, por si aparece con otras tarjetas.
+2. **El motivo del rechazo no venía en la confirmación.** Estaba solo al consultar la intención, en `lastPaymentError` (`code: declined`, mensaje «Transaction declined due to test payment method used»). Primero guardábamos únicamente `requires_payment_method`, que no dice nada útil. Corregimos el adaptador para leer el motivo de esa consulta (el cambio está cubierto por pruebas con respuestas simuladas).
+3. **Datos de más.** La intención trae el método de pago completo (marca, últimos cuatro dígitos, vencimiento, titular) y los cargos. Por eso el adaptador guarda solo una lista corta de campos y descarta el resto.
+4. **Un detalle del modo de prueba:** el cargo aprobado trae `failureMessage` con el texto de rechazo de prueba aunque `isApproved` es verdadero y `failureCode` está vacío. El mensaje no es confiable para decidir el estado; usamos solo `status`.
+
+**Lo que no pudimos probar:** SINPE Móvil (depende de una transferencia que el sandbox simula con números de prueba y no la ejecutamos) y el webhook (llega en el Avance 2). Siguen valiendo los datos de la documentación y quedan marcados como por confirmar en la sección 8.
+
+### PayPal (no se probó contra el sandbox real)
+
+Para crear una app de pruebas hace falta una cuenta de desarrollador de PayPal y, en Costa Rica, el registro pidió **agregar una tarjeta**. Decidimos no hacerlo: no queríamos poner una tarjeta personal, ni la de una compañera, en un trabajo de clase.
+
+Por eso `PaypalGateway` está escrito a partir de la documentación oficial (Orders v2, OAuth 2.0, `PayPal-Request-Id`, captura de la orden, verificación de firma del webhook) y probado solo con respuestas simuladas. **No podemos afirmar cómo se comporta el sandbox real**: cuánto tarda, qué errores devuelve ni si acepta `CRC`. Por eso cobramos en dólares con un tipo de cambio configurable (`PAYPAL_COLONES_PER_DOLLAR`).
+
+Una diferencia de diseño que sí salió de la documentación: con PayPal el comprador aprueba el pago en una página de PayPal. El cobro queda `pendiente` con una dirección de aprobación y se captura cuando se consulta el pago después. Con ONVO el cliente crea el método de pago y el cobro se resuelve en la misma llamada.
+
+### Qué cambia en la recomendación
+
+Nada: ONVO sigue siendo la pasarela por defecto, y ahora con una integración que funcionó de punta a punta en el sandbox. Para PayPal, lo que queda pendiente es probar contra el sandbox real si alguien del equipo ya tiene una cuenta de desarrollador.
 
 ## Fuentes
 
