@@ -76,10 +76,33 @@ final readonly class OnvoGateway implements PaymentGateway
 
         $intentId = $this->text($intent['id'] ?? null) ?? throw GatewayUnavailableException::create();
 
-        return $this->resultOf($this->send(fn (PendingRequest $http): Response => $http->post(
+        $confirmed = $this->send(fn (PendingRequest $http): Response => $http->post(
             '/payment-intents/'.rawurlencode($intentId).'/confirm',
             ['paymentMethodId' => $request->methodToken],
-        )));
+        ));
+
+        return $this->resultOf($this->withDeclineReason($confirmed, $intentId));
+    }
+
+    /**
+     * ONVO answers a declined card with success and the intent back at requires_payment_method; the reason is only in
+     * lastPaymentError of the intent. If the confirmation does not carry it, the intent is read once more. If that read
+     * fails the answer is kept as it is: the payment is failed anyway.
+     *
+     * @param  array<string, mixed>  $confirmed
+     * @return array<string, mixed>
+     */
+    private function withDeclineReason(array $confirmed, string $intentId): array
+    {
+        if (($confirmed['status'] ?? null) !== 'requires_payment_method' || is_array($confirmed['lastPaymentError'] ?? null)) {
+            return $confirmed;
+        }
+
+        try {
+            return $this->send(fn (PendingRequest $http): Response => $http->get('/payment-intents/'.rawurlencode($intentId)));
+        } catch (GatewayUnavailableException) {
+            return $confirmed;
+        }
     }
 
     /** Ask ONVO for the payment intent; a read can be repeated when the connection fails. */
@@ -169,7 +192,19 @@ final readonly class OnvoGateway implements PaymentGateway
             default => PaymentStatus::Pending,
         };
 
-        return new ChargeResult($status, new ChargeReference($id), $status === PaymentStatus::Failed ? $state : null, array_intersect_key($intent, array_flip(self::KEPT_FIELDS)));
+        return new ChargeResult($status, new ChargeReference($id), $status === PaymentStatus::Failed ? $this->declineCodeOf($intent) ?? $state : null, array_intersect_key($intent, array_flip(self::KEPT_FIELDS)));
+    }
+
+    /**
+     * The code that ONVO gives for the last error of the payment, if there is one.
+     *
+     * @param  array<string, mixed>  $intent
+     */
+    private function declineCodeOf(array $intent): ?string
+    {
+        $error = $intent['lastPaymentError'] ?? null;
+
+        return is_array($error) ? $this->text($error['code'] ?? null) : null;
     }
 
     /** A non-empty text, or null. */

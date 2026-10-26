@@ -81,6 +81,41 @@ final class OnvoGatewayTest extends TestCase
         $this->assertSame('canceled', $result->declineCode);
     }
 
+    /** A declined card is a success for ONVO: the reason is read from the last error of the intent. */
+    public function test_a_declined_card_takes_its_reason_from_the_last_payment_error(): void
+    {
+        Http::fake([
+            'api.onvopay.com/v1/payment-intents' => Http::response(['id' => 'intent_1', 'status' => 'requires_payment_method'], 201),
+            'api.onvopay.com/v1/payment-intents/intent_1/confirm' => Http::response(['id' => 'intent_1', 'status' => 'requires_payment_method'], 201),
+            'api.onvopay.com/v1/payment-intents/intent_1' => Http::response([
+                'id' => 'intent_1',
+                'status' => 'requires_payment_method',
+                'lastPaymentError' => ['code' => 'declined', 'message' => 'Transaction declined due to test payment method used'],
+            ]),
+        ]);
+
+        $result = $this->gateway()->charge($this->request());
+
+        $this->assertSame(PaymentStatus::Failed, $result->status);
+        $this->assertSame('declined', $result->declineCode);
+        $this->assertArrayNotHasKey('lastPaymentError', $result->payload);
+    }
+
+    /** If the reason cannot be read the payment is failed anyway, with the state of the intent. */
+    public function test_a_declined_card_is_failed_even_if_the_reason_cannot_be_read(): void
+    {
+        Http::fake([
+            'api.onvopay.com/v1/payment-intents' => Http::response(['id' => 'intent_1', 'status' => 'requires_payment_method'], 201),
+            'api.onvopay.com/v1/payment-intents/intent_1/confirm' => Http::response(['id' => 'intent_1', 'status' => 'requires_payment_method'], 201),
+            'api.onvopay.com/v1/payment-intents/intent_1' => Http::response([], 500),
+        ]);
+
+        $result = $this->gateway()->charge($this->request());
+
+        $this->assertSame(PaymentStatus::Failed, $result->status);
+        $this->assertSame('requires_payment_method', $result->declineCode);
+    }
+
     /** A card that the bank refuses is a rejection with the code of the bank. */
     public function test_a_declined_card_is_a_rejection(): void
     {
