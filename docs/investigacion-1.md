@@ -19,7 +19,7 @@ Se cobra una **venta abierta**; el monto sale del total calculado en el servidor
 
 | Proveedor | Tarifa usada | Fijos | Total mensual | % de lo vendido |
 | --- | --- | --- | --- | --- |
-| ONVO (tarjeta) | 3,9 % + USD 0,25 | Liquidación USD 3 × 4 | **₡75.384** | 5,0 % |
+| ONVO (tarjeta) | 3,9 % + USD 0,35 | Liquidación USD 3 × 4 | **₡79.947** | 5,3 % |
 | ONVO (todo por SINPE) | 1,5 % | Liquidación USD 3 × 4 | **₡27.976** | 1,9 % |
 | PayPal | 5,40 % + USD 0,30 | Retiro en USD: 1 % (mín. USD 10) | **₡108.743** | 7,2 % |
 | Tilopay (tarjeta) | 4,25 % + USD 0,35 | Sin mensualidad | **₡79.721** | 5,3 % |
@@ -30,11 +30,11 @@ Se cobra una **venta abierta**; el monto sale del total calculado en el servidor
 **Cómo se calculó cada uno:**
 
 - **PayPal.** No admite el colón como moneda de cobro ([Currency codes](https://developer.paypal.com/reference/currency-codes/), 23/10/2026), así que se cobra en dólares: USD 3.287,17 al mes, USD 32,87 por venta. La tarifa para cuentas de Costa Rica es 5,40 % + USD 0,30 ([Comisiones PayPal CR, actualizada el 28/09/2026](https://www.paypal.com/cr/webapps/mpp/merchant-fees), 23/10/2026): USD 207,51. El retiro en dólares a un banco de Costa Rica cuesta 1 % del neto: USD 30,80. Retirar en colones suma 3,5 % de conversión.
-- **ONVO.** La página oficial de precios ([onvopay.com/pricing](https://onvopay.com/pricing)) no se pudo leer automáticamente y su documentación técnica no publica comisiones. Usamos los datos de [ecommercecr.com](https://ecommercecr.com/las-mejores-pasarelas-de-pago-en-costa-rica-para-ecommerce-2026/) (modificado el 30/09/2026, consultado el 26/10/2026): tarjeta 3,9 % + USD 0,25, SINPE 1,5 %, sin mensualidad, liquidación USD 3. **Por confirmar contra la página oficial antes de la entrega.**
+- **ONVO.** Página oficial ([Precios, ONVO](https://onvopay.com/pricing), 26/10/2026): tarjeta 3,9 % + USD 0,35, SINPE Móvil 1,5 %, sin costo de instalación ni mensualidad en e-commerce, liquidación USD 3.
 - **Tilopay.** Página oficial: sin mensualidad; no publica el costo de liquidar.
 - **GreenPay.** La FAQ oficial da setup de USD 150 (≈ ₡68.448, una sola vez), mensualidad de USD 30 + IVA (incluye 200 transacciones) y USD 2 por liquidación, pero **no publica el porcentaje**. Los terceros discrepan: 3,8 % según [elcolectivo506.com](https://elcolectivo506.com/pasarelas-de-pago-en-costa-rica-todo-lo-que-debo-saber/) y 4,8 % según [elperiodicocr.com](https://elperiodicocr.com/transando-dinero-digital-en-costa-rica-como-empezar-a-cobrar-por-internet-a-sus-clientes/) (23/10/2026). Por eso damos los dos escenarios. Además retiene 5,31 % de IVA y 1,76 % de renta; no es costo porque se acredita ante Hacienda, pero reduce el dinero que llega.
 
-**Discrepancias con terceros.** Para Tilopay, ecommercecr.com publica 4,5 % + USD 0,35 en tarjeta y 1,5 % en SINPE; la página oficial dice 4,25 % + USD 0,35 y 2 % + USD 0,35, y **vale la oficial**. Para PayPal, el blog [crie.cr](https://crie.cr/?p=23497) habla de 3,99 % + USD 0,30, contra 5,40 % de la tabla oficial.
+**Discrepancias con terceros.** Para ONVO, [ecommercecr.com](https://ecommercecr.com/las-mejores-pasarelas-de-pago-en-costa-rica-para-ecommerce-2026/) publica USD 0,25 fijos en tarjeta; la página oficial dice USD 0,35. Para Tilopay, ecommercecr.com publica 4,5 % + USD 0,35 en tarjeta y 1,5 % en SINPE; la página oficial dice 4,25 % + USD 0,35 y 2 % + USD 0,35, y **vale la oficial**. Para PayPal, el blog [crie.cr](https://crie.cr/?p=23497) habla de 3,99 % + USD 0,30, contra 5,40 % de la tabla oficial.
 
 ## 3. SINPE Móvil
 
@@ -49,7 +49,7 @@ En el código, cada pasarela lo declara con `supportedMethods()`: ONVO devuelve 
 
 | Proveedor | Vía |
 | --- | --- |
-| ONVO | Liquida en colones a una cuenta local; mínimo USD 30 o ₡20.000 (dato de terceros, por confirmar) |
+| ONVO | Liquidación diaria, semanal, bisemanal o mensual a la cuenta bancaria, USD 3 cada una (página oficial) |
 | PayPal | Saldo en PayPal y retiro a un banco de Costa Rica (₡625 en CRC, o 1 % mínimo USD 10 en USD) o de EE. UU. (3 %) |
 | Tilopay | A cualquier cuenta de cualquier entidad, con la frecuencia que el comercio elija (página oficial) |
 | GreenPay | A una cuenta IBAN local en colones o dólares: diaria (T+1), semanal, quincenal o mensual |
@@ -116,7 +116,7 @@ El adaptador lanza `RefundNotSupportedException` y el reembolso se hace desde el
 
 **Cambiaríamos de proveedor si:**
 
-- La comisión oficial de ONVO resulta mayor a la de Tilopay (4,25 % + USD 0,35). En ese caso Tilopay pasaría a principal, siempre que publique o nos entregue su algoritmo de `orderHash`.
+- ONVO sube su tarifa por encima de la de Tilopay (4,25 % + USD 0,35). En ese caso Tilopay pasaría a principal, siempre que nos entregue su algoritmo de `orderHash`.
 - El volumen supera las 200 ventas mensuales con tarjeta. Ahí conviene renegociar con GreenPay, cuya mensualidad fija se diluye.
 - ONVO tiene caídas repetidas. Ahí PayPal entra como respaldo, aceptando el 7,2 % de costo.
 
