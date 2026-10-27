@@ -229,6 +229,8 @@ curl $H -H "Authorization: Bearer $TOKEN" -X POST $API/ventas/$VENTA/pago -d '{"
 curl $H -H "Authorization: Bearer $TOKEN" $API/ventas/$VENTA/pago
 ```
 
+Con cualquiera de los dos proveedores, cuando el pago queda `pagado` la venta pasa a `cobrada` en la misma transacción (con método `tarjeta` o `sinpe_movil`). Un reembolso anula la venta y devuelve su inventario.
+
 `sinpe_movil` con PayPal responde `422`: PayPal declara que solo admite tarjeta. El reembolso con PayPal responde `409` y se hace desde su panel (motivo en el informe).
 
 ### Datos de prueba
@@ -299,7 +301,7 @@ Este proyecto se desarrolla con asistencia de IA (Claude, de Anthropic). Su uso 
 | Alineación con SodaYa-Hexagonal | Comparación con el proyecto guía, cambios de código, pruebas y documentos (`docs/adr`, modelo de datos, base de datos, patrones, lenguaje ubicuo) generados con asistencia de IA | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde en CI |
 | Cierre de sesión y usuario actual | Código y pruebas generados con asistencia de IA, siguiendo el módulo `Identity/Users` del proyecto guía | Revisado en el PR por la otra integrante; pruebas en verde en CI |
 | Cobro con ONVO Pay, tarjeta y SINPE Móvil (#17) | Código, pruebas y documentos (`docs/adr/0010`) generados con asistencia de IA, siguiendo el módulo `Billing/Payments` del proyecto guía | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde; probado en el sandbox de ONVO con llaves de prueba |
-| Cobro con PayPal intercambiable por configuración (#18) | Código y pruebas generados con asistencia de IA, siguiendo el puerto `PaymentGateway` del #17 | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde; PayPal se probó con respuestas simuladas |
-| Reembolso en ONVO y medios soportados por pasarela | Código, pruebas, migración, informe `docs/investigacion-1.md` y esta sección del README generados con asistencia de IA (Claude); la integrante pidió los cambios y revisó cada archivo | Revisado en el PR por la otra integrante; 728 pruebas, Pint y PHPStan nivel 8 en verde; precios y requisitos verificados contra las fuentes citadas |
+| Cobro con PayPal intercambiable por configuración (#18) | Código y pruebas generados con asistencia de IA, siguiendo el puerto `PaymentGateway` del #17 | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde; PayPal se probó con respuestas simuladas y en el sandbox real (orden, aprobación y captura) |
+| Reembolso en ONVO y medios soportados por pasarela | Código, pruebas, migración, informe `docs/investigacion-1.md` y esta sección del README generados con asistencia de IA (Claude); la integrante pidió los cambios y revisó cada archivo | Revisado en el PR por la otra integrante; 729 pruebas, Pint y PHPStan nivel 8 en verde; reembolso real probado en el sandbox de ONVO; la venta pasa a cobrada con su pago; precios y requisitos verificados contra las fuentes citadas |
 
 Esta tabla se actualiza conforme avanza el proyecto. Cada integrante debe poder explicar y modificar cualquier parte del código.

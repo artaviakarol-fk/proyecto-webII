@@ -56,7 +56,7 @@ En el código, cada pasarela lo declara con `supportedMethods()`: ONVO devuelve 
 
 ## 5. Cómo verifica cada proveedor que una notificación es suya
 
-Este es el punto que más diferencia a los cuatro. Ordenados del más robusto al más débil:
+Ordenados del más robusto al más débil:
 
 1. **PayPal: firma asimétrica.** Cada webhook trae los encabezados `PAYPAL-TRANSMISSION-ID`, `-TIME`, `-SIG`, `PAYPAL-CERT-URL` y `PAYPAL-AUTH-ALGO`. PayPal firma con RSA-SHA256 la cadena `id|hora|webhook_id|CRC32(cuerpo)`. Se verifica con su certificado público o con `POST /v1/notifications/verify-webhook-signature` ([PayPal](https://docs.paypal.ai/reference/api/rest/verify-webhook-signature/verify-webhook-signature), 23/10/2026). Es la más sólida: no hay secreto compartido que se pueda filtrar, y la firma cubre contenido, `webhook_id` y hora, así que detecta mensajes alterados o repetidos. Hay que validar que `PAYPAL-CERT-URL` sea de un dominio de PayPal.
 2. **ONVO: secreto compartido.** Envía el secreto en el encabezado `X-Webhook-Secret` ([Webhooks, ONVO](https://docs.onvopay.com/en/webhooks), 25/10/2026). No firma el cuerpo: quien obtenga el secreto puede fabricar cualquier aviso, y un aviso alterado no se detecta. Nuestro adaptador lo compara en tiempo constante (`hash_equals`).
@@ -72,14 +72,12 @@ En esta entrega no hay webhooks (Avance 2): el estado **siempre se consulta al p
 - Cobro aprobado con `4242 4242 4242 4242` por ₡1.500 (`amount: 150000`): unos 1,9 s en total.
 - **La documentación no coincidió con el sandbox.** Un rechazo con `4000 0000 0000 0002` no devolvió un 400 `cards.*`, sino **HTTP 201** con la intención en `requires_payment_method`.
 - **El motivo del rechazo no venía en la confirmación,** solo al volver a consultar la intención (`lastPaymentError`). Hubo que corregir el adaptador.
-- **La intención trae datos de la tarjeta y del titular,** así que solo guardamos una lista corta de campos.
 - **SINPE Móvil** con el número de prueba `+50688888888`: el cobro quedó `pendiente` y pasó a `pagado` a los 15 s, como dice la documentación.
 
 **PayPal** (Karol, 26/10/2026, sandbox real):
 
-- Al registrar la cuenta en Costa Rica, PayPal pidió **agregar una tarjeta** y no dejó avanzar sin ella. No vinculamos ninguna; al día siguiente, con la misma cuenta, el panel de desarrolladores abrió sin pedirla.
+- Al registrar la cuenta en Costa Rica, PayPal pidió **agregar una tarjeta**; no vinculamos ninguna y al día siguiente el panel abrió sin pedirla.
 - Crear la orden de ₡3.000 (USD 6,00) tardó unos **7,7 s**. Después de aprobarla con la cuenta compradora, capturarla tardó unos **4,1 s** y la orden quedó `COMPLETED`. ONVO respondió en 1,4 a 1,9 s.
-- El flujo es más largo: token OAuth, crear la orden, aprobación del comprador en la página de PayPal y captura.
 
 **PayPal fue la más difícil:** el tiempo se fue en aprobación, captura y conversión de moneda; en ONVO, en las diferencias entre documentación y sandbox.
 
@@ -91,6 +89,8 @@ En esta entrega no hay webhooks (Avance 2): el estado **siempre se consulta al p
   - Un índice único parcial impide dos pagos vivos por venta.
   - PayPal recibe `PayPal-Request-Id`, así un reintento devuelve la misma orden.
 - **Al consultar.** Leer el estado sí se reintenta hasta 3 veces. Si el proveedor sigue caído, el pago conserva su estado guardado (por ejemplo, `pendiente`).
+
+**Pago y venta van juntos.** Cuando un pago queda `pagado`, la venta pasa a `cobrada` en la misma transacción, con su forma de pago; si algo falla, se revierte todo. Un reembolso anula la venta y devuelve el inventario.
 
 **Reembolso en PayPal: por qué no se implementó.** Se haría con `POST /v2/payments/captures/{capture_id}/refund`, pero exige guardar el id de la captura (hoy guardamos el de la orden) y el monto volvería en dólares con otro tipo de cambio. El enunciado solo lo exige en ONVO. El adaptador lanza `RefundNotSupportedException` y el reembolso se hace desde el panel de PayPal.
 
