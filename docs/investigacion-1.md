@@ -1,8 +1,8 @@
 # Investigación 1: cobro con dos pasarelas y comparación de proveedores
 
-Minisúper Teresita · ISW-621 Programación en Ambiente Web II · Karol Artavia y Jania Hernández.
+Minisúper Teresita · ISW-621 · Karol Artavia y Jania Hernández.
 
-Se cobra una **venta abierta**; el monto sale del total calculado en el servidor. ONVO y PayPal están integrados detrás de `PaymentGateway` (`docs/adr/0010`); Tilopay y GreenPay se analizan con su documentación. Sin dinero real.
+Se cobra una **venta abierta** y el monto sale del servidor. ONVO y PayPal están integrados detrás de `PaymentGateway` (`docs/adr/0010`); Tilopay y GreenPay se analizan con su documentación.
 
 **Ejemplo de costos del enunciado:** 100 cobros de ₡15.000 al mes = **₡1.500.000**. Para pasar dólares a colones usamos el tipo de cambio de referencia de venta del BCCR del 26/10/2026, **₡456,32** ([Telediario, con dato del BCCR](https://www.telediario.cr/nacional/dolar-costa-rica-tipo-cambio-lunes-26-octubre), consultado el 26/10/2026). Suponemos una liquidación por semana (4 al mes) donde el proveedor la cobra.
 
@@ -49,9 +49,9 @@ En el código, cada pasarela lo declara con `supportedMethods()`: ONVO devuelve 
 
 | Proveedor | Vía |
 | --- | --- |
-| ONVO | Liquidación diaria, semanal, bisemanal o mensual a la cuenta bancaria, USD 3 cada una (página oficial) |
+| ONVO | Liquidación diaria, semanal, bisemanal o mensual a la cuenta bancaria, USD 3 cada una |
 | PayPal | Saldo en PayPal y retiro a un banco de Costa Rica (₡625 en CRC, o 1 % mínimo USD 10 en USD) o de EE. UU. (3 %) |
-| Tilopay | A cualquier cuenta de cualquier entidad, con la frecuencia que el comercio elija (página oficial) |
+| Tilopay | A cualquier cuenta de cualquier entidad, con la frecuencia que el comercio elija |
 | GreenPay | A una cuenta IBAN local en colones o dólares: diaria (T+1), semanal, quincenal o mensual |
 
 ## 5. Cómo verifica cada proveedor que una notificación es suya
@@ -59,7 +59,7 @@ En el código, cada pasarela lo declara con `supportedMethods()`: ONVO devuelve 
 Este es el punto que más diferencia a los cuatro. Ordenados del más robusto al más débil:
 
 1. **PayPal: firma asimétrica.** Cada webhook trae los encabezados `PAYPAL-TRANSMISSION-ID`, `-TIME`, `-SIG`, `PAYPAL-CERT-URL` y `PAYPAL-AUTH-ALGO`. PayPal firma con RSA-SHA256 la cadena `id|hora|webhook_id|CRC32(cuerpo)`. Se verifica con su certificado público o con `POST /v1/notifications/verify-webhook-signature` ([PayPal](https://docs.paypal.ai/reference/api/rest/verify-webhook-signature/verify-webhook-signature), 23/10/2026). Es la más sólida: no hay secreto compartido que se pueda filtrar, y la firma cubre contenido, `webhook_id` y hora, así que detecta mensajes alterados o repetidos. Hay que validar que `PAYPAL-CERT-URL` sea de un dominio de PayPal.
-2. **ONVO: secreto compartido.** Envía el secreto en el encabezado `X-Webhook-Secret` ([Webhooks, ONVO](https://docs.onvopay.com/en/webhooks), 25/10/2026). No firma el cuerpo: quien obtenga el secreto puede fabricar cualquier aviso, y un aviso alterado no se detecta. Nuestro adaptador lo compara en tiempo constante (`hash_equals`). Como el webhook solo trae el `id`, siempre volvemos a consultar la intención en ONVO.
+2. **ONVO: secreto compartido.** Envía el secreto en el encabezado `X-Webhook-Secret` ([Webhooks, ONVO](https://docs.onvopay.com/en/webhooks), 25/10/2026). No firma el cuerpo: quien obtenga el secreto puede fabricar cualquier aviso, y un aviso alterado no se detecta. Nuestro adaptador lo compara en tiempo constante (`hash_equals`).
 3. **Tilopay: `orderHash` con algoritmo no público.** La documentación dice que su algoritmo no es público, que hay que pedirlo a soporte, y recomienda confirmar el estado por la API antes de decisiones irreversibles ([Webhooks, Tilopay](https://tilopay.com/en/developers/api/webhooks), 26/10/2026). No se puede auditar ni implementar sin esa respuesta.
 4. **GreenPay: sin mecanismo documentado.** El webhook del checkout envía un JSON con `status`, `orderId` y autorización, sin firma ni secreto ([Checkoutform webhook](https://support.greenpay.me/portal/es/kb/articles/checkoutform-webhook), 23/10/2026). Cualquiera que conozca la URL podría enviar `"status": 200`.
 
@@ -73,14 +73,13 @@ En esta entrega no hay webhooks (Avance 2): el estado **siempre se consulta al p
 - **La documentación no coincidió con el sandbox.** Un rechazo con `4000 0000 0000 0002` no devolvió un 400 `cards.*`, sino **HTTP 201** con la intención en `requires_payment_method`.
 - **El motivo del rechazo no venía en la confirmación,** solo al volver a consultar la intención (`lastPaymentError`). Hubo que corregir el adaptador.
 - **La intención trae datos de la tarjeta y del titular,** así que solo guardamos una lista corta de campos.
+- **SINPE Móvil** con el número de prueba `+50688888888`: el cobro quedó `pendiente` y pasó a `pagado` a los 15 s, como dice la documentación.
 
-**PayPal:**
+**PayPal** (Karol, 26/10/2026, sandbox real):
 
-- Al crear la cuenta de desarrollador en Costa Rica, el registro pidió **una tarjeta**. Por eso el adaptador se escribió primero con la documentación y respuestas simuladas.
-- El flujo es más largo que el de ONVO: token OAuth, crear la orden en USD, aprobación del comprador en la página de PayPal y captura posterior.
-- La conversión de colones a dólares obligó a un tipo de cambio configurable (`PAYPAL_COLONES_PER_DOLLAR`).
-
-_(Completar con la prueba real en el sandbox: fecha, tiempos y errores encontrados.)_
+- Al registrar la cuenta en Costa Rica, PayPal pidió **agregar una tarjeta** y no dejó avanzar sin ella. No vinculamos ninguna; al día siguiente, con la misma cuenta, el panel de desarrolladores abrió sin pedirla.
+- Crear la orden de ₡3.000 (USD 6,00) tardó unos **7,7 s**. Después de aprobarla con la cuenta compradora, capturarla tardó unos **4,1 s** y la orden quedó `COMPLETED`. ONVO respondió en 1,4 a 1,9 s.
+- El flujo es más largo: token OAuth, crear la orden, aprobación del comprador en la página de PayPal y captura.
 
 **PayPal fue la más difícil:** el tiempo se fue en aprobación, captura y conversión de moneda; en ONVO, en las diferencias entre documentación y sandbox.
 
@@ -92,16 +91,8 @@ _(Completar con la prueba real en el sandbox: fecha, tiempos y errores encontrad
   - Un índice único parcial impide dos pagos vivos por venta.
   - PayPal recibe `PayPal-Request-Id`, así un reintento devuelve la misma orden.
 - **Al consultar.** Leer el estado sí se reintenta hasta 3 veces. Si el proveedor sigue caído, el pago conserva su estado guardado (por ejemplo, `pendiente`).
-- **Al reembolsar.** El reembolso de ONVO sigue la misma regla que el cobro: no se reintenta y el pago queda `pagado` si no hay respuesta.
 
-**Reembolso en PayPal: por qué no se implementó.**
-
-- Se haría con `POST /v2/payments/captures/{capture_id}/refund` y `PayPal-Request-Id`.
-- Requiere guardar el id de la **captura** (hoy guardamos el de la orden).
-- El monto volvería en dólares con un tipo de cambio distinto al del cobro.
-- El enunciado solo lo exige en ONVO.
-
-El adaptador lanza `RefundNotSupportedException` y el reembolso se hace desde el panel de PayPal.
+**Reembolso en PayPal: por qué no se implementó.** Se haría con `POST /v2/payments/captures/{capture_id}/refund`, pero exige guardar el id de la captura (hoy guardamos el de la orden) y el monto volvería en dólares con otro tipo de cambio. El enunciado solo lo exige en ONVO. El adaptador lanza `RefundNotSupportedException` y el reembolso se hace desde el panel de PayPal.
 
 ## 8. Recomendación
 
