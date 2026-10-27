@@ -161,6 +161,121 @@ Cuentas de demostración (`php artisan db:seed`, contraseña `password`, datos f
 
 El archivo `.env` **no se sube al repositorio**. Se copia desde `api/.env.example` y cada integrante o servidor define sus propios valores.
 
+## Cobro con ONVO Pay y PayPal (Investigación 1)
+
+Una venta abierta se cobra con la pasarela que diga `PAYMENT_GATEWAY`. El monto sale del total de la venta en el servidor; el cliente nunca lo envía. Comparación de proveedores y decisiones: [docs/investigacion-1.md](docs/investigacion-1.md). Diseño: [ADR 0010](docs/adr/0010-payments-through-a-gateway-port.md).
+
+### Variables de entorno
+
+Copie `api/.env.example` a `api/.env` y llene solo las de la pasarela que va a usar. **Solo se aceptan credenciales de prueba**: ONVO rechaza llaves que no empiecen con `onvo_test_` y PayPal solo acepta `api-m.sandbox.paypal.com`. El `.env` real nunca se sube.
+
+| Variable | Para qué |
+|---|---|
+| `PAYMENT_GATEWAY` | `onvo` (por defecto) o `paypal` |
+| `ONVO_SECRET_KEY` | Llave secreta de prueba (`onvo_test_...`), en el panel de ONVO, modo prueba |
+| `ONVO_PUBLISHABLE_KEY` | Llave pública de prueba; la usa el cliente para crear el método de pago |
+| `ONVO_SINPE_NUMBER` | Número que se muestra para transferir por SINPE Móvil (opcional) |
+| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | Credenciales de la app REST del sandbox: developer.paypal.com → *Apps & Credentials* |
+| `PAYPAL_COLONES_PER_DOLLAR` | Tipo de cambio para convertir el total a USD (PayPal no cobra colones). Ej.: `456.32` |
+| `PAYPAL_RETURN_URL`, `PAYPAL_CANCEL_URL` | A dónde vuelve el comprador después de aprobar o cancelar en PayPal (opcionales) |
+
+### Cambiar de pasarela
+
+Solo se cambia una línea del `.env`, sin tocar código:
+
+```bash
+PAYMENT_GATEWAY=paypal   # o onvo
+```
+
+Luego `php artisan config:clear` (o `docker compose restart api`). Los controladores no nombran a ningún proveedor: `PaymentsServiceProvider` es el único lugar que lo hace.
+
+### Flujo completo
+
+Con la API corriendo y `db:seed` hecho (ver *Puesta en marcha*):
+
+```bash
+API=http://localhost:8000/api/v1
+H='-H Content-Type:application/json -H Accept:application/json'
+
+# 1. Token de caja y una venta abierta (use el id de un producto de GET $API/productos)
+TOKEN=$(curl -s $H -X POST $API/tokens -d '{"correo":"caja@teresita.test","contrasena":"password","dispositivo":"demo"}' | jq -r .data.token)
+VENTA=$(curl -s $H -H "Authorization: Bearer $TOKEN" -X POST $API/ventas \
+  -d '{"lineas":[{"producto_id":"<id>","cantidad":1}]}' | jq -r .data.id)
+```
+
+**Con ONVO.** El método de pago lo crea el cliente directamente en ONVO (`POST https://api.onvopay.com/v1/payment-methods`); la API solo recibe su id:
+
+```bash
+# Tarjeta aprobada: queda "pagado" en la misma llamada
+curl $H -H "Authorization: Bearer $TOKEN" -X POST $API/ventas/$VENTA/pago \
+  -d '{"metodo_pago":"tarjeta","metodo_proveedor_id":"<id del método creado en ONVO>"}'
+
+# SINPE Móvil: queda "pendiente" con instrucciones; se consulta hasta que ONVO lo confirme
+curl $H -H "Authorization: Bearer $TOKEN" -X POST $API/ventas/$VENTA/pago \
+  -d '{"metodo_pago":"sinpe_movil","metodo_proveedor_id":"<id del método SINPE>"}'
+curl $H -H "Authorization: Bearer $TOKEN" $API/ventas/$VENTA/pago
+
+# Reembolso (solo administración: use el token de admin@teresita.test)
+curl $H -H "Authorization: Bearer $ADMIN_TOKEN" -X POST $API/ventas/$VENTA/pago/reembolso
+```
+
+**Con PayPal** (`PAYMENT_GATEWAY=paypal`):
+
+```bash
+# 1. Crea la orden en USD; responde "pendiente" con url_aprobacion
+curl $H -H "Authorization: Bearer $TOKEN" -X POST $API/ventas/$VENTA/pago -d '{"metodo_pago":"tarjeta"}'
+# 2. Abra url_aprobacion e inicie sesión con la cuenta COMPRADORA del sandbox
+# 3. Al consultar, la API captura la orden y queda "pagado"
+curl $H -H "Authorization: Bearer $TOKEN" $API/ventas/$VENTA/pago
+```
+
+Con cualquiera de los dos proveedores, cuando el pago queda `pagado` la venta pasa a `cobrada` en la misma transacción (con método `tarjeta` o `sinpe_movil`). Un reembolso anula la venta y devuelve su inventario.
+
+`sinpe_movil` con PayPal responde `422`: PayPal declara que solo admite tarjeta. El reembolso con PayPal responde `409` y se hace desde su panel (motivo en el informe).
+
+### Datos de prueba
+
+| Caso | Dato |
+|---|---|
+| ONVO, tarjeta aprobada | `4242424242424242`, cualquier vencimiento futuro, CVV `123`, cualquier titular |
+| ONVO, tarjeta rechazada | `4000000000000002` |
+| ONVO, error del procesador | `4000000000000119` |
+| ONVO, SINPE aprobado (a los 15 s) | número `+50688888888` |
+| ONVO, SINPE que nunca llega | número `+50688889521` |
+| PayPal | cuenta compradora *personal* del sandbox: developer.paypal.com → *Testing Tools → Sandbox Accounts* |
+
+Fuente: [Pruebas, ONVO](https://docs.onvopay.com/en/payments/testing) (consultado el 26/10/2026).
+
+### Diagrama del flujo de cobro
+
+```mermaid
+flowchart TD
+    A[POST /ventas/:id/pago] --> B{¿Venta abierta y sin pago vivo?}
+    B -- no --> X[409 / 404]
+    B -- sí --> C{¿El medio está en supportedMethods de la pasarela?}
+    C -- no --> Y[422]
+    C -- sí --> D[Guardar pago pendiente con el total del servidor]
+    D --> E[[PaymentGateway::charge]]
+    E --> F{Respuesta}
+    F -- aprobado --> G[pagado]
+    F -- pendiente --> H[pendiente]
+    F -- rechazado --> R[409 y no se guarda]
+    F -- sin respuesta --> U[503 + Retry-After y no se guarda]
+    H --> I[GET /ventas/:id/pago]
+    I --> J[[PaymentGateway::status]] --> G
+
+    subgraph ONVO [Solo ONVO]
+      E1[POST /payment-intents en céntimos<br/>+ /confirm con el método del cliente]
+    end
+    subgraph PAYPAL [Solo PayPal]
+      E2[OAuth + POST /v2/checkout/orders en USD<br/>el comprador aprueba · captura al consultar]
+    end
+    E -.ONVO.-> E1
+    E -.PayPal.-> E2
+```
+
+Lo común (validación, monto del servidor, transacción, idempotencia, estados) vive en `StartPayment`, `GetPayment` y `RefundPayment`. Lo que cambia por proveedor (formato del monto, moneda, llamadas HTTP, traducción de estados) vive solo en `OnvoGateway` y `PaypalGateway`.
+
 ## Uso de inteligencia artificial
 
 Este proyecto se desarrolla con asistencia de IA (Claude, de Anthropic). Su uso se declara aquí con honestidad:
@@ -185,5 +300,8 @@ Este proyecto se desarrolla con asistencia de IA (Claude, de Anthropic). Su uso 
 | Despliegue en el VPS | Archivos de Docker Compose, Caddy y la guía generados con asistencia de IA; la integrante hizo el ingreso al servidor | Revisado en el PR por la otra integrante; la API responde en la URL pública |
 | Alineación con SodaYa-Hexagonal | Comparación con el proyecto guía, cambios de código, pruebas y documentos (`docs/adr`, modelo de datos, base de datos, patrones, lenguaje ubicuo) generados con asistencia de IA | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde en CI |
 | Cierre de sesión y usuario actual | Código y pruebas generados con asistencia de IA, siguiendo el módulo `Identity/Users` del proyecto guía | Revisado en el PR por la otra integrante; pruebas en verde en CI |
+| Cobro con ONVO Pay, tarjeta y SINPE Móvil (#17) | Código, pruebas y documentos (`docs/adr/0010`) generados con asistencia de IA, siguiendo el módulo `Billing/Payments` del proyecto guía | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde; probado en el sandbox de ONVO con llaves de prueba |
+| Cobro con PayPal intercambiable por configuración (#18) | Código y pruebas generados con asistencia de IA, siguiendo el puerto `PaymentGateway` del #17 | Revisado en el PR por la otra integrante; pruebas, Pint y PHPStan nivel 8 en verde; PayPal se probó con respuestas simuladas y en el sandbox real (orden, aprobación y captura) |
+| Reembolso en ONVO y medios soportados por pasarela | Código, pruebas, migración, informe `docs/investigacion-1.md` y esta sección del README generados con asistencia de IA (Claude); la integrante pidió los cambios y revisó cada archivo | Revisado en el PR por la otra integrante; 729 pruebas, Pint y PHPStan nivel 8 en verde; reembolso real probado en el sandbox de ONVO; la venta pasa a cobrada con su pago; precios y requisitos verificados contra las fuentes citadas |
 
 Esta tabla se actualiza conforme avanza el proyecto. Cada integrante debe poder explicar y modificar cualquier parte del código.

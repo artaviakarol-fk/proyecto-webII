@@ -20,6 +20,7 @@ Ningún patrón se usa por tenerlo. Cada uno resuelve un problema concreto del p
 | Unidad de trabajo | `TransactionRunner` y `NegocioTransaction` | Que una entrada o una venta guarde todo o nada, dentro de la transacción del negocio |
 | Transacción y bloqueo pesimista | `DatabaseSaleRepository`, `EloquentGoodsReceiptRepository`, `DatabaseExpiredUnitsRepository` | Que dos cajas no vendan la misma última unidad: `FOR UPDATE` en el orden de los identificadores |
 | Estado como enum con transiciones | `SaleStatus` en `Sales/Sales`, `ExpiredUnitsStatus` en `Inventory/Expirations` | Impedir un cambio de estado inválido (una venta anulada es definitiva) |
+| Strategy y capa anticorrupción | `PaymentGateway` y `Billing/Payments/Infrastructure/Gateways` | Cambiar de pasarela de pago por configuración y traducir la API de cada proveedor al dominio (ADR 0010) |
 | Documento de problema | `ProblemDetailsRenderer` y `ProblemType` | Todos los errores salen en RFC 9457 con el mismo formato |
 
 ## Patrones previstos
@@ -27,9 +28,8 @@ Ningún patrón se usa por tenerlo. Cada uno resuelve un problema concreto del p
 | Patrón | Módulo | Para qué |
 | --- | --- | --- |
 | Policy | Cuentas y roles (Avance 2) | Decidir quién puede hacer qué además de la ability del token |
-| Strategy | Cobros (Investigación 1) | Cambiar entre ONVO Pay y PayPal por configuración sin tocar el caso de uso |
 | Clave de idempotencia | Webhook de cobro | Que un reintento del proveedor no confirme dos veces el mismo cobro |
-| Capa anticorrupción | Pasarelas de pago y WhatsApp | Traducir la forma de cada API externa a objetos del dominio |
+| Capa anticorrupción | WhatsApp | Traducir la forma de cada API externa a objetos del dominio |
 | Observer (eventos de dominio) | Ventas y avisos | Avisar a otros contextos sin acoplarlos |
 
 ## Descartados

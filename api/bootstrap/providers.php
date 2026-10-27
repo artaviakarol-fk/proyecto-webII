@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Providers\AppServiceProvider;
+use Src\Billing\Payments\Infrastructure\PaymentsServiceProvider;
 use Src\Identity\Users\Infrastructure\UsersServiceProvider;
 use Src\Inventory\Expirations\Infrastructure\ExpirationsServiceProvider;
 use Src\Inventory\Products\Infrastructure\ProductsServiceProvider;
@@ -22,4 +23,5 @@ return [
     ReceiptsServiceProvider::class,
     ExpirationsServiceProvider::class,
     SalesServiceProvider::class,
+    PaymentsServiceProvider::class,
 ];

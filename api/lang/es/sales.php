@@ -8,6 +8,7 @@ return [
     'sale_without_lines' => 'La venta debe tener al menos una línea.',
     'duplicate_product' => 'Un producto solo puede aparecer una vez en la venta.',
     'quantity_out_of_range' => 'La cantidad debe ser un número entero entre 1 y :max.',
+    'payment_method_invalid' => 'La forma de pago de la venta no es válida.',
     'sale_not_open' => 'La venta ya no está abierta, por eso no se puede modificar ni cobrar.',
     'sale_already_cancelled' => 'La venta ya está anulada.',
     'product_unavailable' => 'Uno de los productos de la venta ya no está disponible.',

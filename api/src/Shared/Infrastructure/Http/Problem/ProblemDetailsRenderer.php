@@ -12,6 +12,7 @@ use Src\Shared\Domain\Exceptions\AuthenticationFailedException;
 use Src\Shared\Domain\Exceptions\DomainException;
 use Src\Shared\Domain\Exceptions\InvalidValueException;
 use Src\Shared\Domain\Exceptions\NotFoundException;
+use Src\Shared\Domain\Exceptions\ServiceUnavailableException;
 use Src\Shared\Infrastructure\Http\Middleware\AssignRequestId;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Throwable;
@@ -19,6 +20,9 @@ use Throwable;
 final readonly class ProblemDetailsRenderer
 {
     public const string CONTENT_TYPE = 'application/problem+json';
+
+    /** Seconds a client should wait before it tries again after a 503. */
+    public const int RETRY_AFTER_SECONDS = 30;
 
     /** Render any exception as an RFC 9457 problem document. */
     public function __invoke(Throwable $exception): JsonResponse
@@ -31,6 +35,7 @@ final readonly class ProblemDetailsRenderer
             $exception instanceof DomainException => $this->respond(
                 $this->typeOfDomainException($exception),
                 __($exception->translationKey(), $exception->parameters()),
+                headers: $exception instanceof ServiceUnavailableException ? ['Retry-After' => (string) self::RETRY_AFTER_SECONDS] : [],
             ),
             $exception instanceof AuthenticationException => $this->respond(ProblemType::Unauthenticated),
             $exception instanceof HttpExceptionInterface => $this->respond(
@@ -46,6 +51,7 @@ final readonly class ProblemDetailsRenderer
     {
         return match (true) {
             $exception instanceof NotFoundException => ProblemType::NotFound,
+            $exception instanceof ServiceUnavailableException => ProblemType::ServiceUnavailable,
             $exception instanceof InvalidValueException => ProblemType::InvalidData,
             $exception instanceof AuthenticationFailedException => ProblemType::InvalidCredentials,
             default => ProblemType::Conflict,

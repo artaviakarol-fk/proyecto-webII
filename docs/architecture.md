@@ -43,6 +43,7 @@ Propuesta a partir de la ficha del proyecto; cada uno se crea cuando llegue su p
 | --- | --- | --- |
 | `Inventory` | `Products`, `Batches` | Stock, lotes con fecha de vencimiento, bloqueo de productos vencidos |
 | `Sales` | `Sales`, `CashShifts` | Venta en caja, control de edad para licor, cierre y cuadre de caja |
+| `Billing` | `Payments` | Cobro de ventas con tarjeta y SINPE Móvil mediante una pasarela intercambiable (ONVO Pay, PayPal) |
 | `Credit` | `Customers` | Fiado con límite por cliente |
 | `Identity` | `Users` | Cuentas y roles: administrador, cajero y bodeguero. Login con tokens de Sanctum |
 | `Negocios` | `Profile`, `OpeningHours` | El negocio (inquilino) al que pertenece cada cuenta y cada dato, y su horario de atención semanal |

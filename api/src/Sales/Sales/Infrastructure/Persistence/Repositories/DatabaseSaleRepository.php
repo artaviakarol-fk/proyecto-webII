@@ -21,8 +21,6 @@ use Src\Shared\Domain\ValueObjects\NegocioId;
 
 final readonly class DatabaseSaleRepository implements SaleRepository
 {
-    public const string PAYMENT_METHOD = 'efectivo';
-
     public const string SALE_MOVEMENT = 'venta';
 
     public const string CANCELLATION_MOVEMENT = 'anulacion';
@@ -63,7 +61,7 @@ final readonly class DatabaseSaleRepository implements SaleRepository
             ))
             ->all();
 
-        return Sale::reconstitute($id, $negocioId, (string) $row->cajero_id, SaleStatus::from((string) $row->estado), array_values($lines), $row->cedula_comprador === null ? null : new BuyerIdNumber((string) $row->cedula_comprador));
+        return Sale::reconstitute($id, $negocioId, (string) $row->cajero_id, SaleStatus::from((string) $row->estado), array_values($lines), $row->cedula_comprador === null ? null : new BuyerIdNumber((string) $row->cedula_comprador), (string) $row->metodo_pago);
     }
 
     /**
@@ -93,7 +91,7 @@ final readonly class DatabaseSaleRepository implements SaleRepository
 
             $columns = [
                 'cajero_id' => $sale->cashierId,
-                'metodo_pago' => self::PAYMENT_METHOD,
+                'metodo_pago' => $sale->paymentMethod,
                 'cedula_comprador' => $sale->buyer?->value,
                 'estado' => $sale->status->value,
                 'total' => $sale->total()->toDecimal(),

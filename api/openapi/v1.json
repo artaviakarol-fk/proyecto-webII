@@ -2001,6 +2001,234 @@
                 ]
             }
         },
+        "/ventas/{venta}/pago": {
+            "post": {
+                "operationId": "billing.payments.store",
+                "summary": "Start the payment of an open sale with the provider chosen in the configuration",
+                "tags": [
+                    "SalePayment"
+                ],
+                "parameters": [
+                    {
+                        "name": "venta",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StartPaymentRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`PaymentResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PaymentResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "caja"
+                ]
+            },
+            "get": {
+                "operationId": "billing.payments.show",
+                "summary": "Show the newest payment of a sale; while it is pending, the provider is asked what happened",
+                "tags": [
+                    "SalePayment"
+                ],
+                "parameters": [
+                    {
+                        "name": "venta",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`PaymentResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PaymentResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "caja"
+                ]
+            }
+        },
+        "/ventas/{venta}/pago/reembolso": {
+            "post": {
+                "operationId": "billing.payments.refund",
+                "summary": "Give back the whole amount of the paid payment of a sale, with the provider that charged it",
+                "tags": [
+                    "SalePayment"
+                ],
+                "parameters": [
+                    {
+                        "name": "venta",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`PaymentResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PaymentResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "caja",
+                    "administrar"
+                ]
+            }
+        },
         "/tokens": {
             "post": {
                 "operationId": "identity.tokens.store",
@@ -2425,6 +2653,104 @@
                     "zona_horaria"
                 ],
                 "title": "OpeningHoursResource"
+            },
+            "PaymentResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "venta_id": {
+                        "type": "string"
+                    },
+                    "proveedor": {
+                        "type": "string"
+                    },
+                    "metodo_pago": {
+                        "type": "string"
+                    },
+                    "monto": {
+                        "type": "number"
+                    },
+                    "moneda": {
+                        "type": "string"
+                    },
+                    "estado": {
+                        "type": "string"
+                    },
+                    "referencia": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "codigo_rechazo": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "creado_en": {
+                        "type": "string"
+                    },
+                    "resuelto_en": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "instrucciones": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "numero_sinpe": {
+                                "type": "string"
+                            },
+                            "monto": {
+                                "type": "number"
+                            },
+                            "mensaje": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "numero_sinpe",
+                            "monto",
+                            "mensaje"
+                        ]
+                    },
+                    "url_aprobacion": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "referencia_reembolso": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "venta_id",
+                    "proveedor",
+                    "metodo_pago",
+                    "monto",
+                    "moneda",
+                    "estado",
+                    "referencia",
+                    "codigo_rechazo",
+                    "creado_en",
+                    "resuelto_en",
+                    "instrucciones",
+                    "url_aprobacion",
+                    "referencia_reembolso"
+                ],
+                "title": "PaymentResource"
             },
             "Problema": {
                 "type": "object",
@@ -3030,6 +3356,31 @@
                     "anulada_en"
                 ],
                 "title": "SaleSummaryResource"
+            },
+            "StartPaymentRequest": {
+                "type": "object",
+                "description": "How the sale is paid and the id of the payment method that the client created with the provider.\nCard data never reaches this API: the client sends it to the provider with its publishable key. Whether the client must send it\ndepends on the configured provider, which the gateway declares.",
+                "properties": {
+                    "metodo_pago": {
+                        "type": "string",
+                        "enum": [
+                            "tarjeta",
+                            "sinpe_movil"
+                        ]
+                    },
+                    "metodo_proveedor_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "metodo_pago"
+                ],
+                "title": "StartPaymentRequest"
             },
             "TokenResource": {
                 "type": "object",
