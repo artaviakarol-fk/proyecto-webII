@@ -188,12 +188,12 @@ final class OnvoGatewayTest extends TestCase
         $this->assertFalse(new OnvoGateway(self::KEY, self::BASE)->verifyWebhook('{}', ['x-webhook-secret' => '']), 'Without a configured secret nothing is accepted.');
     }
 
-    /** Only test keys are accepted: no real money while the course lasts. */
-    public function test_a_live_key_is_refused(): void
+    /** Only test keys are accepted: any key without the test prefix is refused, so no real money while the course lasts. */
+    public function test_a_key_that_is_not_a_test_key_is_refused(): void
     {
         $this->expectException(InvalidArgumentException::class);
 
-        new OnvoGateway('onvo_live_secret_key_real', self::BASE);
+        new OnvoGateway('secret_key_of_the_real_account', self::BASE);
     }
 
     /** The provider names itself, to be kept with each payment. */
