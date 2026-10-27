@@ -100,6 +100,12 @@ final class FakePaymentGateway implements PaymentGateway
         return $this->name;
     }
 
+    /** The fake charges whatever token it is given. */
+    public function requiresClientMethod(): bool
+    {
+        return true;
+    }
+
     /** The ways of paying the test chose; by default card and SINPE Móvil, like ONVO. */
     public function supportedMethods(): array
     {

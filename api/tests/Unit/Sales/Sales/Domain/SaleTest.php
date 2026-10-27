@@ -84,6 +84,21 @@ final class SaleTest extends TestCase
         $sale->pay();
     }
 
+    /** A sale is paid in cash unless a provider took the payment, and only the known ways of paying are accepted. */
+    public function test_sale_remembers_how_it_was_paid(): void
+    {
+        $cash = $this->openSale([$this->line(self::ARROZ, 1, '1500.00')]);
+        $cash->pay();
+        $this->assertSame('efectivo', $cash->paymentMethod);
+
+        $card = $this->openSale([$this->line(self::ARROZ, 1, '1500.00')]);
+        $card->pay('tarjeta');
+        $this->assertSame('tarjeta', $card->paymentMethod);
+
+        $this->expectException(InvalidValueException::class);
+        $this->openSale([$this->line(self::ARROZ, 1, '1500.00')])->pay('cheque');
+    }
+
     /** An open or paid sale can be cancelled, and a cancelled one cannot be cancelled again. */
     public function test_sale_is_cancelled_once(): void
     {

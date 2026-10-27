@@ -17,6 +17,7 @@ use Src\Billing\Payments\Domain\Exceptions\SaleNotFoundException;
 use Src\Billing\Payments\Domain\Exceptions\SaleNotPayableException;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeRequest;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentMethod;
+use Src\Billing\Payments\Domain\ValueObjects\PaymentStatus;
 use Src\Billing\Payments\Domain\ValueObjects\SaleId;
 use Src\Shared\Domain\Contracts\NegocioContext;
 use Src\Shared\Domain\Contracts\TransactionRunner;
@@ -71,6 +72,10 @@ final readonly class StartPayment
                 'Venta '.$saleId->value,
             )), $now);
             $this->payments->save($payment);
+
+            if ($payment->status === PaymentStatus::Paid) {
+                $this->sales->markPaid($saleId, $method);
+            }
 
             return $payment;
         });

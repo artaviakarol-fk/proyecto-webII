@@ -3359,7 +3359,7 @@
             },
             "StartPaymentRequest": {
                 "type": "object",
-                "description": "How the sale is paid and the id of the payment method that the client created with the provider.\nCard data never reaches this API: the client sends it to the provider with its publishable key. PayPal needs\nno payment method from the client: the buyer chooses how to pay on the page of PayPal.",
+                "description": "How the sale is paid and the id of the payment method that the client created with the provider.\nCard data never reaches this API: the client sends it to the provider with its publishable key. Whether the client must send it\ndepends on the configured provider, which the gateway declares.",
                 "properties": {
                     "metodo_pago": {
                         "type": "string",

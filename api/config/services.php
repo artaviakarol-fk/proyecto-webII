@@ -49,8 +49,6 @@ return [
         'publishable' => env('ONVO_PUBLISHABLE_KEY'),
         'webhook_secret' => env('ONVO_WEBHOOK_SECRET'),
         'base_url' => env('ONVO_BASE_URL', 'https://api.onvopay.com/v1'),
-        // Number that receives the SINPE Móvil transfers unless the merchant has its own.
-        'sinpe_number' => env('ONVO_SINPE_NUMBER', '+50670196686'),
     ],
 
     'slack' => [

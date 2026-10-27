@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Src\Billing\Payments\Application\UseCases;
 
+use Src\Billing\Payments\Application\Contracts\PayableSales;
 use Src\Billing\Payments\Application\Contracts\PaymentGateway;
 use Src\Billing\Payments\Application\DTOs\PaymentDetails;
 use Src\Billing\Payments\Domain\Contracts\PaymentRepository;
@@ -21,6 +22,7 @@ final readonly class RefundPayment
     public function __construct(
         private NegocioContext $context,
         private TransactionRunner $transaction,
+        private PayableSales $sales,
         private PaymentRepository $payments,
         private PaymentGateway $gateway,
     ) {}
@@ -28,8 +30,8 @@ final readonly class RefundPayment
     /**
      * Give back the whole amount of the paid payment of a sale of the negocio. The checks come before the provider is
      * called: the payment must be paid (a second refund is refused) and it must have been charged by the provider that
-     * is configured now, because a payment of ONVO cannot be refunded through PayPal. If the provider refuses or does
-     * not answer, nothing changes.
+     * is configured now, because a payment of ONVO cannot be refunded through PayPal. The sale is cancelled in the same transaction, so its
+     * units return to the stock. If the provider refuses or does not answer, nothing changes.
      */
     public function execute(string $saleId): PaymentDetails
     {
@@ -49,6 +51,7 @@ final readonly class RefundPayment
 
             $payment->refund($this->gateway->refund($payment->reference, $payment->amount));
             $this->payments->save($payment);
+            $this->sales->cancel($sale);
 
             return $payment;
         });

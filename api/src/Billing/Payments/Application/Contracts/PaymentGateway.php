@@ -29,6 +29,12 @@ interface PaymentGateway
     public function supportedMethods(): array;
 
     /**
+     * Whether the client must create the payment method with the provider (with the publishable key, so card data
+     * never reaches this API) and send its id. False when the buyer chooses how to pay on the page of the provider.
+     */
+    public function requiresClientMethod(): bool;
+
+    /**
      * Create the charge with the provider and ask it to take the payment.
      *
      * @throws PaymentRejectedException when the provider or the bank refuses the payment

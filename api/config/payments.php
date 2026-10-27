@@ -16,4 +16,10 @@ return [
 
     'default' => env('PAYMENT_GATEWAY', 'onvo'),
 
+    /*
+    | Number that receives the SINPE Móvil transfers, shown to the buyer while the payment is pending.
+    */
+
+    'sinpe_number' => env('ONVO_SINPE_NUMBER', '+50670196686'),
+
 ];

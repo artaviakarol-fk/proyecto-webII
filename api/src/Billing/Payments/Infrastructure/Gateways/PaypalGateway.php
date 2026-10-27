@@ -75,6 +75,12 @@ final readonly class PaypalGateway implements PaymentGateway
         return self::PROVIDER;
     }
 
+    /** The buyer chooses how to pay on the page of PayPal: the client sends nothing. */
+    public function requiresClientMethod(): bool
+    {
+        return false;
+    }
+
     /** PayPal charges a card or the PayPal account on its own page; it has no SINPE Móvil. */
     public function supportedMethods(): array
     {

@@ -60,7 +60,7 @@ final class PaymentResource extends JsonResource
             return null;
         }
 
-        $number = (string) config('services.onvo.sinpe_number');
+        $number = (string) config('payments.sinpe_number');
 
         return [
             'numero_sinpe' => $number,

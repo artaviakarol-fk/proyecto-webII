@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Src\Billing\Payments\Application\UseCases;
 
 use DateTimeImmutable;
+use Src\Billing\Payments\Application\Contracts\PayableSales;
 use Src\Billing\Payments\Application\Contracts\PaymentGateway;
 use Src\Billing\Payments\Application\DTOs\PaymentDetails;
 use Src\Billing\Payments\Domain\Contracts\PaymentRepository;
@@ -22,13 +23,14 @@ final readonly class GetPayment
     public function __construct(
         private NegocioContext $context,
         private TransactionRunner $transaction,
+        private PayableSales $sales,
         private PaymentRepository $payments,
         private PaymentGateway $gateway,
     ) {}
 
     /**
      * Answer the newest payment of a sale of the negocio. While it is pending, ask the provider what happened
-     * and keep the answer; if the provider does not answer, the stored state is shown. A sale of another negocio
+     * keep the answer and, once it is paid, close the sale in the same transaction; if the provider does not answer, the stored state is shown. A sale of another negocio
      * is reported as without payment.
      */
     public function execute(string $saleId, DateTimeImmutable $now): PaymentDetails
@@ -43,6 +45,10 @@ final readonly class GetPayment
                 try {
                     $payment->apply($this->gateway->status($payment->reference), $now);
                     $this->payments->save($payment);
+
+                    if ($payment->status === PaymentStatus::Paid) {
+                        $this->sales->markPaid($sale, $payment->method);
+                    }
                 } catch (GatewayUnavailableException) {
                     // The provider is down: the payment keeps the state it already has.
                 }

@@ -55,6 +55,8 @@ final class PaymentUseCasesTest extends TestCase
 
     private InMemoryPaymentRepository $payments;
 
+    private InMemoryPayableSales $sales;
+
     private StartPayment $start;
 
     private GetPayment $get;
@@ -64,7 +66,7 @@ final class PaymentUseCasesTest extends TestCase
     /** An open sale of 3000 colones and a paid one, with a gateway that is told what to answer. */
     protected function setUp(): void
     {
-        $sales = new InMemoryPayableSales;
+        $sales = $this->sales = new InMemoryPayableSales;
         $sales->add(new PayableSale(new SaleId(self::OPEN_SALE), new Money(300000), true));
         $sales->add(new PayableSale(new SaleId(self::PAID_SALE), new Money(300000), false));
 
@@ -74,8 +76,8 @@ final class PaymentUseCasesTest extends TestCase
         $transaction = new ImmediateTransactionRunner;
 
         $this->start = new StartPayment($context, $transaction, $sales, $this->payments, $this->gateway);
-        $this->get = new GetPayment($context, $transaction, $this->payments, $this->gateway);
-        $this->refund = new RefundPayment($context, $transaction, $this->payments, $this->gateway);
+        $this->get = new GetPayment($context, $transaction, $sales, $this->payments, $this->gateway);
+        $this->refund = new RefundPayment($context, $transaction, $sales, $this->payments, $this->gateway);
     }
 
     /** The payment is pending until the provider says otherwise, and the charge carries the total of the sale. */
@@ -102,6 +104,7 @@ final class PaymentUseCasesTest extends TestCase
 
         $this->assertSame('pagado', $payment->status);
         $this->assertNotNull($payment->settledAt);
+        $this->assertSame([self::OPEN_SALE => 'tarjeta'], $this->sales->paid);
     }
 
     /** A sale that is not in the negocio, or is not open, cannot be paid. */
@@ -184,6 +187,7 @@ final class PaymentUseCasesTest extends TestCase
         $payment = $this->get->execute(self::OPEN_SALE, $this->now());
 
         $this->assertSame('pagado', $payment->status);
+        $this->assertSame([self::OPEN_SALE => 'sinpe_movil'], $this->sales->paid, 'The sale is closed when the provider confirms.');
         $this->assertCount(1, $this->gateway->statusChecks);
 
         $this->get->execute(self::OPEN_SALE, $this->now());
@@ -203,7 +207,7 @@ final class PaymentUseCasesTest extends TestCase
     public function test_a_payment_of_another_negocio_is_not_shown(): void
     {
         $this->start->execute($this->command(), $this->now());
-        $other = new GetPayment(new FixedNegocioContext(new NegocioId(self::OTHER_NEGOCIO_ID)), new ImmediateTransactionRunner, $this->payments, $this->gateway);
+        $other = new GetPayment(new FixedNegocioContext(new NegocioId(self::OTHER_NEGOCIO_ID)), new ImmediateTransactionRunner, $this->sales, $this->payments, $this->gateway);
 
         $this->expectException(PaymentNotFoundException::class);
         $other->execute(self::OPEN_SALE, $this->now());
@@ -239,6 +243,7 @@ final class PaymentUseCasesTest extends TestCase
         $this->assertSame('intent_fake_1', $this->gateway->refunds[0]['reference']->value);
         $this->assertSame(300000, $this->gateway->refunds[0]['amount']->cents);
         $this->assertSame('reembolsado', $this->stored()->status->value);
+        $this->assertSame([self::OPEN_SALE], $this->sales->cancelled, 'The sale is cancelled with the refund.');
     }
 
     /** A second refund is refused without calling the provider again. */
@@ -300,6 +305,7 @@ final class PaymentUseCasesTest extends TestCase
             $this->fail('A refused refund should be an error.');
         } catch (RefundRejectedException) {
             $this->assertSame('pagado', $this->stored()->status->value);
+            $this->assertSame([], $this->sales->cancelled);
         }
 
         $this->gateway->failRefundWith(GatewayUnavailableException::create());

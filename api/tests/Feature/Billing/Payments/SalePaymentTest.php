@@ -85,6 +85,7 @@ final class SalePaymentTest extends TestCase
             'monto' => '3000.00',
             'referencia_externa' => 'intent_1',
         ]);
+        $this->assertDatabaseHas('ventas', ['id' => $this->saleId, 'estado' => 'cobrada', 'metodo_pago' => 'tarjeta']);
     }
 
     /** A SINPE Móvil payment stays pending and tells the buyer where to transfer. */
@@ -118,6 +119,7 @@ final class SalePaymentTest extends TestCase
 
         $this->scopeQueriesTo($this->negocio->id);
         $this->assertDatabaseHas('pagos', ['venta_id' => $this->saleId, 'estado' => 'pagado']);
+        $this->assertDatabaseHas('ventas', ['id' => $this->saleId, 'estado' => 'cobrada', 'metodo_pago' => 'sinpe_movil']);
     }
 
     /** A sale cannot be paid twice while its payment is pending or paid. */
@@ -314,6 +316,7 @@ final class SalePaymentTest extends TestCase
 
         $this->scopeQueriesTo($this->negocio->id);
         $this->assertDatabaseHas('pagos', ['venta_id' => $this->saleId, 'estado' => 'reembolsado', 'referencia_reembolso' => 'refund_1']);
+        $this->assertDatabaseHas('ventas', ['id' => $this->saleId, 'estado' => 'anulada']);
     }
 
     /** Refunding is only for the administration: the cashier is refused and ONVO is not called. */
@@ -371,25 +374,15 @@ final class SalePaymentTest extends TestCase
         Http::assertNothingSent();
     }
 
-    /** A refunded sale can be paid again, because the refunded payment no longer blocks it. */
-    public function test_a_refunded_sale_can_be_paid_again(): void
+    /** A refunded sale is cancelled, so it cannot be paid again: a new sale is opened instead. */
+    public function test_a_refunded_sale_cannot_be_paid_again(): void
     {
-        Http::fake([
-            self::INTENTS => Http::sequence()
-                ->push(['id' => 'intent_1', 'status' => 'requires_payment_method'], 201)
-                ->push(['id' => 'intent_2', 'status' => 'requires_payment_method'], 201),
-            self::INTENTS.'/intent_1/confirm' => Http::response(['id' => 'intent_1', 'status' => 'succeeded'], 201),
-            self::INTENTS.'/intent_2/confirm' => Http::response(['id' => 'intent_2', 'status' => 'succeeded'], 201),
-            self::REFUNDS => Http::response(['id' => 'refund_1', 'status' => 'succeeded'], 201),
-        ]);
+        $this->payWithOnvo();
+        Http::fake([self::REFUNDS => Http::response(['id' => 'refund_1', 'status' => 'succeeded'], 201)]);
         $this->actingAsAdministration();
 
-        $this->postJson($this->endpoint($this->saleId), $this->body('tarjeta'))->assertCreated();
         $this->postJson($this->endpoint($this->saleId).'/reembolso')->assertOk();
-        $this->postJson($this->endpoint($this->saleId), $this->body('tarjeta'))
-            ->assertCreated()
-            ->assertJsonPath('data.referencia', 'intent_2')
-            ->assertJsonPath('data.estado', 'pagado');
+        $this->postJson($this->endpoint($this->saleId), $this->body('tarjeta'))->assertConflict();
     }
 
     /** Pay the sale with a card that ONVO takes at once (intent_1). */

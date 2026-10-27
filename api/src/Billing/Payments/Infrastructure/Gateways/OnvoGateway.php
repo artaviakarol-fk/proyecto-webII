@@ -71,6 +71,12 @@ final readonly class OnvoGateway implements PaymentGateway
         return self::PROVIDER;
     }
 
+    /** ONVO charges a payment method that the client created with the publishable key. */
+    public function requiresClientMethod(): bool
+    {
+        return true;
+    }
+
     /** ONVO charges cards and SINPE Móvil transfers. */
     public function supportedMethods(): array
     {

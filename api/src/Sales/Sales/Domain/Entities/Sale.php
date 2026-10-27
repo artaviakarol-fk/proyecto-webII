@@ -15,8 +15,14 @@ use Src\Shared\Domain\ValueObjects\NegocioId;
 
 final class Sale
 {
+    /** The way of paying that needs no provider. */
+    public const string CASH = 'efectivo';
+
+    /** The ways a sale can be paid: in cash at the register or through a payment provider. */
+    public const array PAYMENT_METHODS = [self::CASH, 'tarjeta', 'sinpe_movil'];
+
     /**
-     * Hold a sale paid in cash: who sold it, what was sold, who bought it when it is known and the stage it is in.
+     * Hold a sale paid in cash or through a provider: who sold it, what was sold, who bought it when it is known and the stage it is in.
      *
      * @param  list<SaleLine>  $lines
      */
@@ -27,6 +33,7 @@ final class Sale
         public private(set) SaleStatus $status,
         public private(set) array $lines,
         public private(set) ?BuyerIdNumber $buyer,
+        public private(set) string $paymentMethod = self::CASH,
     ) {}
 
     /**
@@ -46,9 +53,9 @@ final class Sale
      *
      * @param  list<SaleLine>  $lines
      */
-    public static function reconstitute(SaleId $id, NegocioId $negocioId, string $cashierId, SaleStatus $status, array $lines, ?BuyerIdNumber $buyer = null): self
+    public static function reconstitute(SaleId $id, NegocioId $negocioId, string $cashierId, SaleStatus $status, array $lines, ?BuyerIdNumber $buyer = null, string $paymentMethod = self::CASH): self
     {
-        return new self($id, $negocioId, $cashierId, $status, $lines, $buyer);
+        return new self($id, $negocioId, $cashierId, $status, $lines, $buyer, $paymentMethod);
     }
 
     /** The sum of the lines. */
@@ -76,12 +83,17 @@ final class Sale
         $this->buyer = $buyer;
     }
 
-    /** Close the sale as paid in cash. */
-    public function pay(): void
+    /** Close the sale as paid, in cash unless a provider took the payment. */
+    public function pay(string $method = self::CASH): void
     {
         $this->assertOpen();
 
+        if (! in_array($method, self::PAYMENT_METHODS, true)) {
+            throw new InvalidValueException('sales.payment_method_invalid');
+        }
+
         $this->status = SaleStatus::Paid;
+        $this->paymentMethod = $method;
     }
 
     /** Cancel an open or paid sale; its units go back to the stock. */
