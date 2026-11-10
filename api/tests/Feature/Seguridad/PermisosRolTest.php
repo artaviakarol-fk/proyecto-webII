@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Seguridad;
 
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -31,6 +32,20 @@ final class PermisosRolTest extends TestCase
     private const string NO_AUTENTICADO = 'http://localhost/problemas/no-autenticado';
 
     private const string NO_ENCONTRADO = 'http://localhost/problemas/no-encontrado';
+
+    /** The payment routes build the gateway of the provider, so the test gives it a test key; nothing here calls a provider. */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config([
+            'payments.default' => 'onvo',
+            'services.onvo.secret' => 'onvo_test_secret_key_permisos',
+            'services.onvo.base_url' => 'https://api.onvopay.com/v1',
+            'services.onvo.webhook_secret' => 'whsec_test',
+        ]);
+        Http::preventStrayRequests();
+    }
 
     /** Every role of the staff against every route: who passes and who is refused. */
     #[DataProvider('roleAgainstRoute')]
