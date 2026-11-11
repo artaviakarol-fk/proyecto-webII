@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Src\Sales\Reports\Infrastructure\Http\Requests;
 
+use Carbon\CarbonImmutable;
 use DateTimeImmutable;
 use DateTimeZone;
 use Illuminate\Foundation\Http\FormRequest;
@@ -31,6 +32,6 @@ final class DailyClosingRequest extends FormRequest
 
         return $this->filled('fecha')
             ? new DateTimeImmutable($this->string('fecha')->toString(), $zone)
-            : new DateTimeImmutable('today', $zone);
+            : CarbonImmutable::today($zone)->toDateTimeImmutable();
     }
 }
