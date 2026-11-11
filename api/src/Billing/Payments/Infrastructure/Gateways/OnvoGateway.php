@@ -22,6 +22,7 @@ use Src\Billing\Payments\Domain\ValueObjects\PaymentMethod;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentStatus;
 use Src\Billing\Payments\Domain\ValueObjects\RefundResult;
 use Src\Billing\Payments\Domain\ValueObjects\RefundStatus;
+use Src\Billing\Payments\Domain\ValueObjects\WebhookEvent;
 use Src\Shared\Domain\ValueObjects\Money;
 use Throwable;
 
@@ -132,7 +133,7 @@ final readonly class OnvoGateway implements PaymentGateway
     public function status(ChargeReference $reference): ChargeResult
     {
         return $this->resultOf($this->send(fn (PendingRequest $http): Response => $http
-            ->retry(self::STATUS_ATTEMPTS, self::STATUS_PAUSE_MILLISECONDS, fn (Throwable $error): bool => $error instanceof ConnectionException)
+            ->retry(self::STATUS_ATTEMPTS, self::STATUS_PAUSE_MILLISECONDS, fn (Throwable $error): bool => $error instanceof ConnectionException, throw: false)
             ->get('/payment-intents/'.rawurlencode($reference->value))));
     }
 
@@ -176,6 +177,24 @@ final readonly class OnvoGateway implements PaymentGateway
         $given = $headers['x-webhook-secret'] ?? '';
 
         return $this->webhookSecret !== '' && $given !== '' && hash_equals($this->webhookSecret, $given);
+    }
+
+    /**
+     * ONVO sends no id for the event, only its type and the payment intent: the pair is the id, so the same event sent
+     * again is the same pair. Only the events of a payment intent matter here.
+     */
+    public function parseWebhook(string $payload): ?WebhookEvent
+    {
+        $event = json_decode($payload, true);
+        $type = is_array($event) ? $this->text($event['type'] ?? null) : null;
+        $data = is_array($event) ? ($event['data'] ?? null) : null;
+        $intentId = is_array($data) ? $this->text($data['id'] ?? null) : null;
+
+        if ($type === null || $intentId === null || ! str_starts_with($type, 'payment-intent.')) {
+            return null;
+        }
+
+        return new WebhookEvent($type.':'.$intentId, $type, new ChargeReference($intentId));
     }
 
     /** A client with the secret key, the base address and the time limit of every call. */

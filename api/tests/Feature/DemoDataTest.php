@@ -40,6 +40,8 @@ final class DemoDataTest extends TestCase
         $this->assertDatabaseCount('users', 5);
         $this->scopeQueriesTo(NegociosDemoSeeder::TERESITA_ID);
         $this->assertDatabaseCount('productos', 5);
+        $this->assertDatabaseCount('clientes', 4);
+        $this->assertSame(['0.00'], DB::table('clientes')->distinct()->pluck('saldo_actual')->all());
     }
 
     /** Every demo account logs in with the documented password. */

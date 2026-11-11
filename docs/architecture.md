@@ -177,6 +177,19 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `POST /api/v1/productos/{id}/vencidos` | Marcar unidades vencidas de un producto (`cantidad`, `motivo`). Siguen en el stock pero salen del stock vendible. Bodega y administración |
 | `POST /api/v1/entradas` | Registrar mercadería recibida: proveedor, fecha y líneas (producto existente o nuevo, cantidad, costo unitario). Bodega y administración |
 | `GET /api/v1/entradas/{id}` | Ver una entrada con sus líneas, quién la registró y cuándo. Bodega y administración |
+| `GET /api/v1/clientes` | Listar los clientes de fiado del negocio por páginas, por nombre, con lo que debe cada uno. Filtros opcionales: `buscar` (nombre o teléfono) y `activo`. Caja y administración |
+| `GET /api/v1/clientes/{id}` | Ver un cliente con su límite y su saldo. Caja y administración |
+| `POST /api/v1/clientes` | Registrar un cliente de confianza: nombre, teléfono opcional y límite de fiado (por defecto el límite base, ₡90 000, que también es el máximo). Administración |
+| `PUT /api/v1/clientes/{id}` | Reemplazar los datos, el límite y el estado de un cliente; el saldo nunca cambia aquí. Administración |
+| `DELETE /api/v1/clientes/{id}` | Desactivar un cliente: ya no compra a fiado, pero conserva su historial y su saldo. Administración |
+| `POST /api/v1/ventas/{id}/fiado` | Cerrar una venta abierta a fiado de un cliente activo (`cliente_id`): su total se suma a lo que debe. Si el saldo más el total pasa el límite, responde `409` con lo que debe, el límite y lo disponible, y la venta sigue abierta. Caja y administración |
+| `POST /api/v1/clientes/{id}/ampliaciones` | Ampliar el límite de un cliente activo en una emergencia (`monto`, `motivo`) hasta la medianoche en hora de Costa Rica. El límite base más las ampliaciones vigentes nunca pasa de ₡120 000 (`LIMITE_FIADO_MAXIMO`); si se pasa, responde `422` con cuánto se puede ampliar todavía. Caja y administración |
+| `GET /api/v1/ampliaciones-limite` | Revisar las ampliaciones por páginas, de la más reciente a la más antigua, con quién, cuándo, monto, motivo, vigencia y reversión. Filtros opcionales: `cliente_id` y `vigentes`. Administración |
+| `POST /api/v1/ampliaciones-limite/{id}/revertir` | Revertir una ampliación vigente: deja de contar y queda registrado quién y cuándo. Administración |
+| `POST /api/v1/clientes/{id}/abonos` | Recibir un abono (`monto`, por ahora en efectivo): una parte de lo que debe el cliente o todo. Nunca deja el saldo negativo: un abono mayor responde `422` con lo que debe. Responde el abono con el enlace a su recibo y el cliente con lo que le queda. Caja y administración |
+| `GET /api/v1/clientes/{id}/abonos` | Listar los abonos de un cliente, del más reciente al más antiguo. Caja y administración |
+| `GET /api/v1/abonos/{id}` | Ver un abono. Caja y administración |
+| `GET /api/v1/abonos/{id}/recibo` | El recibo del abono como página imprimible (`text/html`, vista Blade del módulo): negocio, número, fecha, cliente, quién lo recibió, saldo anterior, abono y saldo restante. El navegador lo imprime o lo guarda como PDF. Caja y administración |
 | `GET /api/v1/ventas` | Listar las ventas del negocio por páginas (`pagina`, `por_pagina`), de la más reciente a la más antigua, sin sus líneas. Filtros opcionales: `estado` y `fecha` (día en hora de Costa Rica). Caja y administración |
 | `POST /api/v1/ventas` | Abrir una venta en efectivo: líneas con producto y cantidad (el precio sale del catálogo). Descuenta el stock. Caja y administración |
 | `GET /api/v1/ventas/{id}` | Ver una venta con sus líneas, total, cajero y estado. Caja y administración |
@@ -197,6 +210,18 @@ Cada línea de una entrada guarda el costo anterior del producto, y la respuesta
 Una venta (`ventas` y `venta_lineas`) tiene tres estados: `abierta`, `cobrada` y `anulada`. El precio de cada línea se toma del catálogo en el momento de vender y se guarda en la línea; el cliente nunca lo envía. Una venta abierta se puede modificar; una cobrada ya no; una cobrada o abierta se puede anular, y una anulada es definitiva.
 
 Las unidades salen del stock al abrir la venta y vuelven al anularla. `DatabaseSaleRepository::save` hace todo en una transacción: bloquea la fila de la venta y la de cada producto con `SELECT ... FOR UPDATE` (siempre en el orden de los ids, para que dos ventas con los mismos productos no se bloqueen entre sí), calcula la diferencia entre lo que la venta tenía y lo que tiene ahora, y deja una fila en `movimientos_inventario` (`venta` o `anulacion`). Solo se venden las unidades vendibles (stock menos unidades vencidas en el estante). Si alguna línea no alcanza, responde `409` en formato RFC 9457 con el producto y las unidades disponibles, y no se guarda nada. Si dos cajas venden la última unidad, la segunda espera el bloqueo, ve que ya no queda y recibe el 409; el `CHECK (stock >= 0)` de la base de datos es la última red de seguridad.
+
+### Venta a fiado y concurrencia
+
+Una venta abierta se puede cerrar a fiado con `POST /ventas/{id}/fiado`. El caso de uso `SellOnFiado`, del módulo `Credit/Customers`, hace todo en una transacción: bloquea primero la fila del cliente con `SELECT ... FOR UPDATE`, lee el total de la venta, revisa que el cliente esté activo y que su saldo más el total no pase su límite, cierra la venta con método `fiado` y registra un `cargo` en `movimientos_fiado`, cuyo trigger sube el saldo. Si dos cajas le venden a fiado al mismo cliente al mismo tiempo, la segunda espera el bloqueo y ve el saldo que dejó la primera, así que nunca se pasa el límite. Si la venta no cabe, no se guarda nada y la venta sigue abierta para cobrarla de otra forma.
+
+El crédito y las ventas se hablan por puertos, como los cobros: `Credit` lee y cierra la venta con el puerto `CreditableSales` (adaptador `SalesCreditableSales`, que usa `GetSale` y `PaySale`), y `Sales` devuelve el cargo al anular una venta a fiado con el puerto `FiadoCharges` (adaptador `CreditFiadoCharges`, que usa `ReverseFiadoCharge`). Anular una venta a fiado devuelve las unidades al stock y registra una `anulacion` que baja el saldo del cliente, en la misma transacción.
+
+El límite que se revisa es el **límite efectivo**: el `limite_fiado` del cliente más las ampliaciones de emergencia vigentes (`ampliaciones_limite`). Una ampliación la da la caja con un motivo y dura hasta la medianoche en hora de Costa Rica: es para atender una emergencia sin esperar al dueño, que al día siguiente decide si el cliente necesita un límite base mayor. Se pueden sumar varias, pero el límite efectivo nunca pasa de ₡120 000. Al ampliar también se bloquea la fila del cliente, así que dos ampliaciones simultáneas se cuentan juntas contra ese tope. La entidad `Customer` recibe el momento actual desde el controlador para decidir qué ampliaciones cuentan.
+
+Un **abono** (`ReceiveCreditPayment`) también bloquea primero la fila del cliente, revisa que el monto no pase lo que debe, guarda el abono con el saldo de antes y el de después, y registra su movimiento `abono`, que baja el saldo. El recibo es una vista Blade del módulo (`Infrastructure/Http/Views/recibo.blade.php`, registrada como `credit::recibo`) y no una librería de PDF: el navegador lo imprime o lo guarda como PDF. Por ahora el abono se recibe en efectivo; el pago con pasarela se agrega cuando esté integrado el webhook de los cobros, usando la columna `pagos.abono_id`.
+
+Cada cambio de saldo despacha el evento `SaldoFiadoActualizado` cuando la transacción se confirma (`ShouldDispatchAfterCommit`); lo va a escuchar el aviso de WhatsApp (US-505).
 
 ### Control de edad en la venta de licor
 

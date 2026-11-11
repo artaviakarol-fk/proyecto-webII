@@ -21,6 +21,7 @@ use Src\Billing\Payments\Domain\ValueObjects\ChargeResult;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentMethod;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentStatus;
 use Src\Billing\Payments\Domain\ValueObjects\RefundResult;
+use Src\Billing\Payments\Domain\ValueObjects\WebhookEvent;
 use Src\Shared\Domain\ValueObjects\Money;
 use Throwable;
 
@@ -137,7 +138,7 @@ final readonly class PaypalGateway implements PaymentGateway
     public function status(ChargeReference $reference): ChargeResult
     {
         $order = $this->send(fn (PendingRequest $http): Response => $http
-            ->retry(self::STATUS_ATTEMPTS, self::STATUS_PAUSE_MILLISECONDS, fn (Throwable $error): bool => $error instanceof ConnectionException)
+            ->retry(self::STATUS_ATTEMPTS, self::STATUS_PAUSE_MILLISECONDS, fn (Throwable $error): bool => $error instanceof ConnectionException, throw: false)
             ->get('/v2/checkout/orders/'.rawurlencode($reference->value)));
 
         if ($this->text($order['status'] ?? null) !== 'APPROVED') {
@@ -175,6 +176,27 @@ final readonly class PaypalGateway implements PaymentGateway
         }
 
         return ($answer['verification_status'] ?? null) === 'SUCCESS';
+    }
+
+    /**
+     * PayPal gives every event its own id. The order is the resource of the approval; for the capture the order is
+     * in the related ids. Only the events of an order or of a capture matter here.
+     */
+    public function parseWebhook(string $payload): ?WebhookEvent
+    {
+        $event = json_decode($payload, true);
+        $id = is_array($event) ? $this->text($event['id'] ?? null) : null;
+        $type = is_array($event) ? $this->text($event['event_type'] ?? null) : null;
+        $resource = is_array($event) && is_array($event['resource'] ?? null) ? $event['resource'] : [];
+
+        if ($id === null || $type === null || ! (str_starts_with($type, 'CHECKOUT.ORDER.') || str_starts_with($type, 'PAYMENT.CAPTURE.'))) {
+            return null;
+        }
+
+        $related = is_array($resource['supplementary_data'] ?? null) && is_array($resource['supplementary_data']['related_ids'] ?? null) ? $resource['supplementary_data']['related_ids'] : [];
+        $orderId = $this->text($related['order_id'] ?? null) ?? (str_starts_with($type, 'CHECKOUT.ORDER.') ? $this->text($resource['id'] ?? null) : null);
+
+        return $orderId === null ? null : new WebhookEvent($id, $type, new ChargeReference($orderId));
     }
 
     /**

@@ -37,6 +37,18 @@ final readonly class EloquentPaymentRepository implements PaymentRepository
         return $model === null ? null : $this->toDomain($model);
     }
 
+    /** Find the payment that the provider knows by this reference. */
+    public function findByReference(string $provider, ChargeReference $reference, NegocioId $negocioId): ?Payment
+    {
+        $model = PaymentModel::query()
+            ->where('negocio_id', $negocioId->value)
+            ->where('proveedor', $provider)
+            ->where('referencia_externa', $reference->value)
+            ->first();
+
+        return $model === null ? null : $this->toDomain($model);
+    }
+
     /** Find the pending or paid payment of a sale. */
     public function findLiveForSale(SaleId $saleId, NegocioId $negocioId): ?Payment
     {
