@@ -12,6 +12,7 @@ use Src\Billing\Payments\Domain\ValueObjects\PaymentMethod;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentStatus;
 use Src\Billing\Payments\Domain\ValueObjects\RefundResult;
 use Src\Billing\Payments\Domain\ValueObjects\RefundStatus;
+use Src\Billing\Payments\Domain\ValueObjects\WebhookEvent;
 use Src\Shared\Domain\ValueObjects\Money;
 use Throwable;
 
@@ -144,6 +145,18 @@ final class FakePaymentGateway implements PaymentGateway
     public function verifyWebhook(string $payload, array $headers): bool
     {
         return ($headers['x-webhook-secret'] ?? '') === 'ok';
+    }
+
+    /** Read a body like {"id": "evt_1", "type": "pago", "reference": "intent_fake_1"}; anything else is not about a charge. */
+    public function parseWebhook(string $payload): ?WebhookEvent
+    {
+        $event = json_decode($payload, true);
+
+        if (! is_array($event) || ! is_string($event['id'] ?? null) || ! is_string($event['reference'] ?? null)) {
+            return null;
+        }
+
+        return new WebhookEvent($event['id'], is_string($event['type'] ?? null) ? $event['type'] : 'pago', new ChargeReference($event['reference']));
     }
 
     /** The result the test chose, or the failure. */
