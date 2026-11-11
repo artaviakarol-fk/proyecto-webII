@@ -142,10 +142,22 @@ final class FiadoBalanceTest extends TestCase
         $this->movement(['tipo' => 'cargo', 'monto' => $amount, 'venta_id' => $this->sale()]);
     }
 
-    /** Take an amount from what the customer owes, as an abono will do (US-305). */
+    /** Take an amount from what the customer owes with an abono (US-305): first the abono, then its movement. */
     private function payment(string $amount): void
     {
-        $this->movement(['tipo' => 'abono', 'monto' => $amount, 'abono_id' => (string) Str::uuid7()]);
+        $before = (string) DB::table('clientes')->where('id', $this->customer->id)->value('saldo_actual');
+        $abono = (string) Str::uuid7();
+
+        DB::table('abonos')->insert([
+            'id' => $abono,
+            'negocio_id' => $this->negocio->id,
+            'cliente_id' => $this->customer->id,
+            'monto' => $amount,
+            'saldo_anterior' => $before,
+            'saldo_restante' => $this->minus($before, $amount),
+            'usuario_id' => $this->cashier->id,
+        ]);
+        $this->movement(['tipo' => 'abono', 'monto' => $amount, 'abono_id' => $abono]);
     }
 
     /**
@@ -162,6 +174,14 @@ final class FiadoBalanceTest extends TestCase
             'usuario_id' => $this->cashier->id,
             ...$columns,
         ]);
+    }
+
+    /** Subtract two decimal amounts, even below zero, so the database is the one that refuses a negative balance. */
+    private function minus(string $from, string $amount): string
+    {
+        $cents = (int) round((float) $from * 100) - (int) round((float) $amount * 100);
+
+        return sprintf('%s%d.%02d', $cents < 0 ? '-' : '', intdiv(abs($cents), 100), abs($cents) % 100);
     }
 
     /** An open sale of the negocio, to point a charge to. */

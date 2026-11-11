@@ -201,6 +201,7 @@ return [
         'telefono' => 'teléfono',
         'cliente_id' => 'cliente',
         'monto' => 'monto',
+        'metodo_pago' => 'método de pago',
         'motivo' => 'motivo',
         'vigentes' => 'vigentes',
         'limite_fiado' => 'límite de fiado',

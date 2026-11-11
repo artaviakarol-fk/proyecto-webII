@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Src\Credit\Customers\Domain\Contracts;
 
+use Src\Credit\Customers\Domain\Entities\CreditPayment;
 use Src\Credit\Customers\Domain\ValueObjects\FiadoCharge;
 use Src\Shared\Domain\ValueObjects\NegocioId;
 
@@ -18,4 +19,7 @@ interface FiadoLedger
 
     /** Record that the charge of a cancelled sale is given back; the balance goes down by its amount. */
     public function recordCancellation(NegocioId $negocioId, FiadoCharge $charge, string $userId): void;
+
+    /** Record an abono; the balance goes down by its amount. */
+    public function recordPayment(CreditPayment $payment): void;
 }
