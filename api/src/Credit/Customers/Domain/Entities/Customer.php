@@ -7,9 +7,11 @@ namespace Src\Credit\Customers\Domain\Entities;
 use DateTimeImmutable;
 use Src\Credit\Customers\Domain\Exceptions\CreditIncreaseAboveMaximumException;
 use Src\Credit\Customers\Domain\Exceptions\CreditLimitExceededException;
+use Src\Credit\Customers\Domain\Exceptions\CreditPaymentRejectedException;
 use Src\Credit\Customers\Domain\Exceptions\CustomerInactiveException;
 use Src\Credit\Customers\Domain\ValueObjects\CreditIncreaseId;
 use Src\Credit\Customers\Domain\ValueObjects\CreditLimit;
+use Src\Credit\Customers\Domain\ValueObjects\CreditPaymentId;
 use Src\Credit\Customers\Domain\ValueObjects\CustomerId;
 use Src\Credit\Customers\Domain\ValueObjects\CustomerName;
 use Src\Credit\Customers\Domain\ValueObjects\IncreaseReason;
@@ -169,5 +171,35 @@ final class Customer
         $this->increases[] = $increase->term();
 
         return $increase;
+    }
+
+    /**
+     * Receive an abono on what the customer owes. It can pay part of it or all of it, but never more:
+     * the balance is never negative. An inactive customer can still pay what they owe.
+     */
+    public function receivePayment(
+        CreditPaymentId $id,
+        Money $amount,
+        string $method,
+        string $userId,
+        DateTimeImmutable $at,
+    ): CreditPayment {
+        if ($method !== CreditPayment::CASH) {
+            throw CreditPaymentRejectedException::methodNotAvailable($method);
+        }
+
+        if ($amount->isZero()) {
+            throw CreditPaymentRejectedException::notPositive();
+        }
+
+        if ($this->balance->isZero()) {
+            throw CreditPaymentRejectedException::nothingOwed($this->name->value);
+        }
+
+        if ($amount->cents > $this->balance->cents) {
+            throw CreditPaymentRejectedException::aboveBalance($this->name->value, $amount, $this->balance);
+        }
+
+        return CreditPayment::receive($id, $this->negocioId, $this->id, $amount, $method, $this->balance, $userId, $at);
     }
 }

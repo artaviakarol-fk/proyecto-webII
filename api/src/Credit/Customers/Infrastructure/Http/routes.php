@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use Src\Credit\Customers\Infrastructure\Http\Controllers\CreditIncreaseController;
+use Src\Credit\Customers\Infrastructure\Http\Controllers\CreditPaymentController;
 use Src\Credit\Customers\Infrastructure\Http\Controllers\CustomerController;
 use Src\Credit\Customers\Infrastructure\Http\Controllers\FiadoSaleController;
 
@@ -46,4 +47,15 @@ Route::prefix('ampliaciones-limite')
     ->group(function (): void {
         Route::get('/', 'index')->name('index');
         Route::post('{ampliacion}/revertir', 'revert')->name('revert')->whereUuid('ampliacion');
+    });
+
+// La caja recibe abonos de lo que debe un cliente y entrega el recibo.
+Route::middleware(['auth:sanctum', 'negocio', 'ability:administrar,caja'])
+    ->name('credit.payments.')
+    ->controller(CreditPaymentController::class)
+    ->group(function (): void {
+        Route::post('clientes/{cliente}/abonos', 'store')->name('store')->whereUuid('cliente');
+        Route::get('clientes/{cliente}/abonos', 'index')->name('index')->whereUuid('cliente');
+        Route::get('abonos/{abono}', 'show')->name('show')->whereUuid('abono');
+        Route::get('abonos/{abono}/recibo', 'receipt')->name('receipt')->whereUuid('abono');
     });

@@ -7,6 +7,7 @@ namespace Src\Credit\Customers\Infrastructure\Persistence\Ledger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Src\Credit\Customers\Domain\Contracts\FiadoLedger;
+use Src\Credit\Customers\Domain\Entities\CreditPayment;
 use Src\Credit\Customers\Domain\ValueObjects\CustomerId;
 use Src\Credit\Customers\Domain\ValueObjects\FiadoCharge;
 use Src\Shared\Domain\ValueObjects\Money;
@@ -42,6 +43,21 @@ final readonly class DatabaseFiadoLedger implements FiadoLedger
     public function recordCancellation(NegocioId $negocioId, FiadoCharge $charge, string $userId): void
     {
         $this->insert($negocioId, $charge, 'anulacion', $userId);
+    }
+
+    /** Insert the movement of an abono. */
+    public function recordPayment(CreditPayment $payment): void
+    {
+        DB::table('movimientos_fiado')->insert([
+            'id' => (string) Str::uuid7(),
+            'negocio_id' => $payment->negocioId->value,
+            'cliente_id' => $payment->customerId->value,
+            'tipo' => 'abono',
+            'monto' => $payment->amount->toDecimal(),
+            'abono_id' => $payment->id->value,
+            'usuario_id' => $payment->receivedBy,
+            'created_at' => $payment->receivedAt,
+        ]);
     }
 
     /** One row of the ledger. */
