@@ -68,6 +68,8 @@ final class LimiteFiadoTest extends TestCase
                     'nombre' => 'Doña María',
                     'telefono' => $this->maria->telefono,
                     'limite_fiado' => 25000,
+                    'ampliacion_vigente' => 0,
+                    'limite_efectivo' => 25000,
                     'saldo_actual' => 20000,
                     'disponible' => 5000,
                     'activo' => true,

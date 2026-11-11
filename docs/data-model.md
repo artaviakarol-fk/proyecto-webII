@@ -30,6 +30,8 @@ erDiagram
     clientes ||--o{ movimientos_fiado : "debe por"
     ventas ||--o| movimientos_fiado : "se carga en"
     users ||--o{ movimientos_fiado : "registra"
+    clientes ||--o{ ampliaciones_limite : "recibe"
+    users ||--o{ ampliaciones_limite : "otorga o revierte"
 ```
 
 ## Tablas del negocio
@@ -219,6 +221,23 @@ El rol de la aplicación no puede escribir `saldo_actual` ni borrar clientes: ti
 | `created_at` | `timestamptz` | |
 
 Es un libro de movimientos: las filas solo se agregan. El trigger `trg_movimientos_fiado_aplicar` mueve el `saldo_actual` del cliente en la misma sentencia que inserta el movimiento (suma un cargo, resta una anulación o un abono), así que el saldo siempre es la suma del libro; la función corre con los permisos del dueño del esquema porque la aplicación no puede escribir el saldo. El trigger `trg_movimientos_fiado_inmutables` rechaza cambiar o borrar un movimiento. El `CHECK (saldo_actual >= 0)` de `clientes` impide un abono mayor que la deuda. Tiene aislamiento por negocio con Row Level Security.
+
+### ampliaciones_limite
+
+| Columna | Tipo | Detalle |
+| --- | --- | --- |
+| `id` | `uuid` | Llave primaria |
+| `negocio_id` | `uuid` | Llave foránea a `negocios`; índices `(negocio_id, cliente_id, vigente_hasta)` y `(negocio_id, created_at)` |
+| `cliente_id` | `uuid` | Llave foránea a `clientes` |
+| `monto` | `numeric(12,2)` | Mayor que cero; se suma al límite mientras está vigente |
+| `motivo` | `varchar(255)` | Obligatorio |
+| `usuario_id` | `uuid` | Llave foránea a `users`: quién la otorgó |
+| `vigente_hasta` | `timestamptz` | La medianoche siguiente en hora de Costa Rica; posterior a `created_at` |
+| `revertida_at` | `timestamptz` | Opcional; cuándo la revirtió la administración |
+| `revertida_por` | `uuid` | Llave foránea a `users`; existe si y solo si existe `revertida_at` |
+| `created_at`, `updated_at` | `timestamptz` | `created_at` es cuándo se otorgó |
+
+Es la auditoría de las ampliaciones de emergencia (US-304): nunca se borran (el rol de la aplicación no tiene `DELETE`) y nunca cambian el `limite_fiado` del cliente. El límite efectivo es el límite base más las ampliaciones no revertidas que no han vencido, y nunca pasa de `LIMITE_FIADO_MAXIMO` (₡120 000). Tiene aislamiento por negocio con Row Level Security.
 
 ## Tablas de identidad
 

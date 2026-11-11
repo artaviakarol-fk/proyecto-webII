@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Src\Credit\Customers\Application\UseCases;
 
+use DateTimeImmutable;
 use Src\Credit\Customers\Application\Contracts\CreditableSales;
 use Src\Credit\Customers\Application\Contracts\FiadoBalanceNotifier;
 use Src\Credit\Customers\Application\DTOs\FiadoSale;
@@ -34,18 +35,19 @@ final readonly class SellOnFiado
     /**
      * Charge the sale to the customer in one transaction. The row of the customer is locked first, so
      * two sales to the same customer at the same time are checked against the limit one after the other.
-     * If the sale does not fit, nothing changes: the sale stays open and can be paid in another way.
+     * The limit counts the increases that are still in force at that moment (US-304). If the sale does
+     * not fit, nothing changes: the sale stays open and can be paid in another way.
      */
-    public function execute(string $saleId, string $customerId): FiadoSale
+    public function execute(string $saleId, string $customerId, DateTimeImmutable $at): FiadoSale
     {
         $negocioId = $this->context->current();
 
-        return $this->transaction->run(function () use ($saleId, $customerId, $negocioId): FiadoSale {
+        return $this->transaction->run(function () use ($saleId, $customerId, $negocioId, $at): FiadoSale {
             $customer = $this->customers->findForUpdate(new CustomerId($customerId), $negocioId)
                 ?? throw CustomerNotFoundException::create();
             $sale = $this->sales->find($saleId) ?? throw SaleNotFoundForFiadoException::create();
 
-            $customer->assertCanBuyOnFiado($sale->total);
+            $customer->assertCanBuyOnFiado($sale->total, $at);
 
             $this->sales->markOnFiado($saleId);
             $this->ledger->recordCharge($negocioId, new FiadoCharge($customer->id, $saleId, $sale->total), $this->user->id());

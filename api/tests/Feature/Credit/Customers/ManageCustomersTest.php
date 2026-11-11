@@ -57,6 +57,8 @@ final class ManageCustomersTest extends TestCase
                 'nombre' => 'Doña María',
                 'telefono' => '8888-0001',
                 'limite_fiado' => 90000,
+                'ampliacion_vigente' => 0,
+                'limite_efectivo' => 90000,
                 'saldo_actual' => 0,
                 'disponible' => 90000,
                 'activo' => true,

@@ -17,4 +17,11 @@ return [
 
     'base_limit' => (string) env('LIMITE_FIADO_BASE', '90000'),
 
+    /*
+    | The most a customer may owe counting the exceptional increases a cashier gives (US-304):
+    | ₡120 000, that is the base limit plus up to ₡30 000, agreed with the owner.
+    */
+
+    'max_limit' => (string) env('LIMITE_FIADO_MAXIMO', '120000'),
+
 ];

@@ -77,6 +77,11 @@ A diferencia del proyecto guía, las tablas usan el español del negocio: el due
 | Anulación de un cargo | — | `tipo = 'anulacion'` | — |
 | Venta a fiado | `SellOnFiado` | `metodo_pago = 'fiado'` | `ventas/{id}/fiado` |
 | Disponible | `availableCredit()` | — | `disponible` |
+| Ampliación del límite | `CreditIncrease` | `ampliaciones_limite` | `ampliaciones`, `ampliaciones-limite` |
+| Motivo de la ampliación | `IncreaseReason` | `motivo` | `motivo` |
+| Límite efectivo | `effectiveLimit()` | — | `limite_efectivo` |
+| Ampliación vigente | `increasesAt()` | — | `ampliacion_vigente` |
+| Límite máximo | `maxLimit` | — | — (`LIMITE_FIADO_MAXIMO`) |
 | Abono | — | `tipo = 'abono'` | — |
 
 Los términos de los contextos que aún no existen (saldo prepagado, lista de espera) quedan reservados en los issues de los milestones M2 a M5 y se agregan aquí cuando se construyan.
@@ -109,6 +114,7 @@ Los términos de los contextos que aún no existen (saldo prepagado, lista de es
 - El **saldo** es lo que el cliente debe. Nadie lo escribe directamente: lo mueven los **movimientos de fiado**, un **cargo** por cada venta a fiado y un **abono** por cada pago. Nunca es negativo.
 - Un cliente no se borra: se **desactiva** y conserva su historial y su saldo.
 - Una **venta a fiado** es una venta abierta que la caja cierra cargando su total al cliente. Solo se puede si el cliente está activo y si **lo que debe más el total** no pasa su límite. Lo **disponible** es el límite menos lo que debe.
+- En una emergencia, la caja puede dar una **ampliación** del límite con un **motivo**. Dura hasta la medianoche, no cambia el límite base y queda registrada (quién, cuándo, monto, motivo). El **límite efectivo** es el base más las ampliaciones vigentes, y nunca pasa del **límite máximo** de ₡120 000. La administración revisa las ampliaciones y puede **revertir** las vigentes.
 - **Anular** una venta a fiado devuelve las unidades al stock y le quita ese monto a lo que debe el cliente.
 
 ## Dinero y fechas

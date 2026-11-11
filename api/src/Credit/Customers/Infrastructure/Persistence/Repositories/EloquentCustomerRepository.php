@@ -11,7 +11,9 @@ use Src\Credit\Customers\Domain\Entities\Customer;
 use Src\Credit\Customers\Domain\ValueObjects\CreditLimit;
 use Src\Credit\Customers\Domain\ValueObjects\CustomerId;
 use Src\Credit\Customers\Domain\ValueObjects\CustomerName;
+use Src\Credit\Customers\Domain\ValueObjects\LimitIncrease;
 use Src\Credit\Customers\Domain\ValueObjects\PhoneNumber;
+use Src\Credit\Customers\Infrastructure\Persistence\Models\CreditIncreaseModel;
 use Src\Credit\Customers\Infrastructure\Persistence\Models\CustomerModel;
 use Src\Shared\Domain\ValueObjects\Money;
 use Src\Shared\Domain\ValueObjects\NegocioId;
@@ -94,6 +96,31 @@ final readonly class EloquentCustomerRepository implements CustomerRepository
             CreditLimit::reconstitute(Money::fromDecimal($model->limite_fiado)),
             Money::fromDecimal($model->saldo_actual),
             $model->activo,
+            $this->increasesOf($model),
         );
+    }
+
+    /**
+     * The increases of the customer that were not reverted and have not expired yet; the domain
+     * decides at each moment whether they still count.
+     *
+     * @return list<LimitIncrease>
+     */
+    private function increasesOf(CustomerModel $model): array
+    {
+        $increases = [];
+
+        $rows = CreditIncreaseModel::query()
+            ->where('negocio_id', $model->negocio_id)
+            ->where('cliente_id', $model->id)
+            ->whereNull('revertida_at')
+            ->where('vigente_hasta', '>', now())
+            ->get(['monto', 'vigente_hasta']);
+
+        foreach ($rows as $increase) {
+            $increases[] = new LimitIncrease(Money::fromDecimal($increase->monto), $increase->vigente_hasta);
+        }
+
+        return $increases;
     }
 }
