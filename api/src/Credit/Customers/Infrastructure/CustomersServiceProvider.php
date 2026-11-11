@@ -5,10 +5,16 @@ declare(strict_types=1);
 namespace Src\Credit\Customers\Infrastructure;
 
 use Illuminate\Support\ServiceProvider;
+use Src\Credit\Customers\Application\Contracts\CreditableSales;
+use Src\Credit\Customers\Application\Contracts\FiadoBalanceNotifier;
 use Src\Credit\Customers\Application\UseCases\RegisterCustomer;
 use Src\Credit\Customers\Application\UseCases\UpdateCustomer;
 use Src\Credit\Customers\Domain\Contracts\CustomerRepository;
+use Src\Credit\Customers\Domain\Contracts\FiadoLedger;
+use Src\Credit\Customers\Infrastructure\Events\LaravelFiadoBalanceNotifier;
+use Src\Credit\Customers\Infrastructure\Persistence\Ledger\DatabaseFiadoLedger;
 use Src\Credit\Customers\Infrastructure\Persistence\Repositories\EloquentCustomerRepository;
+use Src\Credit\Customers\Infrastructure\Sales\SalesCreditableSales;
 
 final class CustomersServiceProvider extends ServiceProvider
 {
@@ -19,6 +25,9 @@ final class CustomersServiceProvider extends ServiceProvider
      */
     public array $bindings = [
         CustomerRepository::class => EloquentCustomerRepository::class,
+        FiadoLedger::class => DatabaseFiadoLedger::class,
+        CreditableSales::class => SalesCreditableSales::class,
+        FiadoBalanceNotifier::class => LaravelFiadoBalanceNotifier::class,
     ];
 
     /** Give the use cases the base limit of fiado from the configuration, so they never read it themselves. */

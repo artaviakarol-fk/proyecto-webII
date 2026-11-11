@@ -55,6 +55,18 @@ final readonly class EloquentCustomerRepository implements CustomerRepository
         return $model === null ? null : $this->toDomain($model);
     }
 
+    /** Find the customer scoped to its negocio and lock its row until the transaction ends. */
+    public function findForUpdate(CustomerId $id, NegocioId $negocioId): ?Customer
+    {
+        $model = CustomerModel::query()
+            ->where('negocio_id', $negocioId->value)
+            ->whereKey($id->value)
+            ->lockForUpdate()
+            ->first();
+
+        return $model === null ? null : $this->toDomain($model);
+    }
+
     /** One page of the customers of the negocio ordered by name, optionally matching a name or phone. */
     public function search(NegocioId $negocioId, ?string $term, ?bool $active, PageRequest $page): Page
     {

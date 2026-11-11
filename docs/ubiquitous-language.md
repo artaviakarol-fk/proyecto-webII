@@ -73,7 +73,10 @@ A diferencia del proyecto guía, las tablas usan el español del negocio: el due
 | Saldo (lo que debe) | `balance` (`Money`) | `saldo_actual` | `saldo_actual` |
 | Cliente activo | `active` | `activo` | `activo` |
 | Movimiento de fiado | — | `movimientos_fiado` | — |
-| Cargo | — | `tipo = 'cargo'` | — |
+| Cargo | `FiadoCharge` | `tipo = 'cargo'` | — |
+| Anulación de un cargo | — | `tipo = 'anulacion'` | — |
+| Venta a fiado | `SellOnFiado` | `metodo_pago = 'fiado'` | `ventas/{id}/fiado` |
+| Disponible | `availableCredit()` | — | `disponible` |
 | Abono | — | `tipo = 'abono'` | — |
 
 Los términos de los contextos que aún no existen (saldo prepagado, lista de espera) quedan reservados en los issues de los milestones M2 a M5 y se agregan aquí cuando se construyan.
@@ -105,6 +108,8 @@ Los términos de los contextos que aún no existen (saldo prepagado, lista de es
 - Cada cliente tiene un **límite de fiado**. El **límite base** es de ₡90 000: es el que recibe un cliente nuevo y el máximo que la administración puede definir. La **ampliación** excepcional del cajero (US-304) va aparte.
 - El **saldo** es lo que el cliente debe. Nadie lo escribe directamente: lo mueven los **movimientos de fiado**, un **cargo** por cada venta a fiado y un **abono** por cada pago. Nunca es negativo.
 - Un cliente no se borra: se **desactiva** y conserva su historial y su saldo.
+- Una **venta a fiado** es una venta abierta que la caja cierra cargando su total al cliente. Solo se puede si el cliente está activo y si **lo que debe más el total** no pasa su límite. Lo **disponible** es el límite menos lo que debe.
+- **Anular** una venta a fiado devuelve las unidades al stock y le quita ese monto a lo que debe el cliente.
 
 ## Dinero y fechas
 

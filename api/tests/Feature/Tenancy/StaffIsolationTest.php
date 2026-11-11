@@ -79,7 +79,11 @@ final class StaffIsolationTest extends TestCase
             '{cliente}' => $this->foreignCustomer->id,
         ]);
         array_walk_recursive($payload, function (mixed &$value): void {
-            $value = $value === '{own}' ? $this->ownProduct->id : $value;
+            $value = match ($value) {
+                '{own}' => $this->ownProduct->id,
+                '{cliente}' => $this->foreignCustomer->id,
+                default => $value,
+            };
         });
 
         $this->json($method, '/api/v1'.$uri, $payload)
@@ -129,6 +133,7 @@ final class StaffIsolationTest extends TestCase
             'ver cliente' => ['GET', '/clientes/{cliente}', []],
             'reemplazar cliente' => ['PUT', '/clientes/{cliente}', ['nombre' => 'Otro nombre', 'limite_fiado' => 1000]],
             'desactivar cliente' => ['DELETE', '/clientes/{cliente}', []],
+            'vender a fiado a un cliente ajeno' => ['POST', '/ventas/{venta}/fiado', ['cliente_id' => '{cliente}']],
         ];
     }
 

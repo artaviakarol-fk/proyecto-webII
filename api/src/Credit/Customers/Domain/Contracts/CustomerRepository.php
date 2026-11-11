@@ -22,6 +22,12 @@ interface CustomerRepository
     public function find(CustomerId $id, NegocioId $negocioId): ?Customer;
 
     /**
+     * Find a customer of the negocio and lock its row until the transaction ends, so two sales
+     * on fiado to the same customer are checked against the limit one after the other.
+     */
+    public function findForUpdate(CustomerId $id, NegocioId $negocioId): ?Customer;
+
+    /**
      * One page of the customers of the negocio ordered by name, optionally matching a name or phone
      * and optionally only the active (true) or inactive (false) ones.
      *

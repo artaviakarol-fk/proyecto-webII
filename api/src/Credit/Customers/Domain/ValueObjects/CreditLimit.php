@@ -14,7 +14,7 @@ final readonly class CreditLimit
     public static function upTo(Money $amount, Money $maximum): self
     {
         if ($amount->cents > $maximum->cents) {
-            throw new InvalidValueException('credit.limit_above_maximum', ['max' => self::format($maximum)]);
+            throw new InvalidValueException('credit.limit_above_maximum', ['max' => Colones::format($maximum)]);
         }
 
         return new self($amount);
@@ -27,10 +27,4 @@ final readonly class CreditLimit
     }
 
     private function __construct(public Money $amount) {}
-
-    /** Write an amount the way the messages show it: ₡90 000. */
-    private static function format(Money $amount): string
-    {
-        return '₡'.number_format(intdiv($amount->cents, 100), 0, ',', ' ');
-    }
 }
