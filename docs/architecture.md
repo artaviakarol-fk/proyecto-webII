@@ -177,6 +177,11 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `POST /api/v1/productos/{id}/vencidos` | Marcar unidades vencidas de un producto (`cantidad`, `motivo`). Siguen en el stock pero salen del stock vendible. Bodega y administración |
 | `POST /api/v1/entradas` | Registrar mercadería recibida: proveedor, fecha y líneas (producto existente o nuevo, cantidad, costo unitario). Bodega y administración |
 | `GET /api/v1/entradas/{id}` | Ver una entrada con sus líneas, quién la registró y cuándo. Bodega y administración |
+| `GET /api/v1/clientes` | Listar los clientes de fiado del negocio por páginas, por nombre, con lo que debe cada uno. Filtros opcionales: `buscar` (nombre o teléfono) y `activo`. Caja y administración |
+| `GET /api/v1/clientes/{id}` | Ver un cliente con su límite y su saldo. Caja y administración |
+| `POST /api/v1/clientes` | Registrar un cliente de confianza: nombre, teléfono opcional y límite de fiado (por defecto el límite base, ₡90 000, que también es el máximo). Administración |
+| `PUT /api/v1/clientes/{id}` | Reemplazar los datos, el límite y el estado de un cliente; el saldo nunca cambia aquí. Administración |
+| `DELETE /api/v1/clientes/{id}` | Desactivar un cliente: ya no compra a fiado, pero conserva su historial y su saldo. Administración |
 | `GET /api/v1/ventas` | Listar las ventas del negocio por páginas (`pagina`, `por_pagina`), de la más reciente a la más antigua, sin sus líneas. Filtros opcionales: `estado` y `fecha` (día en hora de Costa Rica). Caja y administración |
 | `POST /api/v1/ventas` | Abrir una venta en efectivo: líneas con producto y cantidad (el precio sale del catálogo). Descuenta el stock. Caja y administración |
 | `GET /api/v1/ventas/{id}` | Ver una venta con sus líneas, total, cajero y estado. Caja y administración |

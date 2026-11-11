@@ -206,6 +206,404 @@
                 }
             }
         },
+        "/clientes": {
+            "get": {
+                "operationId": "credit.customers.index",
+                "summary": "List the customers of the negocio by pages, with what each one owes",
+                "tags": [
+                    "Customer"
+                ],
+                "parameters": [
+                    {
+                        "name": "pagina",
+                        "in": "query",
+                        "description": "N\u00famero de p\u00e1gina, desde 1.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "por_pagina",
+                        "in": "query",
+                        "description": "Elementos por p\u00e1gina, de 1 a 50. Por defecto, 15.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 50
+                        }
+                    },
+                    {
+                        "name": "buscar",
+                        "in": "query",
+                        "description": "Texto que se busca en el nombre o el tel\u00e9fono.",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 120
+                        }
+                    },
+                    {
+                        "name": "activo",
+                        "in": "query",
+                        "description": "Solo los clientes activos (1) o inactivos (0). Sin el filtro, todos.",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/CustomerResource"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "pagina": {
+                                                    "type": "integer"
+                                                },
+                                                "por_pagina": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "ultima_pagina": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "pagina",
+                                                "por_pagina",
+                                                "total",
+                                                "ultima_pagina"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar",
+                    "caja"
+                ]
+            },
+            "post": {
+                "operationId": "credit.customers.store",
+                "summary": "Register a trusted customer; without a limit it gets the base limit (\u20a190 000)",
+                "tags": [
+                    "Customer"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CustomerRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`CustomerResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/CustomerResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/clientes/{cliente}": {
+            "get": {
+                "operationId": "credit.customers.show",
+                "summary": "Show one customer of the negocio and its balance; a customer of another negocio answers 404",
+                "tags": [
+                    "Customer"
+                ],
+                "parameters": [
+                    {
+                        "name": "cliente",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`CustomerResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/CustomerResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar",
+                    "caja"
+                ]
+            },
+            "put": {
+                "operationId": "credit.customers.update",
+                "summary": "Replace the data and the limit of a customer; the balance never changes here",
+                "tags": [
+                    "Customer"
+                ],
+                "parameters": [
+                    {
+                        "name": "cliente",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CustomerRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`CustomerResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/CustomerResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            },
+            "delete": {
+                "operationId": "credit.customers.destroy",
+                "summary": "Deactivate a customer: it can no longer buy on fiado, but its history and balance stay",
+                "tags": [
+                    "Customer"
+                ],
+                "parameters": [
+                    {
+                        "name": "cliente",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
         "/productos/{producto}/vencidos": {
             "post": {
                 "operationId": "inventory.expirations.store",
@@ -2473,6 +2871,74 @@
                     "negocio_id"
                 ],
                 "title": "CurrentUserResource"
+            },
+            "CustomerRequest": {
+                "type": "object",
+                "description": "Data of a customer, used to register it (POST) and to replace it (PUT).\n\nThe balance is not a field: anything sent as saldo_actual is ignored, because only the\nmovements of fiado change it.",
+                "properties": {
+                    "nombre": {
+                        "type": "string",
+                        "description": "Nombre del cliente.",
+                        "maxLength": 120
+                    },
+                    "telefono": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Tel\u00e9fono, por ejemplo 8888-8888 o +506 8888 8888.",
+                        "pattern": "^\\+?[0-9][0-9 -]{6,18}[0-9]$",
+                        "maxLength": 20
+                    },
+                    "limite_fiado": {
+                        "type": "number",
+                        "description": "L\u00edmite de fiado en colones, de 0 al l\u00edmite base (\u20a190 000). Si no se env\u00eda, se usa el l\u00edmite base.",
+                        "minimum": 0
+                    },
+                    "activo": {
+                        "type": "boolean",
+                        "description": "Si el cliente puede comprar a fiado. Por defecto, true."
+                    }
+                },
+                "required": [
+                    "nombre"
+                ],
+                "title": "CustomerRequest"
+            },
+            "CustomerResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "nombre": {
+                        "type": "string"
+                    },
+                    "telefono": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "limite_fiado": {
+                        "type": "number"
+                    },
+                    "saldo_actual": {
+                        "type": "number"
+                    },
+                    "activo": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "id",
+                    "nombre",
+                    "telefono",
+                    "limite_fiado",
+                    "saldo_actual",
+                    "activo"
+                ],
+                "title": "CustomerResource"
             },
             "ExpiredUnitsResource": {
                 "type": "object",

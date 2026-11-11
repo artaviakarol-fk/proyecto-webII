@@ -26,6 +26,10 @@ erDiagram
     users ||--o{ ventas : "cobra"
     ventas ||--|{ venta_lineas : "contiene"
     productos ||--o{ venta_lineas : "se vende en"
+    negocios ||--o{ clientes : "fía a"
+    clientes ||--o{ movimientos_fiado : "debe por"
+    ventas ||--o| movimientos_fiado : "se carga en"
+    users ||--o{ movimientos_fiado : "registra"
 ```
 
 ## Tablas del negocio
@@ -182,6 +186,39 @@ Una fila por cada cambio del stock, para la trazabilidad.
 | `created_at`, `updated_at` | `timestamptz` | |
 
 Un índice único parcial `pagos_venta_viva_unique` impide dos pagos pendientes o pagados para la misma venta; un pago fallido o reembolsado deja cobrarla de nuevo. Tiene aislamiento por negocio con Row Level Security.
+
+## Tablas de fiado
+
+### clientes
+
+| Columna | Tipo | Detalle |
+| --- | --- | --- |
+| `id` | `uuid` | Llave primaria |
+| `negocio_id` | `uuid` | Llave foránea a `negocios`; índice `(negocio_id, nombre)` |
+| `nombre` | `varchar(120)` | |
+| `telefono` | `varchar(20)` | Opcional |
+| `limite_fiado` | `numeric(12,2)` | Cero o más; por defecto el límite base (`LIMITE_FIADO_BASE`, ₡90 000), que también es el máximo que puede definir la administración |
+| `saldo_actual` | `numeric(12,2)` | Cero o más; lo que el cliente debe. Solo lo cambian los movimientos de fiado |
+| `activo` | `boolean` | Un cliente no se borra: se desactiva y conserva su historial |
+| `created_at`, `updated_at` | `timestamptz` | |
+
+El rol de la aplicación no puede escribir `saldo_actual` ni borrar clientes: tiene permiso de `INSERT` y `UPDATE` solo sobre las demás columnas, y ninguno de `DELETE`. Tiene aislamiento por negocio con Row Level Security.
+
+### movimientos_fiado
+
+| Columna | Tipo | Detalle |
+| --- | --- | --- |
+| `id` | `uuid` | Llave primaria |
+| `negocio_id` | `uuid` | Llave foránea a `negocios` |
+| `cliente_id` | `uuid` | Llave foránea a `clientes`; índice `(negocio_id, cliente_id, created_at)` |
+| `tipo` | `varchar(10)` | `cargo` (una venta a fiado, con `venta_id`) o `abono` (con `abono_id`) |
+| `monto` | `numeric(12,2)` | Mayor que cero |
+| `venta_id` | `uuid` | Llave foránea a `ventas`; solo en un cargo, y una venta se carga una sola vez |
+| `abono_id` | `uuid` | Solo en un abono; la tabla `abonos` llega con la US-305 |
+| `usuario_id` | `uuid` | Llave foránea a `users`: quién registró el movimiento |
+| `created_at` | `timestamptz` | |
+
+Es un libro de movimientos: las filas solo se agregan. El trigger `trg_movimientos_fiado_aplicar` mueve el `saldo_actual` del cliente en la misma sentencia que inserta el movimiento (suma un cargo, resta un abono), así que el saldo siempre es la suma del libro; la función corre con los permisos del dueño del esquema porque la aplicación no puede escribir el saldo. El trigger `trg_movimientos_fiado_inmutables` rechaza cambiar o borrar un movimiento. El `CHECK (saldo_actual >= 0)` de `clientes` impide un abono mayor que la deuda. Tiene aislamiento por negocio con Row Level Security.
 
 ## Tablas de identidad
 
