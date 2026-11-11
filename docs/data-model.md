@@ -26,6 +26,15 @@ erDiagram
     users ||--o{ ventas : "cobra"
     ventas ||--|{ venta_lineas : "contiene"
     productos ||--o{ venta_lineas : "se vende en"
+    negocios ||--o{ clientes : "fía a"
+    clientes ||--o{ movimientos_fiado : "debe por"
+    ventas ||--o| movimientos_fiado : "se carga en"
+    users ||--o{ movimientos_fiado : "registra"
+    clientes ||--o{ ampliaciones_limite : "recibe"
+    users ||--o{ ampliaciones_limite : "otorga o revierte"
+    clientes ||--o{ abonos : "paga con"
+    abonos ||--|| movimientos_fiado : "se registra en"
+    users ||--o{ abonos : "recibe"
 ```
 
 ## Tablas del negocio
@@ -138,7 +147,7 @@ Una fila por cada cambio del stock, para la trazabilidad.
 | `id` | `uuid` | Llave primaria |
 | `negocio_id` | `uuid` | Llave foránea a `negocios` |
 | `cajero_id` | `uuid` | Llave foránea a `users` |
-| `metodo_pago` | `varchar(20)` | Por ahora solo `efectivo` |
+| `metodo_pago` | `varchar(20)` | `efectivo`, `tarjeta`, `sinpe_movil` o `fiado` |
 | `estado` | `varchar(20)` | `abierta`, `cobrada` o `anulada`; índice `(negocio_id, estado, created_at)` |
 | `total` | `numeric(12,2)` | Cero o más |
 | `cedula_comprador` | `varchar(20)` | Opcional; obligatoria si alguna línea es de licor |
@@ -168,7 +177,7 @@ Una fila por cada cambio del stock, para la trazabilidad.
 | `id` | `uuid` | Llave primaria |
 | `negocio_id` | `uuid` | Llave foránea a `negocios` |
 | `venta_id` | `uuid` | Llave foránea compuesta `(venta_id, negocio_id)` a `ventas` |
-| `abono_id` | `uuid` | Opcional; reservado para abonos de fiado (el pago es de una venta o de un abono, nunca de ambos) |
+| `abono_id` | `uuid` | Opcional; llave foránea a `abonos`, para el pago de un abono con pasarela (el pago es de una venta o de un abono, nunca de ambos) |
 | `proveedor` | `varchar(20)` | `onvo` o `paypal` |
 | `metodo_pago` | `varchar(20)` | `tarjeta` o `sinpe_movil` |
 | `moneda` | `char(3)` | `CRC` |
@@ -182,6 +191,72 @@ Una fila por cada cambio del stock, para la trazabilidad.
 | `created_at`, `updated_at` | `timestamptz` | |
 
 Un índice único parcial `pagos_venta_viva_unique` impide dos pagos pendientes o pagados para la misma venta; un pago fallido o reembolsado deja cobrarla de nuevo. Tiene aislamiento por negocio con Row Level Security.
+
+## Tablas de fiado
+
+### clientes
+
+| Columna | Tipo | Detalle |
+| --- | --- | --- |
+| `id` | `uuid` | Llave primaria |
+| `negocio_id` | `uuid` | Llave foránea a `negocios`; índice `(negocio_id, nombre)` |
+| `nombre` | `varchar(120)` | |
+| `telefono` | `varchar(20)` | Opcional |
+| `limite_fiado` | `numeric(12,2)` | Cero o más; por defecto el límite base (`LIMITE_FIADO_BASE`, ₡90 000), que también es el máximo que puede definir la administración |
+| `saldo_actual` | `numeric(12,2)` | Cero o más; lo que el cliente debe. Solo lo cambian los movimientos de fiado |
+| `activo` | `boolean` | Un cliente no se borra: se desactiva y conserva su historial |
+| `created_at`, `updated_at` | `timestamptz` | |
+
+El rol de la aplicación no puede escribir `saldo_actual` ni borrar clientes: tiene permiso de `INSERT` y `UPDATE` solo sobre las demás columnas, y ninguno de `DELETE`. Tiene aislamiento por negocio con Row Level Security.
+
+### movimientos_fiado
+
+| Columna | Tipo | Detalle |
+| --- | --- | --- |
+| `id` | `uuid` | Llave primaria |
+| `negocio_id` | `uuid` | Llave foránea a `negocios` |
+| `cliente_id` | `uuid` | Llave foránea a `clientes`; índice `(negocio_id, cliente_id, created_at)` |
+| `tipo` | `varchar(10)` | `cargo` (una venta a fiado, con `venta_id`), `anulacion` (la anulación de esa venta, con el mismo `venta_id`) o `abono` (con `abono_id`) |
+| `monto` | `numeric(12,2)` | Mayor que cero |
+| `venta_id` | `uuid` | Llave foránea a `ventas`; solo en un cargo o una anulación. Una venta se carga una sola vez y se anula una sola vez |
+| `abono_id` | `uuid` | Llave foránea a `abonos`; solo en un abono, y un abono se registra una sola vez |
+| `usuario_id` | `uuid` | Llave foránea a `users`: quién registró el movimiento |
+| `created_at` | `timestamptz` | |
+
+Es un libro de movimientos: las filas solo se agregan. El trigger `trg_movimientos_fiado_aplicar` mueve el `saldo_actual` del cliente en la misma sentencia que inserta el movimiento (suma un cargo, resta una anulación o un abono), así que el saldo siempre es la suma del libro; la función corre con los permisos del dueño del esquema porque la aplicación no puede escribir el saldo. El trigger `trg_movimientos_fiado_inmutables` rechaza cambiar o borrar un movimiento. El `CHECK (saldo_actual >= 0)` de `clientes` impide un abono mayor que la deuda. Tiene aislamiento por negocio con Row Level Security.
+
+### ampliaciones_limite
+
+| Columna | Tipo | Detalle |
+| --- | --- | --- |
+| `id` | `uuid` | Llave primaria |
+| `negocio_id` | `uuid` | Llave foránea a `negocios`; índices `(negocio_id, cliente_id, vigente_hasta)` y `(negocio_id, created_at)` |
+| `cliente_id` | `uuid` | Llave foránea a `clientes` |
+| `monto` | `numeric(12,2)` | Mayor que cero; se suma al límite mientras está vigente |
+| `motivo` | `varchar(255)` | Obligatorio |
+| `usuario_id` | `uuid` | Llave foránea a `users`: quién la otorgó |
+| `vigente_hasta` | `timestamptz` | La medianoche siguiente en hora de Costa Rica; posterior a `created_at` |
+| `revertida_at` | `timestamptz` | Opcional; cuándo la revirtió la administración |
+| `revertida_por` | `uuid` | Llave foránea a `users`; existe si y solo si existe `revertida_at` |
+| `created_at`, `updated_at` | `timestamptz` | `created_at` es cuándo se otorgó |
+
+Es la auditoría de las ampliaciones de emergencia (US-304): nunca se borran (el rol de la aplicación no tiene `DELETE`) y nunca cambian el `limite_fiado` del cliente. El límite efectivo es el límite base más las ampliaciones no revertidas que no han vencido, y nunca pasa de `LIMITE_FIADO_MAXIMO` (₡120 000). Tiene aislamiento por negocio con Row Level Security.
+
+### abonos
+
+| Columna | Tipo | Detalle |
+| --- | --- | --- |
+| `id` | `uuid` | Llave primaria; los últimos 8 caracteres son el número del recibo |
+| `negocio_id` | `uuid` | Llave foránea a `negocios`; índice `(negocio_id, cliente_id, created_at)` |
+| `cliente_id` | `uuid` | Llave foránea a `clientes` |
+| `monto` | `numeric(12,2)` | Mayor que cero |
+| `metodo_pago` | `varchar(20)` | Por ahora solo `efectivo`; la pasarela llega en otro PR |
+| `saldo_anterior` | `numeric(12,2)` | Lo que debía el cliente antes del abono |
+| `saldo_restante` | `numeric(12,2)` | Cero o más, e igual a `saldo_anterior - monto` |
+| `usuario_id` | `uuid` | Llave foránea a `users`: quién lo recibió |
+| `created_at` | `timestamptz` | |
+
+Cada abono guarda los saldos de antes y de después, así su recibo siempre muestra lo mismo. El abono y su movimiento `abono` en `movimientos_fiado` se registran en la misma transacción, y el trigger del libro baja el saldo del cliente. La aplicación no puede cambiar ni borrar un abono. Tiene aislamiento por negocio con Row Level Security.
 
 ## Tablas de identidad
 

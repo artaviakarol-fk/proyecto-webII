@@ -18,8 +18,11 @@ final class Sale
     /** The way of paying that needs no provider. */
     public const string CASH = 'efectivo';
 
-    /** The ways a sale can be paid: in cash at the register or through a payment provider. */
-    public const array PAYMENT_METHODS = [self::CASH, 'tarjeta', 'sinpe_movil'];
+    /** The way of closing a sale that charges its total to what a customer owes. */
+    public const string FIADO = 'fiado';
+
+    /** The ways a sale can be paid: in cash at the register, through a payment provider or on fiado. */
+    public const array PAYMENT_METHODS = [self::CASH, 'tarjeta', 'sinpe_movil', self::FIADO];
 
     /**
      * Hold a sale paid in cash or through a provider: who sold it, what was sold, who bought it when it is known and the stage it is in.
@@ -94,6 +97,12 @@ final class Sale
 
         $this->status = SaleStatus::Paid;
         $this->paymentMethod = $method;
+    }
+
+    /** Tell whether the sale was closed on fiado, so its total is part of what a customer owes. */
+    public function isOnFiado(): bool
+    {
+        return $this->status === SaleStatus::Paid && $this->paymentMethod === self::FIADO;
     }
 
     /** Cancel an open or paid sale; its units go back to the stock. */
