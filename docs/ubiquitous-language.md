@@ -86,6 +86,9 @@ A diferencia del proyecto guía, las tablas usan el español del negocio: el due
 | Saldo anterior | `balanceBefore` | `saldo_anterior` | `saldo_anterior` |
 | Saldo restante | `balanceAfter` | `saldo_restante` | `saldo_restante` |
 | Recibo | `CreditPaymentReceipt` | — | `recibo` |
+| Borrador de venta | `SaleDraft` | — (no se guarda) | `ventas/borrador-ia` |
+| Texto del cajero | `SaleText` | — | `texto` |
+| Aviso del borrador | `warnings` | — | `avisos` |
 | Abono | — | `tipo = 'abono'` | — |
 
 Los términos de los contextos que aún no existen (saldo prepagado, lista de espera) quedan reservados en los issues de los milestones M2 a M5 y se agregan aquí cuando se construyan.

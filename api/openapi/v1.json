@@ -3092,6 +3092,71 @@
                 ]
             }
         },
+        "/ventas/borrador-ia": {
+            "post": {
+                "operationId": "sales.drafts.store",
+                "summary": "Turn what the cashier wrote into a draft of a sale, checked against the catalog, the stock and the\nlimit of fiado. It never registers the sale: the cashier confirms it with POST /ventas (and\nPOST /ventas/{id}/fiado on fiado). If the AI provider fails it answers 503 and the manual flow keeps working",
+                "tags": [
+                    "SaleDraft"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DraftSaleRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SaleDraftResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SaleDraftResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "caja"
+                ]
+            }
+        },
         "/ventas/{venta}/pago": {
             "post": {
                 "operationId": "billing.payments.store",
@@ -3808,6 +3873,21 @@
                     "activo"
                 ],
                 "title": "CustomerResource"
+            },
+            "DraftSaleRequest": {
+                "type": "object",
+                "description": "What the cashier wrote.",
+                "properties": {
+                    "texto": {
+                        "type": "string",
+                        "description": "Lo que escribi\u00f3 el cajero, por ejemplo \"anote 2 leches y 1 pan a do\u00f1a Mar\u00eda en fiado\".",
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "texto"
+                ],
+                "title": "DraftSaleRequest"
             },
             "ExpiredUnitsResource": {
                 "type": "object",
@@ -4556,6 +4636,128 @@
                     "dias"
                 ],
                 "title": "ReplaceOpeningHoursRequest"
+            },
+            "SaleDraftResource": {
+                "type": "object",
+                "properties": {
+                    "texto": {
+                        "type": "string"
+                    },
+                    "metodo_pago": {
+                        "type": "string"
+                    },
+                    "cliente_mencionado": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "cliente": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "nombre": {
+                                "type": "string"
+                            },
+                            "activo": {
+                                "type": "boolean"
+                            },
+                            "saldo_actual": {
+                                "type": "number"
+                            },
+                            "disponible": {
+                                "type": "number"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "nombre",
+                            "activo",
+                            "saldo_actual",
+                            "disponible"
+                        ]
+                    },
+                    "lineas": {
+                        "type": "array",
+                        "items": {}
+                    },
+                    "no_encontrados": {
+                        "type": "array",
+                        "items": {}
+                    },
+                    "total": {
+                        "type": "number"
+                    },
+                    "cabe_en_fiado": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
+                    },
+                    "avisos": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "listo_para_confirmar": {
+                        "type": "boolean"
+                    },
+                    "confirmar": {
+                        "type": "object",
+                        "properties": {
+                            "venta": {
+                                "type": "object",
+                                "properties": {
+                                    "lineas": {
+                                        "type": "array",
+                                        "items": {}
+                                    }
+                                },
+                                "required": [
+                                    "lineas"
+                                ]
+                            },
+                            "fiado": {
+                                "type": [
+                                    "object",
+                                    "null"
+                                ],
+                                "properties": {
+                                    "cliente_id": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "cliente_id"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "venta",
+                            "fiado"
+                        ]
+                    }
+                },
+                "required": [
+                    "texto",
+                    "metodo_pago",
+                    "cliente_mencionado",
+                    "cliente",
+                    "lineas",
+                    "no_encontrados",
+                    "total",
+                    "cabe_en_fiado",
+                    "avisos",
+                    "listo_para_confirmar",
+                    "confirmar"
+                ],
+                "title": "SaleDraftResource"
             },
             "SaleRequest": {
                 "type": "object",

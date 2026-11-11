@@ -190,6 +190,7 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `GET /api/v1/clientes/{id}/abonos` | Listar los abonos de un cliente, del más reciente al más antiguo. Caja y administración |
 | `GET /api/v1/abonos/{id}` | Ver un abono. Caja y administración |
 | `GET /api/v1/abonos/{id}/recibo` | El recibo del abono como página imprimible (`text/html`, vista Blade del módulo): negocio, número, fecha, cliente, quién lo recibió, saldo anterior, abono y saldo restante. El navegador lo imprime o lo guarda como PDF. Caja y administración |
+| `POST /api/v1/ventas/borrador-ia` | Convertir lo que escribe el cajero (`texto`, por ejemplo "anote 2 leches y 1 pan a doña María en fiado") en un borrador de venta: productos del catálogo, cantidades, cliente y método de pago, contrastado con el stock vendible y el límite de fiado, con `avisos` y los cuerpos para confirmarla a mano (`confirmar`). Nunca registra la venta. Si el proveedor de IA falla o responde algo inválido, `503`. Caja y administración |
 | `GET /api/v1/ventas` | Listar las ventas del negocio por páginas (`pagina`, `por_pagina`), de la más reciente a la más antigua, sin sus líneas. Filtros opcionales: `estado` y `fecha` (día en hora de Costa Rica). Caja y administración |
 | `POST /api/v1/ventas` | Abrir una venta en efectivo: líneas con producto y cantidad (el precio sale del catálogo). Descuenta el stock. Caja y administración |
 | `GET /api/v1/ventas/{id}` | Ver una venta con sus líneas, total, cajero y estado. Caja y administración |
@@ -222,6 +223,12 @@ El límite que se revisa es el **límite efectivo**: el `limite_fiado` del clien
 Un **abono** (`ReceiveCreditPayment`) también bloquea primero la fila del cliente, revisa que el monto no pase lo que debe, guarda el abono con el saldo de antes y el de después, y registra su movimiento `abono`, que baja el saldo. El recibo es una vista Blade del módulo (`Infrastructure/Http/Views/recibo.blade.php`, registrada como `credit::recibo`) y no una librería de PDF: el navegador lo imprime o lo guarda como PDF. Por ahora el abono se recibe en efectivo; el pago con pasarela se agrega cuando esté integrado el webhook de los cobros, usando la columna `pagos.abono_id`.
 
 Cada cambio de saldo despacha el evento `SaldoFiadoActualizado` cuando la transacción se confirma (`ShouldDispatchAfterCommit`); lo va a escuchar el aviso de WhatsApp (US-505).
+
+### Borrador de venta con IA (US-308)
+
+El módulo `Sales/SaleDrafts` convierte el texto libre del cajero en un borrador estructurado. El caso de uso `DraftSaleFromText` le pide al puerto `SaleInterpreter` que interprete el texto; su adaptador `GeminiSaleInterpreter` llama a la API `generateContent` de Google Gemini desde el servidor con el cliente `Http` de Laravel, tiempo de espera de 15 segundos y un reintento ante fallos de red o del proveedor. El modelo debe responder JSON con un esquema de respuesta (`responseSchema`: cliente, método de pago y líneas), así que la respuesta es un dato y no una conversación; además se valida con el `Validator` de Laravel antes de usarla. Si el proveedor falla, tarda o responde algo que no cumple el esquema, la API responde `503` (`servicio-no-disponible`) y el flujo manual sigue funcionando.
+
+La IA no decide nada sobre los datos del negocio: `NameMatcher` busca cada producto y el cliente por nombre aproximado (sin mayúsculas, tildes ni plurales) solo entre los del negocio, y el caso de uso revisa el stock vendible (puerto `DraftCatalog`) y el límite de fiado (puerto `DraftCustomers`, cuyo adaptador usa `ListCustomers` del crédito). Lo que no calza se devuelve en `avisos` y `no_encontrados`. El borrador nunca se guarda: el cajero lo confirma con `POST /ventas` y, si es a fiado, `POST /ventas/{id}/fiado`, con los cuerpos que trae `confirmar`. La clave vive en `GEMINI_API_KEY` (capa gratuita de Google AI Studio) y el modelo en `GEMINI_MODEL`; sin clave, el borrador responde `503` sin llamar a nadie. Las pruebas simulan al proveedor con `Http::fake` y ninguna llama a la API real.
 
 ### Control de edad en la venta de licor
 

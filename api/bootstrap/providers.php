@@ -11,6 +11,7 @@ use Src\Inventory\Products\Infrastructure\ProductsServiceProvider;
 use Src\Inventory\Receipts\Infrastructure\ReceiptsServiceProvider;
 use Src\Negocios\OpeningHours\Infrastructure\OpeningHoursServiceProvider;
 use Src\Negocios\Profile\Infrastructure\ProfileServiceProvider;
+use Src\Sales\SaleDrafts\Infrastructure\SaleDraftsServiceProvider;
 use Src\Sales\Sales\Infrastructure\SalesServiceProvider;
 use Src\Shared\Infrastructure\SharedServiceProvider;
 
@@ -26,4 +27,5 @@ return [
     SalesServiceProvider::class,
     PaymentsServiceProvider::class,
     CustomersServiceProvider::class,
+    SaleDraftsServiceProvider::class,
 ];
