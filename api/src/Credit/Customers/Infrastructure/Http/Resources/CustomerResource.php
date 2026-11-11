@@ -32,6 +32,7 @@ final class CustomerResource extends JsonResource
             'telefono' => $this->customer->phone?->value,
             'limite_fiado' => $this->customer->creditLimit->amount->cents / 100,
             'saldo_actual' => $this->customer->balance->cents / 100,
+            'disponible' => $this->customer->availableCredit()->cents / 100,
             'activo' => $this->customer->active,
         ];
     }

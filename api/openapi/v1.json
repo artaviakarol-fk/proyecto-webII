@@ -699,6 +699,91 @@
                 ]
             }
         },
+        "/ventas/{venta}/fiado": {
+            "post": {
+                "operationId": "credit.fiado.store",
+                "summary": "Close an open sale on fiado: its total goes to what the customer owes. If it does not fit the\nlimit of the customer, it answers 409 with what they owe and what is left, and the sale stays open",
+                "tags": [
+                    "FiadoSale"
+                ],
+                "parameters": [
+                    {
+                        "name": "venta",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SellOnFiadoRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`FiadoSaleResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/FiadoSaleResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "caja"
+                ]
+            }
+        },
         "/entradas": {
             "post": {
                 "operationId": "inventory.receipts.store",
@@ -2926,6 +3011,9 @@
                     "saldo_actual": {
                         "type": "number"
                     },
+                    "disponible": {
+                        "type": "number"
+                    },
                     "activo": {
                         "type": "boolean"
                     }
@@ -2936,6 +3024,7 @@
                     "telefono",
                     "limite_fiado",
                     "saldo_actual",
+                    "disponible",
                     "activo"
                 ],
                 "title": "CustomerResource"
@@ -2987,6 +3076,66 @@
                     "stock_vendible"
                 ],
                 "title": "ExpiredUnitsResource"
+            },
+            "FiadoSaleResource": {
+                "type": "object",
+                "properties": {
+                    "venta_id": {
+                        "type": "string"
+                    },
+                    "metodo_pago": {
+                        "type": "string",
+                        "const": "fiado"
+                    },
+                    "total": {
+                        "type": "number"
+                    },
+                    "cliente": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "nombre": {
+                                "type": "string"
+                            },
+                            "telefono": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "limite_fiado": {
+                                "type": "number"
+                            },
+                            "saldo_actual": {
+                                "type": "number"
+                            },
+                            "disponible": {
+                                "type": "number"
+                            },
+                            "activo": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "nombre",
+                            "telefono",
+                            "limite_fiado",
+                            "saldo_actual",
+                            "disponible",
+                            "activo"
+                        ]
+                    }
+                },
+                "required": [
+                    "venta_id",
+                    "metodo_pago",
+                    "total",
+                    "cliente"
+                ],
+                "title": "FiadoSaleResource"
             },
             "HealthResource": {
                 "type": "object",
@@ -3822,6 +3971,21 @@
                     "anulada_en"
                 ],
                 "title": "SaleSummaryResource"
+            },
+            "SellOnFiadoRequest": {
+                "type": "object",
+                "description": "The customer an open sale is charged to.",
+                "properties": {
+                    "cliente_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Cliente activo del negocio al que se carga la venta."
+                    }
+                },
+                "required": [
+                    "cliente_id"
+                ],
+                "title": "SellOnFiadoRequest"
             },
             "StartPaymentRequest": {
                 "type": "object",

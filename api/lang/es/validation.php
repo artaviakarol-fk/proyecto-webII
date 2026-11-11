@@ -199,6 +199,7 @@ return [
         'lineas.*.cantidad' => 'cantidad',
         'lineas.*.costo_unitario' => 'costo unitario',
         'telefono' => 'teléfono',
+        'cliente_id' => 'cliente',
         'limite_fiado' => 'límite de fiado',
         'activo' => 'activo',
         'buscar' => 'búsqueda',

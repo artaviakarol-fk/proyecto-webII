@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Src\Credit\Customers\Domain\Entities;
 
+use Src\Credit\Customers\Domain\Exceptions\CreditLimitExceededException;
+use Src\Credit\Customers\Domain\Exceptions\CustomerInactiveException;
 use Src\Credit\Customers\Domain\ValueObjects\CreditLimit;
 use Src\Credit\Customers\Domain\ValueObjects\CustomerId;
 use Src\Credit\Customers\Domain\ValueObjects\CustomerName;
@@ -77,5 +79,29 @@ final class Customer
     public function reactivate(): void
     {
         $this->active = true;
+    }
+
+    /** The most the customer may owe right now: the base limit (the exceptional increases of US-304 add to it). */
+    public function effectiveLimit(): Money
+    {
+        return $this->creditLimit->amount;
+    }
+
+    /** What the customer can still buy on fiado: the limit minus what they owe, never below zero. */
+    public function availableCredit(): Money
+    {
+        return new Money(max(0, $this->effectiveLimit()->cents - $this->balance->cents));
+    }
+
+    /** A sale goes on fiado only to an active customer, and only if what they owe plus the sale fits the limit. */
+    public function assertCanBuyOnFiado(Money $sale): void
+    {
+        if (! $this->active) {
+            throw CustomerInactiveException::create($this->name->value);
+        }
+
+        if ($this->balance->cents + $sale->cents > $this->effectiveLimit()->cents) {
+            throw CreditLimitExceededException::create($this->name->value, $sale, $this->balance, $this->effectiveLimit(), $this->availableCredit());
+        }
     }
 }

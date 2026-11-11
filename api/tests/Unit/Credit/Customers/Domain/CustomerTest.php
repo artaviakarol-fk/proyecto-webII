@@ -7,6 +7,8 @@ namespace Tests\Unit\Credit\Customers\Domain;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Src\Credit\Customers\Domain\Entities\Customer;
+use Src\Credit\Customers\Domain\Exceptions\CreditLimitExceededException;
+use Src\Credit\Customers\Domain\Exceptions\CustomerInactiveException;
 use Src\Credit\Customers\Domain\ValueObjects\CreditLimit;
 use Src\Credit\Customers\Domain\ValueObjects\CustomerId;
 use Src\Credit\Customers\Domain\ValueObjects\CustomerName;
@@ -74,6 +76,45 @@ final class CustomerTest extends TestCase
         $this->assertTrue($customer->active);
     }
 
+    /** A sale fits while what is owed plus the sale stays within the limit, the limit itself included. */
+    public function test_sale_fits_up_to_the_limit(): void
+    {
+        $customer = $this->owing('80000');
+
+        $customer->assertCanBuyOnFiado(Money::fromDecimal('10000'));
+        $this->assertSame(1_000_000, $customer->availableCredit()->cents);
+
+        $this->expectException(CreditLimitExceededException::class);
+        $customer->assertCanBuyOnFiado(Money::fromDecimal('10000.01'));
+    }
+
+    /** The message tells what the sale is, what is owed, the limit and what is left. */
+    public function test_limit_message_has_what_the_cashier_needs(): void
+    {
+        try {
+            $this->owing('80000')->assertCanBuyOnFiado(Money::fromDecimal('12500.50'));
+            $this->fail('The sale should not fit.');
+        } catch (CreditLimitExceededException $exception) {
+            $this->assertSame([
+                'customer' => 'Ana',
+                'sale' => '₡12 500,50',
+                'balance' => '₡80 000',
+                'limit' => '₡90 000',
+                'available' => '₡10 000',
+            ], $exception->parameters());
+        }
+    }
+
+    /** An inactive customer cannot buy on fiado, whatever they owe. */
+    public function test_inactive_customer_cannot_buy_on_fiado(): void
+    {
+        $customer = $this->owing('0');
+        $customer->deactivate();
+
+        $this->expectException(CustomerInactiveException::class);
+        $customer->assertCanBuyOnFiado(new Money(100));
+    }
+
     /** Valid phone numbers. */
     #[DataProvider('validPhones')]
     public function test_valid_phone_numbers(string $phone): void
@@ -116,6 +157,20 @@ final class CustomerTest extends TestCase
             'teléfono con letras' => [fn () => new PhoneNumber('8888-ABCD'), 'credit.phone_invalid'],
             'teléfono corto' => [fn () => new PhoneNumber('123'), 'credit.phone_invalid'],
         ];
+    }
+
+    /** Ana, with the base limit, owing an amount. */
+    private function owing(string $balance): Customer
+    {
+        return Customer::reconstitute(
+            new CustomerId('019a0000-7b1e-7c3a-9f1d-2b6a4e8c0d01'),
+            new NegocioId('019a0000-7b1e-7c3a-9f1d-2b6a4e8c0d02'),
+            new CustomerName('Ana'),
+            null,
+            CreditLimit::reconstitute(Money::fromDecimal('90000')),
+            Money::fromDecimal($balance),
+            true,
+        );
     }
 
     /** A new customer with the base limit. */

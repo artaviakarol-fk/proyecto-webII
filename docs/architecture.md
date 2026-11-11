@@ -182,6 +182,7 @@ y sus rutas llevan `->middleware(['auth:sanctum', 'negocio'])`. La prueba `RowLe
 | `POST /api/v1/clientes` | Registrar un cliente de confianza: nombre, teléfono opcional y límite de fiado (por defecto el límite base, ₡90 000, que también es el máximo). Administración |
 | `PUT /api/v1/clientes/{id}` | Reemplazar los datos, el límite y el estado de un cliente; el saldo nunca cambia aquí. Administración |
 | `DELETE /api/v1/clientes/{id}` | Desactivar un cliente: ya no compra a fiado, pero conserva su historial y su saldo. Administración |
+| `POST /api/v1/ventas/{id}/fiado` | Cerrar una venta abierta a fiado de un cliente activo (`cliente_id`): su total se suma a lo que debe. Si el saldo más el total pasa el límite, responde `409` con lo que debe, el límite y lo disponible, y la venta sigue abierta. Caja y administración |
 | `GET /api/v1/ventas` | Listar las ventas del negocio por páginas (`pagina`, `por_pagina`), de la más reciente a la más antigua, sin sus líneas. Filtros opcionales: `estado` y `fecha` (día en hora de Costa Rica). Caja y administración |
 | `POST /api/v1/ventas` | Abrir una venta en efectivo: líneas con producto y cantidad (el precio sale del catálogo). Descuenta el stock. Caja y administración |
 | `GET /api/v1/ventas/{id}` | Ver una venta con sus líneas, total, cajero y estado. Caja y administración |
@@ -202,6 +203,14 @@ Cada línea de una entrada guarda el costo anterior del producto, y la respuesta
 Una venta (`ventas` y `venta_lineas`) tiene tres estados: `abierta`, `cobrada` y `anulada`. El precio de cada línea se toma del catálogo en el momento de vender y se guarda en la línea; el cliente nunca lo envía. Una venta abierta se puede modificar; una cobrada ya no; una cobrada o abierta se puede anular, y una anulada es definitiva.
 
 Las unidades salen del stock al abrir la venta y vuelven al anularla. `DatabaseSaleRepository::save` hace todo en una transacción: bloquea la fila de la venta y la de cada producto con `SELECT ... FOR UPDATE` (siempre en el orden de los ids, para que dos ventas con los mismos productos no se bloqueen entre sí), calcula la diferencia entre lo que la venta tenía y lo que tiene ahora, y deja una fila en `movimientos_inventario` (`venta` o `anulacion`). Solo se venden las unidades vendibles (stock menos unidades vencidas en el estante). Si alguna línea no alcanza, responde `409` en formato RFC 9457 con el producto y las unidades disponibles, y no se guarda nada. Si dos cajas venden la última unidad, la segunda espera el bloqueo, ve que ya no queda y recibe el 409; el `CHECK (stock >= 0)` de la base de datos es la última red de seguridad.
+
+### Venta a fiado y concurrencia
+
+Una venta abierta se puede cerrar a fiado con `POST /ventas/{id}/fiado`. El caso de uso `SellOnFiado`, del módulo `Credit/Customers`, hace todo en una transacción: bloquea primero la fila del cliente con `SELECT ... FOR UPDATE`, lee el total de la venta, revisa que el cliente esté activo y que su saldo más el total no pase su límite, cierra la venta con método `fiado` y registra un `cargo` en `movimientos_fiado`, cuyo trigger sube el saldo. Si dos cajas le venden a fiado al mismo cliente al mismo tiempo, la segunda espera el bloqueo y ve el saldo que dejó la primera, así que nunca se pasa el límite. Si la venta no cabe, no se guarda nada y la venta sigue abierta para cobrarla de otra forma.
+
+El crédito y las ventas se hablan por puertos, como los cobros: `Credit` lee y cierra la venta con el puerto `CreditableSales` (adaptador `SalesCreditableSales`, que usa `GetSale` y `PaySale`), y `Sales` devuelve el cargo al anular una venta a fiado con el puerto `FiadoCharges` (adaptador `CreditFiadoCharges`, que usa `ReverseFiadoCharge`). Anular una venta a fiado devuelve las unidades al stock y registra una `anulacion` que baja el saldo del cliente, en la misma transacción.
+
+Cada cambio de saldo despacha el evento `SaldoFiadoActualizado` cuando la transacción se confirma (`ShouldDispatchAfterCommit`); lo va a escuchar el aviso de WhatsApp (US-505).
 
 ### Control de edad en la venta de licor
 

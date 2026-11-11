@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use Src\Credit\Customers\Infrastructure\Http\Controllers\CustomerController;
+use Src\Credit\Customers\Infrastructure\Http\Controllers\FiadoSaleController;
 
 Route::prefix('clientes')
     ->middleware(['auth:sanctum', 'negocio'])
@@ -23,3 +24,9 @@ Route::prefix('clientes')
             Route::delete('{cliente}', 'destroy')->name('destroy')->whereUuid('cliente');
         });
     });
+
+// La caja (cajero y administración) cierra una venta abierta a fiado de un cliente.
+Route::post('ventas/{venta}/fiado', [FiadoSaleController::class, 'store'])
+    ->middleware(['auth:sanctum', 'negocio', 'abilities:caja'])
+    ->whereUuid('venta')
+    ->name('credit.fiado.store');

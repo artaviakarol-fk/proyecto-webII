@@ -142,7 +142,7 @@ Una fila por cada cambio del stock, para la trazabilidad.
 | `id` | `uuid` | Llave primaria |
 | `negocio_id` | `uuid` | Llave foránea a `negocios` |
 | `cajero_id` | `uuid` | Llave foránea a `users` |
-| `metodo_pago` | `varchar(20)` | Por ahora solo `efectivo` |
+| `metodo_pago` | `varchar(20)` | `efectivo`, `tarjeta`, `sinpe_movil` o `fiado` |
 | `estado` | `varchar(20)` | `abierta`, `cobrada` o `anulada`; índice `(negocio_id, estado, created_at)` |
 | `total` | `numeric(12,2)` | Cero o más |
 | `cedula_comprador` | `varchar(20)` | Opcional; obligatoria si alguna línea es de licor |
@@ -211,14 +211,14 @@ El rol de la aplicación no puede escribir `saldo_actual` ni borrar clientes: ti
 | `id` | `uuid` | Llave primaria |
 | `negocio_id` | `uuid` | Llave foránea a `negocios` |
 | `cliente_id` | `uuid` | Llave foránea a `clientes`; índice `(negocio_id, cliente_id, created_at)` |
-| `tipo` | `varchar(10)` | `cargo` (una venta a fiado, con `venta_id`) o `abono` (con `abono_id`) |
+| `tipo` | `varchar(10)` | `cargo` (una venta a fiado, con `venta_id`), `anulacion` (la anulación de esa venta, con el mismo `venta_id`) o `abono` (con `abono_id`) |
 | `monto` | `numeric(12,2)` | Mayor que cero |
-| `venta_id` | `uuid` | Llave foránea a `ventas`; solo en un cargo, y una venta se carga una sola vez |
+| `venta_id` | `uuid` | Llave foránea a `ventas`; solo en un cargo o una anulación. Una venta se carga una sola vez y se anula una sola vez |
 | `abono_id` | `uuid` | Solo en un abono; la tabla `abonos` llega con la US-305 |
 | `usuario_id` | `uuid` | Llave foránea a `users`: quién registró el movimiento |
 | `created_at` | `timestamptz` | |
 
-Es un libro de movimientos: las filas solo se agregan. El trigger `trg_movimientos_fiado_aplicar` mueve el `saldo_actual` del cliente en la misma sentencia que inserta el movimiento (suma un cargo, resta un abono), así que el saldo siempre es la suma del libro; la función corre con los permisos del dueño del esquema porque la aplicación no puede escribir el saldo. El trigger `trg_movimientos_fiado_inmutables` rechaza cambiar o borrar un movimiento. El `CHECK (saldo_actual >= 0)` de `clientes` impide un abono mayor que la deuda. Tiene aislamiento por negocio con Row Level Security.
+Es un libro de movimientos: las filas solo se agregan. El trigger `trg_movimientos_fiado_aplicar` mueve el `saldo_actual` del cliente en la misma sentencia que inserta el movimiento (suma un cargo, resta una anulación o un abono), así que el saldo siempre es la suma del libro; la función corre con los permisos del dueño del esquema porque la aplicación no puede escribir el saldo. El trigger `trg_movimientos_fiado_inmutables` rechaza cambiar o borrar un movimiento. El `CHECK (saldo_actual >= 0)` de `clientes` impide un abono mayor que la deuda. Tiene aislamiento por negocio con Row Level Security.
 
 ## Tablas de identidad
 
