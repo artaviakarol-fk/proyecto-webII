@@ -51,6 +51,13 @@ return [
         'base_url' => env('ONVO_BASE_URL', 'https://api.onvopay.com/v1'),
     ],
 
+    // Google Gemini: reads the text of the cashier for the draft of a sale (US-308). Free tier key from Google AI Studio.
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+        'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
