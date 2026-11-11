@@ -194,6 +194,8 @@ final class PermisosRolTest extends TestCase
             ['POST', '/ventas/{id}/pago', $till],
             ['GET', '/ventas/{id}/pago', $till],
             ['POST', '/ventas/{id}/pago/reembolso', $administration],
+            // Reports: only the administration sees the income of the day.
+            ['GET', '/reportes/cierre-diario', $administration],
             // Fiado: the till reads the customers and what they owe; only the administration changes them.
             ['GET', '/clientes', $till],
             ['GET', '/clientes/{id}', $till],
