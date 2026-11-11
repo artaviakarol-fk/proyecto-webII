@@ -11,9 +11,10 @@ use Src\Billing\Payments\Application\UseCases\HandlePaymentWebhook;
 final readonly class PaymentWebhookController
 {
     /**
-     * Receive a notification of the payment provider. No token is used: the provider proves itself with its signature or
-     * secret. Answers 200 when the notification was processed, was already processed or is not about a payment; 401 when
-     * it is not proved to come from the provider.
+     * Receive a payment notification from the provider.
+     *
+     * No token is used: the provider proves itself with its signature or secret. Answers 200 when the notification was
+     * processed, was already processed or is not about a payment; 401 when it is not proved to come from the provider.
      */
     public function __invoke(string $negocio, Request $request, HandlePaymentWebhook $handlePaymentWebhook): JsonResponse
     {
