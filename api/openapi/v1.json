@@ -1794,6 +1794,77 @@
                 ]
             }
         },
+        "/webhooks/pagos/{negocio}": {
+            "post": {
+                "operationId": "billing.payments.webhook",
+                "description": "No token is used: the provider proves itself with its signature or secret. Answers 200 when the notification was\nprocessed, was already processed or is not about a payment; 401 when it is not proved to come from the provider.",
+                "summary": "Receive a payment notification from the provider",
+                "tags": [
+                    "PaymentWebhook"
+                ],
+                "parameters": [
+                    {
+                        "name": "negocio",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "estado": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "estado"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
         "/productos": {
             "get": {
                 "operationId": "inventory.products.index",

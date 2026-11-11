@@ -13,6 +13,7 @@ use Src\Billing\Payments\Domain\ValueObjects\ChargeRequest;
 use Src\Billing\Payments\Domain\ValueObjects\ChargeResult;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentMethod;
 use Src\Billing\Payments\Domain\ValueObjects\RefundResult;
+use Src\Billing\Payments\Domain\ValueObjects\WebhookEvent;
 use Src\Shared\Domain\ValueObjects\Money;
 
 interface PaymentGateway
@@ -64,4 +65,10 @@ interface PaymentGateway
      * @param  array<string, string>  $headers  Headers of the request, with their names in lowercase.
      */
     public function verifyWebhook(string $payload, array $headers): bool;
+
+    /**
+     * Read which event and which charge a notification talks about, already verified. Null when the notification is
+     * not about a charge. The id of the event must be the same every time the provider sends the same event again.
+     */
+    public function parseWebhook(string $payload): ?WebhookEvent;
 }
