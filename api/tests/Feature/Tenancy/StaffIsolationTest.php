@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Src\Credit\Customers\Infrastructure\Persistence\Models\CustomerModel;
 use Src\Identity\Users\Domain\ValueObjects\Role;
 use Src\Identity\Users\Infrastructure\Persistence\Models\UserModel;
 use Src\Inventory\Products\Infrastructure\Persistence\Models\ProductModel;
@@ -43,6 +44,8 @@ final class StaffIsolationTest extends TestCase
 
     private string $foreignSale;
 
+    private CustomerModel $foreignCustomer;
+
     /** Two negocios, each with a product; the second one also has a delivery and an open sale. */
     protected function setUp(): void
     {
@@ -56,6 +59,7 @@ final class StaffIsolationTest extends TestCase
 
         $this->foreignReceipt = $this->receiptOf($this->otherNegocio, $this->otherCashier, $this->foreignProduct);
         $this->foreignSale = SaleFactory::new()->for($this->otherNegocio, $this->otherCashier)->line($this->foreignProduct, 2)->create();
+        $this->foreignCustomer = CustomerModel::factory()->create(['negocio_id' => $this->otherNegocio->id, 'nombre' => 'Cliente de B', 'limite_fiado' => '50000.00']);
 
         Sanctum::actingAs(UserModel::factory()->create(['negocio_id' => $this->negocio->id]), Role::Administrador->abilities());
     }
@@ -72,6 +76,7 @@ final class StaffIsolationTest extends TestCase
             '{producto}' => $this->foreignProduct->id,
             '{entrada}' => $this->foreignReceipt,
             '{venta}' => $this->foreignSale,
+            '{cliente}' => $this->foreignCustomer->id,
         ]);
         array_walk_recursive($payload, function (mixed &$value): void {
             $value = $value === '{own}' ? $this->ownProduct->id : $value;
@@ -94,6 +99,11 @@ final class StaffIsolationTest extends TestCase
         $sale = DB::table('ventas')->where('id', $this->foreignSale)->first();
         $this->assertSame('abierta', $sale->estado);
         $this->assertSame([2], DB::table('venta_lineas')->where('venta_id', $this->foreignSale)->pluck('cantidad')->map(fn ($quantity): int => (int) $quantity)->all());
+
+        $customer = DB::table('clientes')->where('id', $this->foreignCustomer->id)->first();
+        $this->assertSame('Cliente de B', $customer->nombre);
+        $this->assertSame('50000.00', $customer->limite_fiado);
+        $this->assertTrue($customer->activo);
     }
 
     /**
@@ -116,6 +126,9 @@ final class StaffIsolationTest extends TestCase
             'revisar venta' => ['PUT', '/ventas/{venta}', ['lineas' => [['producto_id' => '{own}', 'cantidad' => 1]]]],
             'cobrar venta' => ['POST', '/ventas/{venta}/cobrar', []],
             'anular venta' => ['POST', '/ventas/{venta}/anular', []],
+            'ver cliente' => ['GET', '/clientes/{cliente}', []],
+            'reemplazar cliente' => ['PUT', '/clientes/{cliente}', ['nombre' => 'Otro nombre', 'limite_fiado' => 1000]],
+            'desactivar cliente' => ['DELETE', '/clientes/{cliente}', []],
         ];
     }
 

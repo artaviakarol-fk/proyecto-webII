@@ -67,8 +67,16 @@ A diferencia del proyecto guía, las tablas usan el español del negocio: el due
 | Rol | `Role` | `rol` | — |
 | Ability | `Role::abilities()` | `personal_access_tokens.abilities` | `abilities` |
 | Página de un listado | `Page`, `PageRequest` | — | `pagina`, `por_pagina`, `meta` |
+| Cliente (de fiado) | `Customer` | `clientes` | `clientes` |
+| Teléfono | `PhoneNumber` | `telefono` | `telefono` |
+| Límite de fiado | `CreditLimit` | `limite_fiado` | `limite_fiado` |
+| Saldo (lo que debe) | `balance` (`Money`) | `saldo_actual` | `saldo_actual` |
+| Cliente activo | `active` | `activo` | `activo` |
+| Movimiento de fiado | — | `movimientos_fiado` | — |
+| Cargo | — | `tipo = 'cargo'` | — |
+| Abono | — | `tipo = 'abono'` | — |
 
-Los términos de los contextos que aún no existen (fiado, abono, cobro con tarjeta, saldo prepagado, lista de espera) quedan reservados en los issues de los milestones M2 a M5 y se agregan aquí cuando se construyan.
+Los términos de los contextos que aún no existen (saldo prepagado, lista de espera) quedan reservados en los issues de los milestones M2 a M5 y se agregan aquí cuando se construyan.
 
 ## Roles
 
@@ -90,6 +98,13 @@ Los términos de los contextos que aún no existen (fiado, abono, cobro con tarj
 
 - Las **unidades vencidas** activas siguen en el estante pero no se venden: el **stock vendible** es el stock menos esas unidades.
 - La venta de un producto con unidades vencidas no se bloquea: la respuesta trae una **advertencia** para el cajero, porque puede que solo una unidad esté vencida (respuesta del dueño en la entrevista).
+
+## Fiado
+
+- Se le fía solo a **clientes de confianza** que registra la administración (respuesta del dueño en la entrevista).
+- Cada cliente tiene un **límite de fiado**. El **límite base** es de ₡90 000: es el que recibe un cliente nuevo y el máximo que la administración puede definir. La **ampliación** excepcional del cajero (US-304) va aparte.
+- El **saldo** es lo que el cliente debe. Nadie lo escribe directamente: lo mueven los **movimientos de fiado**, un **cargo** por cada venta a fiado y un **abono** por cada pago. Nunca es negativo.
+- Un cliente no se borra: se **desactiva** y conserva su historial y su saldo.
 
 ## Dinero y fechas
 

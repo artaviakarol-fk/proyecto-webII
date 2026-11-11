@@ -198,6 +198,10 @@ return [
         'lineas.*.producto.precio_venta' => 'precio de venta del producto nuevo',
         'lineas.*.cantidad' => 'cantidad',
         'lineas.*.costo_unitario' => 'costo unitario',
+        'telefono' => 'teléfono',
+        'limite_fiado' => 'límite de fiado',
+        'activo' => 'activo',
+        'buscar' => 'búsqueda',
     ],
 
 ];
