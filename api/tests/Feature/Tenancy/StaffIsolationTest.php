@@ -133,6 +133,7 @@ final class StaffIsolationTest extends TestCase
             'ver cliente' => ['GET', '/clientes/{cliente}', []],
             'reemplazar cliente' => ['PUT', '/clientes/{cliente}', ['nombre' => 'Otro nombre', 'limite_fiado' => 1000]],
             'desactivar cliente' => ['DELETE', '/clientes/{cliente}', []],
+            'ampliar el límite de un cliente ajeno' => ['POST', '/clientes/{cliente}/ampliaciones', ['monto' => 1000, 'motivo' => 'Emergencia']],
             'vender a fiado a un cliente ajeno' => ['POST', '/ventas/{venta}/fiado', ['cliente_id' => '{cliente}']],
         ];
     }

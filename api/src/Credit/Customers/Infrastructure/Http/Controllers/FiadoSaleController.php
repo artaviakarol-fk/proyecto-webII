@@ -16,6 +16,6 @@ final readonly class FiadoSaleController
      */
     public function store(SellOnFiadoRequest $request, string $venta, SellOnFiado $sellOnFiado): FiadoSaleResource
     {
-        return new FiadoSaleResource($sellOnFiado->execute($venta, $request->customerId()));
+        return new FiadoSaleResource($sellOnFiado->execute($venta, $request->customerId(), now()->toDateTimeImmutable()));
     }
 }

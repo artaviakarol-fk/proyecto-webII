@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Credit\Customers\Domain;
 
+use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Src\Credit\Customers\Domain\Entities\CreditIncrease;
 use Src\Credit\Customers\Domain\Entities\Customer;
+use Src\Credit\Customers\Domain\Exceptions\CreditIncreaseAboveMaximumException;
+use Src\Credit\Customers\Domain\Exceptions\CreditIncreaseNotRevertibleException;
 use Src\Credit\Customers\Domain\Exceptions\CreditLimitExceededException;
 use Src\Credit\Customers\Domain\Exceptions\CustomerInactiveException;
+use Src\Credit\Customers\Domain\ValueObjects\CreditIncreaseId;
 use Src\Credit\Customers\Domain\ValueObjects\CreditLimit;
 use Src\Credit\Customers\Domain\ValueObjects\CustomerId;
 use Src\Credit\Customers\Domain\ValueObjects\CustomerName;
+use Src\Credit\Customers\Domain\ValueObjects\IncreaseReason;
 use Src\Credit\Customers\Domain\ValueObjects\PhoneNumber;
 use Src\Shared\Domain\Exceptions\InvalidValueException;
 use Src\Shared\Domain\ValueObjects\Money;
@@ -81,18 +87,18 @@ final class CustomerTest extends TestCase
     {
         $customer = $this->owing('80000');
 
-        $customer->assertCanBuyOnFiado(Money::fromDecimal('10000'));
-        $this->assertSame(1_000_000, $customer->availableCredit()->cents);
+        $customer->assertCanBuyOnFiado(Money::fromDecimal('10000'), $this->now());
+        $this->assertSame(1_000_000, $customer->availableCredit($this->now())->cents);
 
         $this->expectException(CreditLimitExceededException::class);
-        $customer->assertCanBuyOnFiado(Money::fromDecimal('10000.01'));
+        $customer->assertCanBuyOnFiado(Money::fromDecimal('10000.01'), $this->now());
     }
 
     /** The message tells what the sale is, what is owed, the limit and what is left. */
     public function test_limit_message_has_what_the_cashier_needs(): void
     {
         try {
-            $this->owing('80000')->assertCanBuyOnFiado(Money::fromDecimal('12500.50'));
+            $this->owing('80000')->assertCanBuyOnFiado(Money::fromDecimal('12500.50'), $this->now());
             $this->fail('The sale should not fit.');
         } catch (CreditLimitExceededException $exception) {
             $this->assertSame([
@@ -112,7 +118,7 @@ final class CustomerTest extends TestCase
         $customer->deactivate();
 
         $this->expectException(CustomerInactiveException::class);
-        $customer->assertCanBuyOnFiado(new Money(100));
+        $customer->assertCanBuyOnFiado(new Money(100), $this->now());
     }
 
     /** Valid phone numbers. */
@@ -157,6 +163,74 @@ final class CustomerTest extends TestCase
             'teléfono con letras' => [fn () => new PhoneNumber('8888-ABCD'), 'credit.phone_invalid'],
             'teléfono corto' => [fn () => new PhoneNumber('123'), 'credit.phone_invalid'],
         ];
+    }
+
+    /** Increases add to the limit until midnight in Costa Rica, can be stacked and never pass the maximum. */
+    public function test_increases_add_to_the_limit_until_the_end_of_the_day(): void
+    {
+        $customer = $this->owing('85000');
+        $at = new DateTimeImmutable('2026-11-11 15:30:00-06:00');
+        $max = Money::fromDecimal('120000');
+
+        $first = $customer->grantIncrease($this->increaseId('01'), Money::fromDecimal('20000'), new IncreaseReason('Compra del almuerzo de la familia'), 'cajero', $at, $max);
+        $customer->grantIncrease($this->increaseId('02'), Money::fromDecimal('10000'), new IncreaseReason('Medicinas'), 'cajero', $at, $max);
+
+        $this->assertEquals(new DateTimeImmutable('2026-11-12 00:00:00-06:00'), $first->validUntil);
+        $this->assertSame(12_000_000, $customer->effectiveLimit($at)->cents);
+        $this->assertSame(9_000_000, $customer->creditLimit->amount->cents, 'The base limit never changes.');
+        $this->assertSame(3_500_000, $customer->availableCredit($at)->cents);
+
+        $midnight = new DateTimeImmutable('2026-11-12 00:00:00-06:00');
+        $this->assertSame(9_000_000, $customer->effectiveLimit($midnight)->cents);
+        $this->assertSame(500_000, $customer->availableCredit($midnight)->cents);
+    }
+
+    /** An increase that would pass the maximum is refused, saying how much can still be given. */
+    public function test_increase_above_the_maximum_is_refused(): void
+    {
+        $customer = $this->owing('0');
+        $at = new DateTimeImmutable('2026-11-11 10:00:00-06:00');
+        $customer->grantIncrease($this->increaseId('01'), Money::fromDecimal('25000'), new IncreaseReason('Emergencia'), 'cajero', $at, Money::fromDecimal('120000'));
+
+        try {
+            $customer->grantIncrease($this->increaseId('02'), Money::fromDecimal('5000.01'), new IncreaseReason('Otra'), 'cajero', $at, Money::fromDecimal('120000'));
+            $this->fail('The increase should be refused.');
+        } catch (CreditIncreaseAboveMaximumException $exception) {
+            $this->assertSame(['customer' => 'Ana', 'increase' => '₡5 000,01', 'would_be' => '₡120 000,01', 'max' => '₡120 000', 'left' => '₡5 000'], $exception->parameters());
+        }
+    }
+
+    /** An increase is reverted once, and only while it still counts. */
+    public function test_increase_is_reverted_once_and_only_while_it_counts(): void
+    {
+        $at = new DateTimeImmutable('2026-11-11 10:00:00-06:00');
+        $increase = CreditIncrease::grant($this->increaseId('01'), new NegocioId('019a0000-7b1e-7c3a-9f1d-2b6a4e8c0d02'), new CustomerId('019a0000-7b1e-7c3a-9f1d-2b6a4e8c0d01'), Money::fromDecimal('1000'), new IncreaseReason('Emergencia'), 'cajero', $at);
+
+        $increase->revert('admin', $at->modify('+1 hour'));
+        $this->assertFalse($increase->isActiveAt($at->modify('+2 hours')));
+
+        try {
+            $increase->revert('admin', $at->modify('+2 hours'));
+            $this->fail('An increase is reverted only once.');
+        } catch (CreditIncreaseNotRevertibleException $exception) {
+            $this->assertSame('credit.increase_already_reverted', $exception->translationKey());
+        }
+
+        $expired = CreditIncrease::grant($this->increaseId('02'), new NegocioId('019a0000-7b1e-7c3a-9f1d-2b6a4e8c0d02'), new CustomerId('019a0000-7b1e-7c3a-9f1d-2b6a4e8c0d01'), Money::fromDecimal('1000'), new IncreaseReason('Emergencia'), 'cajero', $at);
+        $this->expectException(CreditIncreaseNotRevertibleException::class);
+        $expired->revert('admin', new DateTimeImmutable('2026-11-12 00:00:00-06:00'));
+    }
+
+    /** A fixed moment of the afternoon. */
+    private function now(): DateTimeImmutable
+    {
+        return new DateTimeImmutable('2026-11-11 15:00:00-06:00');
+    }
+
+    /** An identifier for an increase. */
+    private function increaseId(string $suffix): CreditIncreaseId
+    {
+        return new CreditIncreaseId('019a0000-7b1e-7c3a-9f1d-2b6a4e8c0e'.$suffix);
     }
 
     /** Ana, with the base limit, owing an amount. */

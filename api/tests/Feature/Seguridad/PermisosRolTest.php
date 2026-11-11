@@ -201,6 +201,9 @@ final class PermisosRolTest extends TestCase
             ['PUT', '/clientes/{id}', $administration],
             ['DELETE', '/clientes/{id}', $administration],
             ['POST', '/ventas/{id}/fiado', $till],
+            ['POST', '/clientes/{id}/ampliaciones', $till],
+            ['GET', '/ampliaciones-limite', $administration],
+            ['POST', '/ampliaciones-limite/{id}/revertir', $administration],
             // Negocio: everybody sees it, only the administration changes it.
             ['GET', '/negocio', $everyone],
             ['GET', '/negocio/horario', $everyone],
