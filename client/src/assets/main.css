@@ -1,0 +1,21 @@
+:root {
+  --brand: #0f766e;
+  --brand-dark: #115e59;
+  --bg: #f4f6f5;
+  --card: #fff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --danger: #b91c1c;
+  --border: #d9dfdc;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
+h1, h2, h3 { margin: 0 0 0.5rem; }
+button { font: inherit; cursor: pointer; border: 1px solid var(--border); background: var(--card); padding: 0.45rem 0.8rem; border-radius: 6px; }
+button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+button.primary:hover:not(:disabled) { background: var(--brand-dark); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+input, select { font: inherit; padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.muted { color: var(--muted); }
+.error-text { color: var(--danger); }
