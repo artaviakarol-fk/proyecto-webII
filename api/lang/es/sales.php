@@ -17,4 +17,8 @@ return [
     'expired_units_warning' => 'Hay :count unidades vencidas de :product en el estante: no se pueden vender, pero las demás sí.',
     'insufficient_stock' => 'No alcanza el stock de :product. Disponible para vender: :available.',
 
+    'ai_unavailable' => 'El asistente de IA no está disponible en este momento. Registre la venta a mano.',
+    'ai_invalid_answer' => 'El asistente de IA respondió algo que no se pudo usar. Intente de nuevo o registre la venta a mano.',
+    'ai_text_invalid' => 'Escriba la venta en un texto de hasta :max caracteres.',
+
 ];

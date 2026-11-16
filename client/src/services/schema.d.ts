@@ -526,6 +526,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ventas/borrador-ia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Turn what the cashier wrote into a draft of a sale, checked against the catalog, the stock and the
+         *     limit of fiado. It never registers the sale: the cashier confirms it with POST /ventas (and
+         *     POST /ventas/{id}/fiado on fiado). If the AI provider fails it answers 503 and the manual flow keeps working
+         */
+        post: operations["sales.drafts.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ventas/{venta}/pago": {
         parameters: {
             query?: never;
@@ -722,6 +743,14 @@ export interface components {
                 fiado: number;
             };
             total: number;
+        };
+        /**
+         * DraftSaleRequest
+         * @description What the cashier wrote.
+         */
+        DraftSaleRequest: {
+            /** @description Lo que escribió el cajero, por ejemplo "anote 2 leches y 1 pan a doña María en fiado". */
+            texto: string;
         };
         /** ExpiredUnitsResource */
         ExpiredUnitsResource: {
@@ -938,6 +967,33 @@ export interface components {
                 abre: string;
                 cierra: string;
             }[][];
+        };
+        /** SaleDraftResource */
+        SaleDraftResource: {
+            texto: string;
+            metodo_pago: string;
+            cliente_mencionado: string | null;
+            cliente: {
+                id: string;
+                nombre: string;
+                activo: boolean;
+                saldo_actual: number;
+                disponible: number;
+            } | null;
+            lineas: unknown[];
+            no_encontrados: unknown[];
+            total: number;
+            cabe_en_fiado: boolean | null;
+            avisos: string[];
+            listo_para_confirmar: boolean;
+            confirmar: {
+                venta: {
+                    lineas: unknown[];
+                };
+                fiado: {
+                    cliente_id: string;
+                } | null;
+            };
         };
         /**
          * SaleRequest
@@ -3170,6 +3226,51 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problema"];
                 };
             };
+        };
+    };
+    "sales.drafts.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftSaleRequest"];
+            };
+        };
+        responses: {
+            /** @description `SaleDraftResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SaleDraftResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
         };
     };
     "billing.payments.show": {
