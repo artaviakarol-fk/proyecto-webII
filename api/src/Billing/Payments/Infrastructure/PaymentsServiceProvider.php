@@ -9,9 +9,11 @@ use InvalidArgumentException;
 use Src\Billing\Payments\Application\Contracts\PayableSales;
 use Src\Billing\Payments\Application\Contracts\PaymentGateway;
 use Src\Billing\Payments\Domain\Contracts\PaymentRepository;
+use Src\Billing\Payments\Domain\Contracts\WebhookEventRepository;
 use Src\Billing\Payments\Infrastructure\Gateways\OnvoGateway;
 use Src\Billing\Payments\Infrastructure\Gateways\PaypalGateway;
 use Src\Billing\Payments\Infrastructure\Persistence\Repositories\EloquentPaymentRepository;
+use Src\Billing\Payments\Infrastructure\Persistence\Repositories\EloquentWebhookEventRepository;
 use Src\Billing\Payments\Infrastructure\Sales\SalesPayableSales;
 
 final class PaymentsServiceProvider extends ServiceProvider
@@ -23,6 +25,7 @@ final class PaymentsServiceProvider extends ServiceProvider
      */
     public array $bindings = [
         PaymentRepository::class => EloquentPaymentRepository::class,
+        WebhookEventRepository::class => EloquentWebhookEventRepository::class,
         PayableSales::class => SalesPayableSales::class,
     ];
 

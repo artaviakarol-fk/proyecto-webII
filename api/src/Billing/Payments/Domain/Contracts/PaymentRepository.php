@@ -6,6 +6,7 @@ namespace Src\Billing\Payments\Domain\Contracts;
 
 use Src\Billing\Payments\Domain\Entities\Payment;
 use Src\Billing\Payments\Domain\Exceptions\PaymentAlreadyStartedException;
+use Src\Billing\Payments\Domain\ValueObjects\ChargeReference;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentId;
 use Src\Billing\Payments\Domain\ValueObjects\SaleId;
 use Src\Shared\Domain\ValueObjects\NegocioId;
@@ -17,6 +18,9 @@ interface PaymentRepository
 
     /** Find a payment of the negocio. */
     public function find(PaymentId $id, NegocioId $negocioId): ?Payment;
+
+    /** The payment of the negocio that the provider knows by this reference. */
+    public function findByReference(string $provider, ChargeReference $reference, NegocioId $negocioId): ?Payment;
 
     /** The pending or paid payment of a sale of the negocio, if it has one. */
     public function findLiveForSale(SaleId $saleId, NegocioId $negocioId): ?Payment;

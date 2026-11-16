@@ -7,6 +7,7 @@ namespace Tests\Support\Billing;
 use Src\Billing\Payments\Domain\Contracts\PaymentRepository;
 use Src\Billing\Payments\Domain\Entities\Payment;
 use Src\Billing\Payments\Domain\Exceptions\PaymentAlreadyStartedException;
+use Src\Billing\Payments\Domain\ValueObjects\ChargeReference;
 use Src\Billing\Payments\Domain\ValueObjects\PaymentId;
 use Src\Billing\Payments\Domain\ValueObjects\SaleId;
 use Src\Shared\Domain\ValueObjects\NegocioId;
@@ -30,6 +31,15 @@ final class InMemoryPaymentRepository implements PaymentRepository
         $payment = $this->payments[$id->value] ?? null;
 
         return $payment !== null && $payment->negocioId->equals($negocioId) ? $payment : null;
+    }
+
+    /** The payment of the negocio that the provider knows by this reference. */
+    public function findByReference(string $provider, ChargeReference $reference, NegocioId $negocioId): ?Payment
+    {
+        return array_find(
+            $this->payments,
+            fn (Payment $payment): bool => $payment->negocioId->equals($negocioId) && $payment->provider === $provider && $payment->reference?->value === $reference->value,
+        );
     }
 
     /** The pending or paid payment of a sale of the negocio. */

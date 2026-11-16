@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Support\Factories;
 
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Src\Identity\Users\Infrastructure\Persistence\Models\UserModel;
@@ -25,6 +26,10 @@ final class SaleFactory
     private UserModel $cashier;
 
     private string $status = 'abierta';
+
+    private string $method = 'efectivo';
+
+    private ?CarbonInterface $paidAt = null;
 
     /** @var list<array{ProductModel, int}> */
     private array $lines = [];
@@ -59,6 +64,17 @@ final class SaleFactory
     {
         $clone = clone $this;
         $clone->status = 'cobrada';
+
+        return $clone;
+    }
+
+    /** The sale is paid with this way of paying, at this moment (now when it is not given). */
+    public function paidWith(string $method, ?CarbonInterface $at = null): self
+    {
+        $clone = clone $this;
+        $clone->status = 'cobrada';
+        $clone->method = $method;
+        $clone->paidAt = $at;
 
         return $clone;
     }
@@ -103,10 +119,10 @@ final class SaleFactory
             'id' => $id,
             'negocio_id' => $this->negocio->id,
             'cajero_id' => $this->cashier->id,
-            'metodo_pago' => 'efectivo',
+            'metodo_pago' => $this->method,
             'estado' => $this->status,
             'total' => number_format($total, 2, '.', ''),
-            'cobrada_at' => $this->status === 'cobrada' ? $now : null,
+            'cobrada_at' => $this->status === 'cobrada' ? ($this->paidAt ?? $now) : null,
             'anulada_at' => $this->status === 'anulada' ? $now : null,
             'created_at' => $now,
             'updated_at' => $now,

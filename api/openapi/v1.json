@@ -1212,6 +1212,73 @@
                 ]
             }
         },
+        "/reportes/cierre-diario": {
+            "get": {
+                "operationId": "reports.daily-closing",
+                "description": "Only the administration sees it. It adds the paid sales of the day (efectivo, tarjeta, sinpe_movil and fiado) and\ncounts them; it has no cash count and no missing or extra money.",
+                "summary": "Show the income of a day by way of paying",
+                "tags": [
+                    "DailyClosing"
+                ],
+                "parameters": [
+                    {
+                        "name": "fecha",
+                        "in": "query",
+                        "description": "D\u00eda del cierre, en hora de Costa Rica (AAAA-MM-DD). Si no se env\u00eda, es hoy.",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`DailyClosingResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/DailyClosingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
         "/productos/{producto}/vencidos": {
             "post": {
                 "operationId": "inventory.expirations.store",
@@ -1792,6 +1859,77 @@
                 "x-abilities": [
                     "administrar"
                 ]
+            }
+        },
+        "/webhooks/pagos/{negocio}": {
+            "post": {
+                "operationId": "billing.payments.webhook",
+                "description": "No token is used: the provider proves itself with its signature or secret. Answers 200 when the notification was\nprocessed, was already processed or is not about a payment; 401 when it is not proved to come from the provider.",
+                "summary": "Receive a payment notification from the provider",
+                "tags": [
+                    "PaymentWebhook"
+                ],
+                "parameters": [
+                    {
+                        "name": "negocio",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "estado": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "estado"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
             }
         },
         "/productos": {
@@ -3873,6 +4011,50 @@
                     "activo"
                 ],
                 "title": "CustomerResource"
+            },
+            "DailyClosingResource": {
+                "type": "object",
+                "properties": {
+                    "fecha": {
+                        "type": "string"
+                    },
+                    "cantidad_ventas": {
+                        "type": "integer"
+                    },
+                    "totales": {
+                        "type": "object",
+                        "properties": {
+                            "efectivo": {
+                                "type": "number"
+                            },
+                            "tarjeta": {
+                                "type": "number"
+                            },
+                            "sinpe_movil": {
+                                "type": "number"
+                            },
+                            "fiado": {
+                                "type": "number"
+                            }
+                        },
+                        "required": [
+                            "efectivo",
+                            "tarjeta",
+                            "sinpe_movil",
+                            "fiado"
+                        ]
+                    },
+                    "total": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "fecha",
+                    "cantidad_ventas",
+                    "totales",
+                    "total"
+                ],
+                "title": "DailyClosingResource"
             },
             "DraftSaleRequest": {
                 "type": "object",
