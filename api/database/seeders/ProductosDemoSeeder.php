@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Src\Inventory\Products\Infrastructure\Persistence\Models\ProductModel;
 use Src\Shared\Domain\ImageFolders;
 use Src\Shared\Domain\ValueObjects\NegocioId;
 use Src\Shared\Infrastructure\Storage\DiskImageStorage;
-use Src\Inventory\Products\Infrastructure\Persistence\Models\ProductModel;
 use Src\Shared\Infrastructure\Tenancy\NegocioTransaction;
 
 final class ProductosDemoSeeder extends Seeder
