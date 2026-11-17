@@ -28,51 +28,62 @@ use Throwable;
  */
 final readonly class GeminiSaleInterpreter implements SaleInterpreter
 {
-    private const int TIMEOUT_SECONDS = 15;
+    private const int TIMEOUT_SECONDS = 8;
 
     private const int MAX_NAMES = 200;
 
-    /** Receive the configuration of the provider: the key never comes from the code. */
+    /**
+     * Receive the configuration of the provider: the key never comes from the code.
+     *
+     * @param  list<string>  $fallbackModels  other models to try, in order, when the first one is overloaded or fails
+     */
     public function __construct(
         private ?string $apiKey,
         private string $model,
         private string $baseUrl,
+        private array $fallbackModels = [],
     ) {}
 
-    /** Ask the model for the structured sale and validate it. */
+    /** Ask the model for the structured sale and validate it; if a model fails, the next one in the list is tried. */
     public function interpret(SaleText $text, array $productNames, array $customerNames): InterpretedSale
     {
         if ($this->apiKey === null || $this->apiKey === '') {
             throw SaleInterpreterUnavailableException::unavailable();
         }
 
-        try {
-            $response = Http::withHeaders(['x-goog-api-key' => $this->apiKey])
-                ->acceptJson()
-                ->asJson()
-                ->timeout(self::TIMEOUT_SECONDS)
-                ->retry(2, 500, fn (Throwable $error): bool => $error instanceof ConnectionException
-                    || ($error instanceof RequestException && in_array($error->response->status(), [429, 500, 502, 503, 504], true)))
-                ->post($this->endpoint(), $this->payload($text, $productNames, $customerNames));
-        } catch (ConnectionException|RequestException $error) {
-            Log::warning('El asistente de IA no respondió.', ['error' => $error->getMessage()]);
+        $payload = $this->payload($text, $productNames, $customerNames);
 
-            throw SaleInterpreterUnavailableException::unavailable();
+        foreach ([$this->model, ...$this->fallbackModels] as $model) {
+            try {
+                $response = Http::withHeaders(['x-goog-api-key' => $this->apiKey])
+                    ->acceptJson()
+                    ->asJson()
+                    ->timeout(self::TIMEOUT_SECONDS)
+                    ->retry(2, 500, fn (Throwable $error): bool => $error instanceof ConnectionException
+                        || ($error instanceof RequestException && in_array($error->response->status(), [429, 500, 502, 503, 504], true)))
+                    ->post($this->endpoint($model), $payload);
+            } catch (ConnectionException|RequestException $error) {
+                Log::warning('El asistente de IA no respondió.', ['modelo' => $model, 'error' => $error->getMessage()]);
+
+                continue;
+            }
+
+            if ($response->failed()) {
+                Log::warning('El asistente de IA respondió con error.', ['modelo' => $model, 'status' => $response->status()]);
+
+                continue;
+            }
+
+            return $this->validated($response);
         }
 
-        if ($response->failed()) {
-            Log::warning('El asistente de IA respondió con error.', ['status' => $response->status()]);
-
-            throw SaleInterpreterUnavailableException::unavailable();
-        }
-
-        return $this->validated($response);
+        throw SaleInterpreterUnavailableException::unavailable();
     }
 
-    /** The address of generateContent for the configured model. */
-    private function endpoint(): string
+    /** The address of generateContent for a model. */
+    private function endpoint(string $model): string
     {
-        return rtrim($this->baseUrl, '/').'/v1beta/models/'.rawurlencode($this->model).':generateContent';
+        return rtrim($this->baseUrl, '/').'/v1beta/models/'.rawurlencode($model).':generateContent';
     }
 
     /**

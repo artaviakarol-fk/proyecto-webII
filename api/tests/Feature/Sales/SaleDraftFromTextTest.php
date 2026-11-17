@@ -44,7 +44,7 @@ final class SaleDraftFromTextTest extends TestCase
     {
         parent::setUp();
 
-        config(['services.gemini.key' => 'gemini-test-key', 'services.gemini.model' => 'gemini-2.5-flash', 'services.gemini.base_url' => 'https://generativelanguage.googleapis.com']);
+        config(['services.gemini.key' => 'gemini-test-key', 'services.gemini.model' => 'gemini-2.5-flash', 'services.gemini.fallback_models' => '', 'services.gemini.base_url' => 'https://generativelanguage.googleapis.com']);
         Sleep::fake();
 
         $this->negocio = NegocioModel::factory()->create();
@@ -163,6 +163,26 @@ final class SaleDraftFromTextTest extends TestCase
 
         Http::assertSentCount(2);
         $this->postJson('/api/v1/ventas', ['lineas' => [['producto_id' => $this->leche->id, 'cantidad' => 2]]])->assertCreated();
+    }
+
+    /** When the first model is overloaded, the next one in the list answers and the cashier never notices. */
+    public function test_a_fallback_model_answers_when_the_first_is_overloaded(): void
+    {
+        config(['services.gemini.fallback_models' => 'gemini-3.5-flash-lite']);
+        $backup = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent';
+        Http::fake([
+            self::PROVIDER => Http::response(['error' => ['code' => 503, 'status' => 'UNAVAILABLE']], 503),
+            $backup => Http::response(['candidates' => [[
+                'content' => ['role' => 'model', 'parts' => [['text' => json_encode(['cliente' => null, 'metodo_pago' => null, 'lineas' => [['producto' => 'leches', 'cantidad' => 2]]], JSON_UNESCAPED_UNICODE)]]],
+                'finishReason' => 'STOP',
+            ]]]),
+        ]);
+
+        $this->postJson(self::ENDPOINT, ['texto' => '2 leches'])
+            ->assertOk()
+            ->assertJsonPath('data.lineas.0.producto_id', $this->leche->id);
+
+        Http::assertSent(fn (Request $request): bool => $request->url() === $backup);
     }
 
     /** A timeout or a dropped connection is the same controlled error. */
