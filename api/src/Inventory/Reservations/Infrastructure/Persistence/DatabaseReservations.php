@@ -100,6 +100,38 @@ final readonly class DatabaseReservations implements ReservationReader, Reservat
             ->update(['estado' => ReservationStatus::Cancelled->value, 'updated_at' => $now]) > 0;
     }
 
+    /** Lock the active reservas of the cliente, mark them confirmed and answer the units of each product. */
+    public function claimActive(NegocioId $negocioId, string $userId, DateTimeImmutable $now): array
+    {
+        return DB::transaction(function () use ($negocioId, $userId, $now): array {
+            $rows = DB::table('reservas')
+                ->where('negocio_id', $negocioId->value)
+                ->where('usuario_id', $userId)
+                ->where('estado', ReservationStatus::Active->value)
+                ->where('expira_en', '>', $now)
+                ->orderBy('created_at')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get(['id', 'producto_id', 'cantidad']);
+
+            if ($rows->isEmpty()) {
+                return [];
+            }
+
+            DB::table('reservas')
+                ->whereIn('id', $rows->pluck('id')->all())
+                ->update(['estado' => ReservationStatus::Confirmed->value, 'updated_at' => $now]);
+
+            $units = [];
+
+            foreach ($rows as $row) {
+                $units[(string) $row->producto_id] = (int) $row->cantidad;
+            }
+
+            return $units;
+        });
+    }
+
     /** Read the active reservas of the cliente with the name and the current price of each product. */
     public function activeOf(NegocioId $negocioId, string $userId, DateTimeImmutable $now): array
     {
