@@ -811,7 +811,12 @@
                             }
                         }
                     }
-                }
+                },
+                "x-abilities": [
+                    "administrar",
+                    "caja",
+                    "inventario"
+                ]
             }
         },
         "/clientes": {
@@ -1678,7 +1683,12 @@
                             }
                         }
                     }
-                }
+                },
+                "x-abilities": [
+                    "administrar",
+                    "caja",
+                    "inventario"
+                ]
             },
             "post": {
                 "operationId": "negocios.profile.logo.store",
@@ -3911,6 +3921,17 @@
                                     {
                                         "type": "string",
                                         "const": "inventario"
+                                    }
+                                ],
+                                "minItems": 1,
+                                "maxItems": 1
+                            },
+                            {
+                                "type": "array",
+                                "prefixItems": [
+                                    {
+                                        "type": "string",
+                                        "const": "comprar"
                                     }
                                 ],
                                 "minItems": 1,
