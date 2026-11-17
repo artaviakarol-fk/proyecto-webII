@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Src\Inventory\Products\Application\UseCases;
 
+use DateTimeImmutable;
 use Src\Inventory\Products\Application\Contracts\ExpiredUnitsCounter;
+use Src\Inventory\Products\Application\Contracts\ReservedUnitsCounter;
 use Src\Inventory\Products\Application\DTOs\CatalogItem;
 use Src\Inventory\Products\Domain\Entities\Product;
 use Src\Inventory\Products\Domain\ValueObjects\Availability;
@@ -13,24 +15,26 @@ use Src\Shared\Domain\ValueObjects\PageRequest;
 
 final readonly class ListCatalog
 {
-    /** Receive the listing of the products of the negocio and the expired units counter. */
+    /** Receive the listing of the products of the negocio and the counters of expired and reserved units. */
     public function __construct(
         private ListProducts $listProducts,
         private ExpiredUnitsCounter $expiredUnits,
+        private ReservedUnitsCounter $reservedUnits,
     ) {}
 
     /**
      * One page of what a cliente can buy in the current negocio: each product with the units that can really be
-     * sold, which are the stock minus the units marked as expired.
+     * sold (the stock minus the units marked as expired) and the units other reservas hold at this moment.
      *
      * @return Page<CatalogItem>
      */
-    public function execute(?string $term, PageRequest $page): Page
+    public function execute(?string $term, PageRequest $page, DateTimeImmutable $now): Page
     {
         return $this->listProducts->execute($term, $page)->map(
             fn (Product $product): CatalogItem => new CatalogItem(
                 $product,
                 new Availability($product->details->stock, $this->expiredUnits->of($product->id, $product->negocioId)),
+                $this->reservedUnits->of($product->id, $product->negocioId, $now),
             ),
         );
     }

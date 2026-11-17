@@ -21,7 +21,7 @@ final class CatalogProductResource extends JsonResource
 
     /**
      * Expose only what a cliente needs to buy. The cost, the code and the raw stock are data of the negocio and
-     * are left out on purpose; `disponible` is what can really be sold.
+     * are left out on purpose; `disponible` is what can be sold and nobody holds in a reserva.
      *
      * @return array{id: string, nombre: string, categoria: string|null, precio_venta: float|int, disponible: int, agotado: bool, es_licor: bool, foto: string|null}
      */
@@ -35,8 +35,8 @@ final class CatalogProductResource extends JsonResource
             'nombre' => $details->name->value,
             'categoria' => $details->category?->value,
             'precio_venta' => $details->salePrice->cents / 100,
-            'disponible' => $this->item->availability->sellable,
-            'agotado' => $this->item->availability->isSoldOut(),
+            'disponible' => $this->item->available(),
+            'agotado' => $this->item->isSoldOut(),
             'es_licor' => $details->liquor,
             'foto' => $product->photoPath === null ? null : route('inventory.catalog.photo.show', $product->id->value),
         ];
