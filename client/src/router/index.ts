@@ -76,6 +76,18 @@ const router = createRouter({
       meta: { ability: 'caja' },
     },
     {
+      path: '/ventas',
+      name: 'ventas',
+      component: () => import('@/views/VentasView.vue'),
+      meta: { ability: 'caja' },
+    },
+    {
+      path: '/fiado',
+      name: 'fiado',
+      component: () => import('@/views/FiadoView.vue'),
+      meta: { ability: 'caja' },
+    },
+    {
       path: '/cierre-diario',
       name: 'cierre-diario',
       component: () => import('@/views/CierreDiarioView.vue'),
