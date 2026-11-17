@@ -5,6 +5,7 @@ import type {
   Customer,
   CurrentUser,
   DailyClosing,
+  ExpiredUnits,
   FiadoSale,
   GatewayOption,
   Payment,
@@ -12,6 +13,7 @@ import type {
   PurchaseRequest,
   RegisterClienteRequest,
   Page,
+  Receipt,
   Reservation,
   Sale,
   SaleStatus,
@@ -119,3 +121,14 @@ export const receiveCreditPayment = (customerId: string, monto: number) =>
 
 export const grantCreditIncrease = (customerId: string, monto: number, motivo: string) =>
   request<unknown>('POST', `/clientes/${customerId}/ampliaciones`, { body: { monto, motivo } })
+
+export const registerReceipt = (body: {
+  proveedor: string
+  fecha: string
+  lineas: { producto_id: string; cantidad: number; costo_unitario: number }[]
+}) => request<One<Receipt>>('POST', '/entradas', { body }).then((r) => r.data)
+
+export const markExpired = (productId: string, cantidad: number, motivo: string) =>
+  request<One<ExpiredUnits>>('POST', `/productos/${productId}/vencidos`, {
+    body: { cantidad, motivo },
+  }).then((r) => r.data)
