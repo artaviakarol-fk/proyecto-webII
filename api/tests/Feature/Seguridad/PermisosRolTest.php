@@ -221,6 +221,9 @@ final class PermisosRolTest extends TestCase
             ['GET', '/reservas', $buyers],
             ['POST', '/reservas', $buyers],
             ['DELETE', '/reservas/{id}', $buyers],
+            // Compras: only the cliente buys what it reserved and sees the payment of its purchases.
+            ['POST', '/compras', $buyers],
+            ['GET', '/compras/{id}/pago', $buyers],
             // Negocio: everybody sees it, only the administration changes it.
             ['GET', '/negocio', $everyone],
             ['GET', '/negocio/horario', $everyone],
