@@ -59,21 +59,8 @@ describe('TiendaView', () => {
     api.reserve.mockRejectedValue(new ApiError(409, 'Solo quedan 1 unidades de Leche.'))
     const w = mount(TiendaView)
     await flushPromises()
-    await w.find('.reserve').trigger('submit')
+    await w.find('.card-body form').trigger('submit')
     await flushPromises()
     expect(w.text()).toContain('Solo quedan 1 unidades')
-  })
-
-  it('shows the reservas with their countdown', async () => {
-    api.listCatalog.mockResolvedValue(page([product]))
-    api.listReservations.mockResolvedValue({
-      data: [{ id: 'r1', producto_id: 'p1', nombre: 'Leche', cantidad: 2, precio_unitario: 1200, subtotal: 2400,
-        expira_en: new Date(Date.now() + 5 * 60_000).toISOString() }],
-      total: 2400,
-    })
-    const w = mount(TiendaView)
-    await flushPromises()
-    expect(w.text()).toContain('Vence en 0')
-    expect(w.text()).toContain('Total: ₡2')
   })
 })

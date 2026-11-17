@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import AuthLayout from '@/components/AuthLayout.vue'
+import PasswordInput from '@/components/PasswordInput.vue'
 import { registerCliente } from '@/services/api'
 import { useSessionStore } from '@/stores/session'
 
@@ -45,23 +47,31 @@ async function submit() {
 </script>
 
 <template>
-  <form class="card registro" @submit.prevent="submit">
-    <h1>Crear cuenta de cliente</h1>
-    <label>Nombre <input v-model="nombre" required autocomplete="name" /></label>
-    <label>Correo <input v-model="correo" type="email" required autocomplete="email" /></label>
-    <label>
-      Contraseña
-      <input v-model="contrasena" type="password" minlength="8" required autocomplete="new-password" />
-    </label>
-    <p v-if="error" class="error-text" role="alert">{{ error }}</p>
-    <button class="primary" type="submit" :disabled="loading">
-      {{ loading ? 'Creando cuenta…' : 'Crear cuenta' }}
-    </button>
-    <p class="muted">¿Ya tiene cuenta? <RouterLink :to="{ name: 'login' }">Inicie sesión</RouterLink></p>
-  </form>
+  <AuthLayout>
+    <h2>Crear cuenta</h2>
+    <p>Pida a su minisúper y pague en línea.</p>
+    <form class="lform" novalidate @submit.prevent="submit">
+      <label class="lfield">
+        Nombre completo
+        <input v-model="nombre" required autocomplete="name" />
+      </label>
+      <label class="lfield">
+        Correo electrónico
+        <input v-model="correo" type="email" required placeholder="nombre@correo.com" autocomplete="email" />
+      </label>
+      <label class="lfield">
+        Contraseña
+        <PasswordInput v-model="contrasena" :minlength="8" placeholder="Mínimo 8 caracteres" autocomplete="new-password" />
+      </label>
+      <p class="lerr" role="alert">{{ error }}</p>
+      <button class="primary full lg" type="submit" :disabled="loading">
+        {{ loading ? 'Creando cuenta…' : 'Crear cuenta y entrar' }}
+      </button>
+    </form>
+    <p class="center">¿Ya tiene cuenta? <RouterLink :to="{ name: 'login' }">Iniciar sesión</RouterLink></p>
+  </AuthLayout>
 </template>
 
 <style scoped>
-.registro { max-width: 380px; margin: 3rem auto; display: grid; gap: 0.8rem; }
-label { display: grid; gap: 0.25rem; }
+.center { text-align: center; margin: 0; }
 </style>

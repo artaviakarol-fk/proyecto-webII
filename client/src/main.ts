@@ -4,7 +4,10 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 
 import App from './App.vue'
+import { applyAppearance } from './composables/useAppearance'
 import router from './router'
+
+applyAppearance()
 
 const app = createApp(App)
 

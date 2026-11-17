@@ -21,11 +21,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <img v-if="src" :src="src" :alt="alt" class="photo" />
-  <div v-else class="photo empty" aria-hidden="true">🛒</div>
+  <img v-if="src" :src="src" :alt="alt" />
+  <span v-else class="placeholder" aria-hidden="true">🛒</span>
 </template>
 
 <style scoped>
-.photo { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; background: var(--verde-suave); }
-.empty { display: grid; place-items: center; font-size: 2rem; }
+.placeholder { font-size: 2.2rem; }
 </style>

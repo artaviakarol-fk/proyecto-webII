@@ -5,6 +5,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import StateBox from '@/components/StateBox.vue'
 import { useAsync } from '@/composables/useAsync'
 import { getPurchasePayment } from '@/services/api'
+import { formatMoney } from '@/utils/money'
 import { lastSale } from '@/utils/navigation'
 
 const POLL_MS = 5000
@@ -19,8 +20,6 @@ const saleId = computed(() => {
 const payment = useAsync(() => getPurchasePayment(saleId.value ?? ''))
 const pending = computed(() => payment.data.value?.estado === 'pendiente')
 let timer: ReturnType<typeof setInterval> | null = null
-
-const money = (value: number) => `₡${value.toLocaleString('es-CR')}`
 
 function stop() {
   if (timer) clearInterval(timer)
@@ -54,28 +53,36 @@ onBeforeUnmount(stop)
       @retry="refresh"
     >
       <template v-if="payment.data.value">
-        <p class="amount">{{ money(payment.data.value.monto) }}</p>
+        <p class="amount">{{ formatMoney(payment.data.value.monto) }}</p>
 
-        <p v-if="payment.data.value.estado === 'pagado'" class="ok" role="status">
-          ¡Pago recibido! Gracias por su compra.
-        </p>
-        <p v-else-if="payment.data.value.estado === 'fallido'" class="error-text" role="alert">
-          El pago no se pudo completar<span v-if="payment.data.value.codigo_rechazo">
-            ({{ payment.data.value.codigo_rechazo }})</span
-          >. Sus reservas ya no están activas; puede volver a intentarlo desde la tienda.
-        </p>
-        <p v-else-if="payment.data.value.estado === 'reembolsado'" role="status">
-          Este pago fue reembolsado.
-        </p>
+        <div v-if="payment.data.value.estado === 'pagado'" class="status ok" role="status">
+          <div class="okmark" aria-hidden="true">✓</div>
+          <b>¡Pago recibido!</b>
+          <p>Gracias por su compra.</p>
+        </div>
+        <div v-else-if="payment.data.value.estado === 'fallido'" class="status bad" role="alert">
+          <div class="ic" aria-hidden="true">✗</div>
+          <b>El pago no se pudo completar</b>
+          <p>
+            <span v-if="payment.data.value.codigo_rechazo">({{ payment.data.value.codigo_rechazo }}) </span>Sus
+            productos ya no están reservados; puede volver a intentarlo desde la tienda.
+          </p>
+        </div>
+        <div v-else-if="payment.data.value.estado === 'reembolsado'" class="status" role="status">
+          <b>Este pago fue reembolsado.</b>
+        </div>
         <template v-else>
-          <p role="status">Esperando la confirmación del pago…</p>
-          <p v-if="payment.data.value.instrucciones" class="instrucciones">
+          <div class="status" role="status">
+            <div class="spin"></div>
+            <b>Esperando la confirmación del pago…</b>
+            <p class="muted">Esta página se actualiza sola.</p>
+          </div>
+          <p v-if="payment.data.value.instrucciones" class="note">
             {{ payment.data.value.instrucciones.mensaje }}
           </p>
           <p v-if="payment.data.value.url_aprobacion">
             <a :href="payment.data.value.url_aprobacion">Aprobar el pago en PayPal</a>
           </p>
-          <p class="muted">Esta página se actualiza sola.</p>
         </template>
       </template>
     </StateBox>
@@ -86,7 +93,5 @@ onBeforeUnmount(stop)
 
 <style scoped>
 .estado { max-width: 520px; margin: 2rem auto; display: grid; gap: 0.8rem; }
-.amount { font-size: 1.6rem; font-weight: 600; margin: 0; color: var(--verde-oscuro); }
-.ok { color: var(--verde-medio); font-weight: 600; }
-.instrucciones { background: var(--verde-suave); padding: 0.75rem; border-radius: 8px; }
+.amount { font-family: var(--font-display); font-size: 1.8rem; font-weight: 700; margin: 0; color: var(--titulo); }
 </style>

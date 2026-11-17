@@ -63,6 +63,6 @@ describe('PagoView', () => {
     api.listReservations.mockResolvedValue({ data: [], total: 0 })
     const w = mount(PagoView)
     await flushPromises()
-    expect(w.text()).toContain('No tiene reservas activas')
+    expect(w.text()).toContain('No tiene productos en su compra')
   })
 })

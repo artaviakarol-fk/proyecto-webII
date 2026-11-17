@@ -6,6 +6,9 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Src\Inventory\Products\Infrastructure\Persistence\Models\ProductModel;
+use Src\Shared\Domain\ImageFolders;
+use Src\Shared\Domain\ValueObjects\NegocioId;
+use Src\Shared\Infrastructure\Storage\DiskImageStorage;
 use Src\Shared\Infrastructure\Tenancy\NegocioTransaction;
 
 final class ProductosDemoSeeder extends Seeder
@@ -29,7 +32,7 @@ final class ProductosDemoSeeder extends Seeder
         foreach ([NegociosDemoSeeder::TERESITA_ID, NegociosDemoSeeder::LA_ESQUINA_ID] as $negocioId) {
             $transaction->run($negocioId, function () use ($negocioId): void {
                 foreach (self::PRODUCTS as [$code, $name, $category, $price, $cost, $stock, $perishable, $liquor]) {
-                    ProductModel::query()->updateOrCreate(
+                    $product = ProductModel::query()->updateOrCreate(
                         ['negocio_id' => $negocioId, 'codigo' => $code],
                         [
                             'nombre' => $name,
@@ -41,8 +44,23 @@ final class ProductosDemoSeeder extends Seeder
                             'es_licor' => $liquor,
                         ],
                     );
+
+                    $this->attachPhoto($product, $negocioId, $code);
                 }
             });
         }
+    }
+
+    /** Give the product the demo photo that matches its code (database/seeders/images/{code}.png), if it has none yet. */
+    private function attachPhoto(ProductModel $product, string $negocioId, string $code): void
+    {
+        $source = __DIR__.'/images/'.$code.'.png';
+
+        if ($product->foto_path !== null || ! is_file($source)) {
+            return;
+        }
+
+        $path = (new DiskImageStorage)->store(ImageFolders::product(new NegocioId($negocioId), (string) $product->id), $source, 'png');
+        $product->update(['foto_path' => $path]);
     }
 }
