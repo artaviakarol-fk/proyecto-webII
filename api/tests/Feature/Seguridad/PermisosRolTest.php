@@ -217,6 +217,10 @@ final class PermisosRolTest extends TestCase
             // Catalog of the cliente: only the cliente; the staff has its own catalog with costs.
             ['GET', '/catalogo', $buyers],
             ['GET', '/catalogo/{id}/foto', $buyers],
+            // Reservas: only the cliente holds units before paying.
+            ['GET', '/reservas', $buyers],
+            ['POST', '/reservas', $buyers],
+            ['DELETE', '/reservas/{id}', $buyers],
             // Negocio: everybody sees it, only the administration changes it.
             ['GET', '/negocio', $everyone],
             ['GET', '/negocio/horario', $everyone],
