@@ -1,6 +1,7 @@
 import { request, requestBlob } from './http'
 import type {
   CatalogPage,
+  CreditPayment,
   Customer,
   CurrentUser,
   DailyClosing,
@@ -10,8 +11,11 @@ import type {
   Product,
   PurchaseRequest,
   RegisterClienteRequest,
+  Page,
   Reservation,
   Sale,
+  SaleStatus,
+  SaleSummary,
   SaleDraft,
   SaleRequest,
   TokenResult,
@@ -37,8 +41,10 @@ export const listProducts = (buscar?: string) =>
 export const getProduct = (id: string) =>
   request<One<Product>>('GET', `/productos/${id}`).then((r) => r.data)
 
-export const listCustomers = () =>
-  request<Many<Customer>>('GET', '/clientes', { query: { por_pagina: 50 } }).then((r) => r.data)
+export const listCustomers = (buscar?: string) =>
+  request<Many<Customer>>('GET', '/clientes', { query: { buscar, por_pagina: 50 } }).then(
+    (r) => r.data,
+  )
 
 export const createSale = (body: SaleRequest) =>
   request<One<Sale>>('POST', '/ventas', { body }).then((r) => r.data)
@@ -94,3 +100,22 @@ export const buy = (body: PurchaseRequest) =>
 
 export const getPurchasePayment = (saleId: string) =>
   request<One<Payment>>('GET', `/compras/${saleId}/pago`).then((r) => r.data)
+
+export const listSales = (filters: { estado?: SaleStatus; fecha?: string; pagina?: number } = {}) =>
+  request<Page<SaleSummary>>('GET', '/ventas', {
+    query: { estado: filters.estado, fecha: filters.fecha, pagina: filters.pagina ?? 1, por_pagina: 15 },
+  })
+
+export const getSale = (saleId: string) =>
+  request<One<Sale>>('GET', `/ventas/${saleId}`).then((r) => r.data)
+
+export const cancelSale = (saleId: string) =>
+  request<One<Sale>>('POST', `/ventas/${saleId}/anular`).then((r) => r.data)
+
+export const receiveCreditPayment = (customerId: string, monto: number) =>
+  request<One<CreditPayment>>('POST', `/clientes/${customerId}/abonos`, {
+    body: { monto, metodo_pago: 'efectivo' },
+  }).then((r) => r.data)
+
+export const grantCreditIncrease = (customerId: string, monto: number, motivo: string) =>
+  request<unknown>('POST', `/clientes/${customerId}/ampliaciones`, { body: { monto, motivo } })

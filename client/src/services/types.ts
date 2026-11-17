@@ -5,6 +5,8 @@ type Schemas = components['schemas']
 export type Product = Schemas['ProductResource']
 export type Customer = Schemas['CustomerResource']
 export type Sale = Schemas['SaleResource']
+export type SaleSummary = Schemas['SaleSummaryResource']
+export type CreditPayment = Schemas['CreditPaymentResource']
 export type SaleRequest = Schemas['SaleRequest']
 export type FiadoSale = Schemas['FiadoSaleResource']
 export type Payment = Schemas['PaymentResource']
@@ -60,3 +62,10 @@ export interface CatalogPage {
   data: CatalogProduct[]
   meta: { pagina: number; por_pagina: number; total: number; ultima_pagina: number }
 }
+
+export interface Page<T> {
+  data: T[]
+  meta: { pagina: number; por_pagina: number; total: number; ultima_pagina: number }
+}
+
+export type SaleStatus = Schemas['SaleStatus']
