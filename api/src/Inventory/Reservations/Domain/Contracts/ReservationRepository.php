@@ -26,4 +26,13 @@ interface ReservationRepository
 
     /** Let go an active reserva of the cliente; answer false when there is none with that identifier. */
     public function cancel(NegocioId $negocioId, string $userId, ReservationId $id, DateTimeImmutable $now): bool;
+
+    /**
+     * Take all the active, not expired reservas of the cliente to buy them: they pass to confirmed, so they stop holding
+     * units, and the units each product was held for are answered. The rows are locked, so two purchases of the same
+     * cliente at the same time cannot take the same reserva twice.
+     *
+     * @return array<string, int> Units held, by product.
+     */
+    public function claimActive(NegocioId $negocioId, string $userId, DateTimeImmutable $now): array;
 }
