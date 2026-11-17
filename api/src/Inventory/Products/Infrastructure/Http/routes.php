@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use Src\Inventory\Products\Infrastructure\Http\Controllers\AvailabilityController;
+use Src\Inventory\Products\Infrastructure\Http\Controllers\CatalogController;
 use Src\Inventory\Products\Infrastructure\Http\Controllers\ProductController;
 use Src\Inventory\Products\Infrastructure\Http\Controllers\ProductPhotoController;
 use Src\Inventory\Products\Infrastructure\Http\Controllers\ProductPriceController;
@@ -30,4 +31,13 @@ Route::prefix('productos')
             Route::patch('{producto}/precio', [ProductPriceController::class, 'update'])->name('price.update')->whereUuid('producto');
             Route::get('{producto}/historial-precios', [ProductPriceController::class, 'history'])->name('price.history')->whereUuid('producto');
         });
+    });
+
+// El cliente ve lo que puede comprar en su negocio: precio y unidades disponibles, nunca el costo.
+Route::prefix('catalogo')
+    ->middleware(['auth:sanctum', 'negocio', 'abilities:comprar'])
+    ->name('inventory.catalog.')
+    ->group(function (): void {
+        Route::get('/', CatalogController::class)->name('index');
+        Route::get('{producto}/foto', [ProductPhotoController::class, 'show'])->name('photo.show')->whereUuid('producto');
     });
