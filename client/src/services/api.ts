@@ -7,6 +7,7 @@ import type {
   Payment,
   Product,
   Sale,
+  SaleDraft,
   SaleRequest,
   TokenResult,
 } from './types'
@@ -27,6 +28,9 @@ export const listProducts = (buscar?: string) =>
   request<Many<Product>>('GET', '/productos', { query: { buscar, por_pagina: 50 } }).then(
     (r) => r.data,
   )
+
+export const getProduct = (id: string) =>
+  request<One<Product>>('GET', `/productos/${id}`).then((r) => r.data)
 
 export const listCustomers = () =>
   request<Many<Customer>>('GET', '/clientes', { query: { por_pagina: 50 } }).then((r) => r.data)
@@ -54,3 +58,6 @@ export const dailyClosing = (fecha?: string) =>
   request<One<DailyClosing>>('GET', '/reportes/cierre-diario', { query: { fecha } }).then(
     (r) => r.data,
   )
+
+export const draftSale = (texto: string) =>
+  request<One<SaleDraft>>('POST', '/ventas/borrador-ia', { body: { texto } }).then((r) => r.data)
