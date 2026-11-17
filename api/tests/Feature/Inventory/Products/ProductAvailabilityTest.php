@@ -125,7 +125,7 @@ final class ProductAvailabilityTest extends TestCase
     /** Every staff role checks availability; without a token it answers 401. */
     public function test_every_staff_role_checks_availability(): void
     {
-        foreach (Role::cases() as $role) {
+        foreach (Role::staff() as $role) {
             Sanctum::actingAs(UserModel::factory()->role($role)->create(['negocio_id' => $this->negocio->id]), $role->abilities());
             $this->getJson($this->url())->assertOk();
         }
