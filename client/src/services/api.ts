@@ -1,11 +1,16 @@
-import { request } from './http'
+import { request, requestBlob } from './http'
 import type {
+  CatalogPage,
   Customer,
   CurrentUser,
   DailyClosing,
   FiadoSale,
+  GatewayOption,
   Payment,
   Product,
+  PurchaseRequest,
+  RegisterClienteRequest,
+  Reservation,
   Sale,
   SaleDraft,
   SaleRequest,
@@ -61,3 +66,31 @@ export const dailyClosing = (fecha?: string) =>
 
 export const draftSale = (texto: string) =>
   request<One<SaleDraft>>('POST', '/ventas/borrador-ia', { body: { texto } }).then((r) => r.data)
+
+export const registerCliente = (negocioId: string, body: RegisterClienteRequest) =>
+  request<One<CurrentUser>>('POST', `/negocios/${negocioId}/registro`, { body }).then((r) => r.data)
+
+export const listCatalog = (buscar?: string, pagina = 1) =>
+  request<CatalogPage>('GET', '/catalogo', { query: { buscar, pagina, por_pagina: 24 } })
+
+export const catalogPhoto = (productId: string) => requestBlob(`/catalogo/${productId}/foto`)
+
+export const listReservations = () =>
+  request<{ data: Reservation[]; total: number }>('GET', '/reservas')
+
+export const reserve = (productoId: string, cantidad: number) =>
+  request<One<Reservation>>('POST', '/reservas', {
+    body: { producto_id: productoId, cantidad },
+  }).then((r) => r.data)
+
+export const cancelReservation = (reservationId: string) =>
+  request<void>('DELETE', `/reservas/${reservationId}`)
+
+export const listGateways = () =>
+  request<Many<GatewayOption>>('GET', '/pagos/pasarelas').then((r) => r.data)
+
+export const buy = (body: PurchaseRequest) =>
+  request<One<Payment>>('POST', '/compras', { body }).then((r) => r.data)
+
+export const getPurchasePayment = (saleId: string) =>
+  request<One<Payment>>('GET', `/compras/${saleId}/pago`).then((r) => r.data)

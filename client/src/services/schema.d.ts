@@ -38,6 +38,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/catalogo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List what the cliente can buy in its negocio, by pages, optionally searching by name
+         * @description Each product comes with its price and the units available: the ones that can be sold minus the ones that
+         *     reservas hold right now. The cost of the product is never sent.
+         */
+        get: operations["inventory.catalog.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/negocios/{negocio}/registro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register as cliente of a negocio
+         * @description Public: it needs no token. The account is always created with the `cliente` role, whatever the request
+         *     sends, and it answers the new account without a token; the person logs in afterwards with `POST /tokens`.
+         *     An email that already has an account answers 409, and a negocio that does not exist or is inactive, 404.
+         */
+        post: operations["identity.registration.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/clientes/{cliente}/ampliaciones": {
         parameters: {
             query?: never;
@@ -259,6 +302,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/pagos/pasarelas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the gateways the buyer can choose, with the ways of paying each one offers
+         * @description The public key of ONVO is public by design (the client uses it to create the payment method, so card data never
+         *     reaches this API); no secret is ever shown.
+         */
+        get: operations["billing.payments.gateways"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/entradas": {
         parameters: {
             query?: never;
@@ -357,10 +421,35 @@ export interface paths {
         put?: never;
         /**
          * Receive a payment notification from the provider
-         * @description No token is used: the provider proves itself with its signature or secret. Answers 200 when the notification was
-         *     processed, was already processed or is not about a payment; 401 when it is not proved to come from the provider.
+         * @description No token is used: the provider proves itself with its signature or secret. The address may name the provider
+         *     (`/webhooks/pagos/{negocio}/paypal`); without it the configured one is used, so the addresses already given to
+         *     the providers keep working. Answers 200 when the notification was processed, was already processed or is not
+         *     about a payment; 401 when it is not proved to come from the provider.
          */
         post: operations["billing.payments.webhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks/pagos/{negocio}/{pasarela}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receive a payment notification from the provider
+         * @description No token is used: the provider proves itself with its signature or secret. The address may name the provider
+         *     (`/webhooks/pagos/{negocio}/paypal`); without it the configured one is used, so the addresses already given to
+         *     the providers keep working. Answers 200 when the notification was processed, was already processed or is not
+         *     about a payment; 401 when it is not proved to come from the provider.
+         */
+        post: operations["billing.payments.webhook.provider"];
         delete?: never;
         options?: never;
         head?: never;
@@ -422,6 +511,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/catalogo/{producto}/foto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Send the photo of a product of the negocio; a product of another negocio answers 404 */
+        get: operations["inventory.catalog.photo.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/productos/{producto}/precio": {
         parameters: {
             query?: never;
@@ -451,6 +557,88 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/compras": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Buy what the cliente reserved and pay it with the gateway it chose
+         * @description The reservas become a sale and the gateway (ONVO or PayPal) is asked to charge it, all or nothing: if the stock is
+         *     not enough, liquor lacks the id number or the gateway refuses, the reservas stay active. It answers the payment;
+         *     while it is pending (SINPE Móvil, PayPal) its `venta_id` is used to ask how it stands.
+         */
+        post: operations["sales.purchases.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/compras/{venta}/pago": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Show how the payment of a purchase of the cliente stands; a purchase of somebody else answers 404 */
+        get: operations["sales.purchases.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reservas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the reservas the cliente still holds and what they add up to
+         * @description A reserva that expired is not listed any more: its units are free again.
+         */
+        get: operations["inventory.reservations.index"];
+        put?: never;
+        /**
+         * Hold units of a product for a while, before paying
+         * @description The units are kept for the cliente for 15 minutes: nobody else can reserve or buy them. Reserving the same
+         *     product again replaces the previous reserva. When the product does not have that many units free it answers
+         *     409 and says how many are left.
+         */
+        post: operations["inventory.reservations.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reservas/{reserva}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Let go a reserva: its units are free again. A reserva of somebody else, or one already expired, answers 404 */
+        delete: operations["inventory.reservations.destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -554,10 +742,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Show the newest payment of a sale; while it is pending, the provider is asked what happened */
+        /** Show the newest payment of a sale; while it is pending, the provider that charged it is asked what happened */
         get: operations["billing.payments.show"];
         put?: never;
-        /** Start the payment of an open sale with the provider chosen in the configuration */
+        /** Start the payment of an open sale with the provider chosen for this payment (or the configured one) */
         post: operations["billing.payments.store"];
         delete?: never;
         options?: never;
@@ -642,6 +830,17 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** CatalogProductResource */
+        CatalogProductResource: {
+            id: string;
+            nombre: string;
+            categoria: string | null;
+            precio_venta: number;
+            disponible: number;
+            agotado: boolean;
+            es_licor: boolean;
+            foto: string | null;
+        };
         /** ChangeSalePriceRequest */
         ChangeSalePriceRequest: {
             precio_venta: number;
@@ -700,6 +899,8 @@ export interface components {
                 "caja"
             ] | [
                 "inventario"
+            ] | [
+                "comprar"
             ];
             negocio_id: string;
         };
@@ -903,6 +1104,19 @@ export interface components {
             foto: string | null;
             agotado: boolean;
         };
+        /**
+         * PurchaseRequest
+         * @description How the cliente pays what it reserved: the way of paying, the gateway of this payment and, when the gateway asks for
+         *     it, the payment method created with the provider. Liquor also needs the id number of the buyer.
+         */
+        PurchaseRequest: {
+            /** @enum {string} */
+            metodo_pago: "tarjeta" | "sinpe_movil";
+            /** @enum {string} */
+            pasarela: "onvo" | "paypal";
+            metodo_proveedor_id?: string | null;
+            cedula_comprador?: string | null;
+        };
         /** ReceiptResource */
         ReceiptResource: {
             id: string;
@@ -937,6 +1151,13 @@ export interface components {
             /** @description Cómo se paga. Por ahora solo "efectivo"; es el valor por defecto. */
             metodo_pago?: string;
         };
+        /** RegisterClienteRequest */
+        RegisterClienteRequest: {
+            nombre: string;
+            /** Format: email */
+            correo: string;
+            contrasena: string;
+        };
         /**
          * RegisterReceiptRequest
          * @description A delivery of goods. Each line brings either "producto_id" (a product of the catalog) or
@@ -967,6 +1188,25 @@ export interface components {
                 abre: string;
                 cierra: string;
             }[][];
+        };
+        /** ReservationResource */
+        ReservationResource: {
+            id: string;
+            producto_id: string;
+            nombre: string;
+            cantidad: number;
+            precio_unitario: number;
+            subtotal: number;
+            expira_en: string;
+        };
+        /**
+         * ReserveRequest
+         * @description Units of a product the cliente wants to hold: "producto_id" and "cantidad". Who reserves comes from the token.
+         */
+        ReserveRequest: {
+            /** Format: uuid */
+            producto_id: string;
+            cantidad: number;
         };
         /** SaleDraftResource */
         SaleDraftResource: {
@@ -1073,11 +1313,13 @@ export interface components {
          * StartPaymentRequest
          * @description How the sale is paid and the id of the payment method that the client created with the provider.
          *     Card data never reaches this API: the client sends it to the provider with its publishable key. Whether the client must send it
-         *     depends on the configured provider, which the gateway declares.
+         *     depends on the provider of the payment (the chosen one or the configured one), which the gateway declares.
          */
         StartPaymentRequest: {
             /** @enum {string} */
             metodo_pago: "tarjeta" | "sinpe_movil";
+            /** @enum {string|null} */
+            pasarela?: "onvo" | "paypal" | null;
             metodo_proveedor_id?: string | null;
         };
         /** TokenResource */
@@ -1215,6 +1457,115 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problema"];
                 };
             };
+        };
+    };
+    "inventory.catalog.index": {
+        parameters: {
+            query?: {
+                /** @description Número de página, desde 1. */
+                pagina?: number;
+                /** @description Elementos por página, de 1 a 50. Por defecto, 15. */
+                por_pagina?: number;
+                /** @description Texto que se busca en el nombre o el código. */
+                buscar?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CatalogProductResource"][];
+                        meta: {
+                            pagina: number;
+                            por_pagina: number;
+                            total: number;
+                            ultima_pagina: number;
+                        };
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "identity.registration.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                negocio: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterClienteRequest"];
+            };
+        };
+        responses: {
+            /** @description `CurrentUserResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CurrentUserResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description El recurso no existe o pertenece a otro negocio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
         };
     };
     "credit.increases.store": {
@@ -2049,6 +2400,45 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "billing.payments.gateways": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: unknown[];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+        };
+    };
     "inventory.receipts.store": {
         parameters: {
             query?: never;
@@ -2348,6 +2738,57 @@ export interface operations {
             header?: never;
             path: {
                 negocio: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        estado: string;
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description El recurso no existe o pertenece a otro negocio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+        };
+    };
+    "billing.payments.webhook.provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                negocio: string;
+                pasarela: string | null;
             };
             cookie?: never;
         };
@@ -2767,6 +3208,55 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "inventory.catalog.photo.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                producto: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    "Transfer-Encoding": "chunked";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description El recurso no existe o pertenece a otro negocio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+        };
+    };
     "inventory.products.price.update": {
         parameters: {
             query?: never;
@@ -2853,6 +3343,234 @@ export interface operations {
                         }[];
                     };
                 };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description El recurso no existe o pertenece a otro negocio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+        };
+    };
+    "sales.purchases.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseRequest"];
+            };
+        };
+        responses: {
+            /** @description `PaymentResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PaymentResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "sales.purchases.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                venta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `PaymentResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PaymentResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description El recurso no existe o pertenece a otro negocio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+        };
+    };
+    "inventory.reservations.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReservationResource"][];
+                        total: number;
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+        };
+    };
+    "inventory.reservations.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReserveRequest"];
+            };
+        };
+        responses: {
+            /** @description `ReservationResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReservationResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "inventory.reservations.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reserva: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description No autenticado: falta el token o no es válido. */
             401: {

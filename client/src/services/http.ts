@@ -6,6 +6,7 @@ export interface Problem {
   detail?: string
   status?: number
   errors?: Record<string, string[]>
+  errores?: Record<string, string[]>
 }
 
 export class ApiError extends Error {
@@ -96,4 +97,23 @@ export async function request<T>(
     )
   }
   return payload as T
+}
+
+/** Downloads a protected file (a product photo) with the token, since an <img> cannot send the header. */
+export async function requestBlob(path: string): Promise<Blob> {
+  const headers: Record<string, string> = {}
+  const token = tokenStorage.get()
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  let response: Response
+  try {
+    response = await fetch(`${BASE_URL}${path}`, { headers })
+  } catch {
+    throw new ApiError(0, 'No se pudo conectar con el servidor. Revise su conexión.')
+  }
+  if (!response.ok) {
+    if (response.status === 401 && token) onUnauthorized?.()
+    throw new ApiError(response.status, `Error ${response.status}`)
+  }
+  return response.blob()
 }
