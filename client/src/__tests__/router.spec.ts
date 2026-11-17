@@ -57,3 +57,25 @@ describe('resolveAccess for the cliente', () => {
     })
   })
 })
+
+describe('resolveAccess for the bodeguero', () => {
+  const keeper = logged(['inventario'])
+
+  it('sends the bodeguero to the warehouse, not to the till', () => {
+    expect(resolveAccess({ fullPath: '/login', meta: { public: true } }, keeper)).toEqual({ name: 'bodega' })
+  })
+
+  it('keeps the bodeguero out of the till, the fiado and the reports', () => {
+    expect(resolveAccess({ fullPath: '/caja', meta: { ability: 'caja' } }, keeper)).toEqual({ name: 'forbidden' })
+    expect(resolveAccess({ fullPath: '/fiado', meta: { ability: 'caja' } }, keeper)).toEqual({ name: 'forbidden' })
+    expect(resolveAccess({ fullPath: '/cierre-diario', meta: { ability: 'administrar' } }, keeper)).toEqual({
+      name: 'forbidden',
+    })
+  })
+
+  it('keeps the cashier out of the warehouse', () => {
+    expect(resolveAccess({ fullPath: '/bodega', meta: { ability: 'inventario' } }, logged(['caja']))).toEqual({
+      name: 'forbidden',
+    })
+  })
+})

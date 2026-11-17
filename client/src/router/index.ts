@@ -23,7 +23,9 @@ interface GuardTarget {
 
 /** The first page of each kind of account: the cliente shops, the staff works at the till. */
 export function homeFor(session: GuardSession): RouteLocationRaw {
-  return session.can('comprar') ? { name: 'tienda' } : { name: 'caja' }
+  if (session.can('comprar')) return { name: 'tienda' }
+  // The bodeguero only has the inventario permission, so the till would be forbidden for them.
+  return session.can('caja') ? { name: 'caja' } : { name: 'bodega' }
 }
 
 /** Decides where a navigation goes: true to continue, or the redirect. */
@@ -86,6 +88,12 @@ const router = createRouter({
       name: 'fiado',
       component: () => import('@/views/FiadoView.vue'),
       meta: { ability: 'caja' },
+    },
+    {
+      path: '/bodega',
+      name: 'bodega',
+      component: () => import('@/views/BodegaView.vue'),
+      meta: { ability: 'inventario' },
     },
     {
       path: '/cierre-diario',
