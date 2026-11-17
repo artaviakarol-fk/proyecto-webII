@@ -16,13 +16,14 @@ final readonly class CatalogController
     /**
      * List what the cliente can buy in its negocio, by pages, optionally searching by name.
      *
-     * Each product comes with its price and the units available to sell. The cost of the product is never sent.
+     * Each product comes with its price and the units available: the ones that can be sold minus the ones that
+     * reservas hold right now. The cost of the product is never sent.
      *
      * @response array{data: list<CatalogProductResource>, meta: array{pagina: int, por_pagina: int, total: int, ultima_pagina: int}}
      */
     public function __invoke(ListProductsRequest $request, ListCatalog $listCatalog): JsonResponse
     {
-        $page = $listCatalog->execute($request->term(), $request->page());
+        $page = $listCatalog->execute($request->term(), $request->page(), now()->toDateTimeImmutable());
 
         return new JsonResponse([
             'data' => array_map(fn (CatalogItem $item): array => new CatalogProductResource($item)->toArray($request), $page->items),
