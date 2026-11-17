@@ -169,6 +169,7 @@ final class PermisosRolTest extends TestCase
         $administration = [Role::Administrador];
         $till = [Role::Administrador, Role::Cajero];
         $warehouse = [Role::Administrador, Role::Bodeguero];
+        $buyers = [Role::Cliente];
 
         return [
             // Catalog: everybody reads it, only the administration changes it.
@@ -211,6 +212,9 @@ final class PermisosRolTest extends TestCase
             ['POST', '/ventas/borrador-ia', $till],
             ['GET', '/ampliaciones-limite', $administration],
             ['POST', '/ampliaciones-limite/{id}/revertir', $administration],
+            // Catalog of the cliente: only the cliente; the staff has its own catalog with costs.
+            ['GET', '/catalogo', $buyers],
+            ['GET', '/catalogo/{id}/foto', $buyers],
             // Negocio: everybody sees it, only the administration changes it.
             ['GET', '/negocio', $everyone],
             ['GET', '/negocio/horario', $everyone],
