@@ -15,4 +15,10 @@ interface UserRepository
 
     /** Find an account by its identifier. */
     public function find(UserId $id): ?User;
+
+    /** Answer the identifier of the next account. */
+    public function nextId(): UserId;
+
+    /** Store a new account. */
+    public function save(User $user): void;
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Src\Identity\Users\Infrastructure\Persistence\Repositories;
 
+use Illuminate\Support\Str;
 use Src\Identity\Users\Domain\Contracts\UserRepository;
 use Src\Identity\Users\Domain\Entities\User;
 use Src\Identity\Users\Domain\ValueObjects\Email;
@@ -28,6 +29,26 @@ final readonly class EloquentUserRepository implements UserRepository
         $model = UserModel::query()->find($id->value);
 
         return $model === null ? null : $this->toDomain($model);
+    }
+
+    /** Answer a new time-ordered identifier. */
+    public function nextId(): UserId
+    {
+        return new UserId((string) Str::uuid7());
+    }
+
+    /** Insert the account with its password already hashed. */
+    public function save(User $user): void
+    {
+        UserModel::query()->create([
+            'id' => $user->id->value,
+            'negocio_id' => $user->negocioId->value,
+            'nombre' => $user->name,
+            'correo' => $user->email->value,
+            'password' => $user->passwordHash,
+            'rol' => $user->role->value,
+            'activo' => $user->active,
+        ]);
     }
 
     /** Rebuild the aggregate from its stored state. */
