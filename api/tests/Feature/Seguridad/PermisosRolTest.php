@@ -195,6 +195,8 @@ final class PermisosRolTest extends TestCase
             ['POST', '/ventas/{id}/pago', $till],
             ['GET', '/ventas/{id}/pago', $till],
             ['POST', '/ventas/{id}/pago/reembolso', $administration],
+            // Gateways to choose when paying: the till and the cliente.
+            ['GET', '/pagos/pasarelas', [Role::Administrador, Role::Cajero, Role::Cliente]],
             // Reports: only the administration sees the income of the day.
             ['GET', '/reportes/cierre-diario', $administration],
             // Fiado: the till reads the customers and what they owe; only the administration changes them.
