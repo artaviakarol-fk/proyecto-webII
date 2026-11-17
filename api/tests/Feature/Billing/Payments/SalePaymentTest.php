@@ -359,19 +359,21 @@ final class SalePaymentTest extends TestCase
         $this->assertDatabaseHas('pagos', ['venta_id' => $this->saleId, 'estado' => 'pagado', 'referencia_reembolso' => null]);
     }
 
-    /** A payment charged by ONVO is not refunded through PayPal after PAYMENT_GATEWAY changed: nobody is called. */
+    /** A payment charged by ONVO is still refunded by ONVO after PAYMENT_GATEWAY changed to PayPal: the payment remembers its provider. */
     public function test_a_payment_is_refunded_by_the_provider_that_charged_it(): void
     {
         $this->payWithOnvo();
         $this->usePaypal();
-        Http::fake();
+        Http::fake([self::REFUNDS => Http::response(['id' => 'refund_1', 'status' => 'succeeded', 'amount' => 300000, 'currency' => 'CRC', 'paymentIntentId' => 'intent_1'], 201)]);
 
         $this->actingAsAdministration();
         $this->postJson($this->endpoint($this->saleId).'/reembolso')
-            ->assertConflict()
-            ->assertJsonPath('detail', 'El pago se cobró con onvo y la pasarela configurada es paypal: el reembolso debe hacerse con la misma pasarela que cobró.');
+            ->assertOk()
+            ->assertJsonPath('data.estado', 'reembolsado')
+            ->assertJsonPath('data.proveedor', 'onvo');
 
-        Http::assertNothingSent();
+        Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/refunds'));
+        Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'paypal.com'));
     }
 
     /** A refunded sale is cancelled, so it cannot be paid again: a new sale is opened instead. */
