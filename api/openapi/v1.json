@@ -1664,6 +1664,61 @@
                 ]
             }
         },
+        "/pagos/pasarelas": {
+            "get": {
+                "operationId": "billing.payments.gateways",
+                "description": "The public key of ONVO is public by design (the client uses it to create the payment method, so card data never\nreaches this API); no secret is ever shown.",
+                "summary": "List the gateways the buyer can choose, with the ways of paying each one offers",
+                "tags": [
+                    "GatewayOptions"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "caja",
+                    "comprar"
+                ]
+            }
+        },
         "/entradas": {
             "post": {
                 "operationId": "inventory.receipts.store",
@@ -2074,7 +2129,7 @@
         "/webhooks/pagos/{negocio}": {
             "post": {
                 "operationId": "billing.payments.webhook",
-                "description": "No token is used: the provider proves itself with its signature or secret. Answers 200 when the notification was\nprocessed, was already processed or is not about a payment; 401 when it is not proved to come from the provider.",
+                "description": "No token is used: the provider proves itself with its signature or secret. The address may name the provider\n(`/webhooks/pagos/{negocio}/paypal`); without it the configured one is used, so the addresses already given to\nthe providers keep working. Answers 200 when the notification was processed, was already processed or is not\nabout a payment; 401 when it is not proved to come from the provider.",
                 "summary": "Receive a payment notification from the provider",
                 "tags": [
                     "PaymentWebhook"
@@ -2086,6 +2141,89 @@
                         "required": true,
                         "schema": {
                             "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "estado": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "estado"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/webhooks/pagos/{negocio}/{pasarela}": {
+            "post": {
+                "operationId": "billing.payments.webhook.provider",
+                "description": "No token is used: the provider proves itself with its signature or secret. The address may name the provider\n(`/webhooks/pagos/{negocio}/paypal`); without it the configured one is used, so the addresses already given to\nthe providers keep working. Answers 200 when the notification was processed, was already processed or is not\nabout a payment; 401 when it is not proved to come from the provider.",
+                "summary": "Receive a payment notification from the provider",
+                "tags": [
+                    "PaymentWebhook"
+                ],
+                "parameters": [
+                    {
+                        "name": "negocio",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "pasarela",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "default": null
                         }
                     }
                 ],
@@ -3584,7 +3722,7 @@
         "/ventas/{venta}/pago": {
             "post": {
                 "operationId": "billing.payments.store",
-                "summary": "Start the payment of an open sale with the provider chosen in the configuration",
+                "summary": "Start the payment of an open sale with the provider chosen for this payment (or the configured one)",
                 "tags": [
                     "SalePayment"
                 ],
@@ -3667,7 +3805,7 @@
             },
             "get": {
                 "operationId": "billing.payments.show",
-                "summary": "Show the newest payment of a sale; while it is pending, the provider is asked what happened",
+                "summary": "Show the newest payment of a sale; while it is pending, the provider that charged it is asked what happened",
                 "tags": [
                     "SalePayment"
                 ],
@@ -5570,13 +5708,24 @@
             },
             "StartPaymentRequest": {
                 "type": "object",
-                "description": "How the sale is paid and the id of the payment method that the client created with the provider.\nCard data never reaches this API: the client sends it to the provider with its publishable key. Whether the client must send it\ndepends on the configured provider, which the gateway declares.",
+                "description": "How the sale is paid and the id of the payment method that the client created with the provider.\nCard data never reaches this API: the client sends it to the provider with its publishable key. Whether the client must send it\ndepends on the provider of the payment (the chosen one or the configured one), which the gateway declares.",
                 "properties": {
                     "metodo_pago": {
                         "type": "string",
                         "enum": [
                             "tarjeta",
                             "sinpe_movil"
+                        ]
+                    },
+                    "pasarela": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "onvo",
+                            "paypal",
+                            null
                         ]
                     },
                     "metodo_proveedor_id": {
