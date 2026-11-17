@@ -10,6 +10,7 @@ type AnyFn = (...args: any[]) => any
 
 const api = vi.hoisted(() => ({
   listProducts: vi.fn<AnyFn>(),
+  listExpired: vi.fn<AnyFn>(),
   registerReceipt: vi.fn<AnyFn>(),
   markExpired: vi.fn<AnyFn>(),
 }))
@@ -24,6 +25,7 @@ const empty = { ...milk, id: 'p2', codigo: 'PAN', nombre: 'Pan', stock: 0, agota
 beforeEach(() => {
   vi.clearAllMocks()
   api.listProducts.mockResolvedValue([milk, empty])
+  api.listExpired.mockResolvedValue([])
 })
 
 describe('BodegaView', () => {
@@ -91,5 +93,20 @@ describe('BodegaView', () => {
     await form.trigger('submit')
     await flushPromises()
     expect(w.text()).toContain('No hay tantas unidades.')
+  })
+
+  it('shows the expired units and discounts them from what can be sold', async () => {
+    api.listExpired.mockResolvedValue([
+      { id: 'e1', producto_id: 'p1', codigo: 'LCH', producto: 'Leche', cantidad: 3, motivo: 'Fecha cumplida', registrada_por: 'Bodega', registrada_en: '2026-11-17T10:00:00Z' },
+    ])
+    const w = mount(BodegaView)
+    await flushPromises()
+    expect(w.text()).toContain('Vencidos en el estante')
+    expect(w.text()).toContain('Fecha cumplida')
+    const row = w.findAll('tbody tr').find((r) => r.text().includes('LCH') && r.text().includes('Perecedero'))!
+    const cells = row.findAll('td').map((c) => c.text())
+    expect(cells[2]).toBe('10')
+    expect(cells[3]).toBe('3')
+    expect(cells[4]).toBe('7')
   })
 })
