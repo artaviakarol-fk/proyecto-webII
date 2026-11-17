@@ -1,21 +1,33 @@
 :root {
-  --brand: #0f766e;
-  --brand-dark: #115e59;
-  --bg: #f4f6f5;
+  --verde-oscuro: #1b4332;
+  --verde-medio: #2d6a4f;
+  --verde-claro: #40916c;
+  --verde-suave: #d8f3dc;
+  --naranja: #ff6a00;
+  --naranja-aa: #c24e00;
+  --naranja-fuerte: #8f3900;
+  --border: #c8e6c9;
+  --bg-alt: #f7fdf9;
+  --brand: var(--verde-oscuro);
+  --brand-dark: var(--verde-medio);
+  --bg: var(--bg-alt);
   --card: #fff;
-  --text: #1f2937;
-  --muted: #6b7280;
+  --text: #1b2a22;
+  --muted: #55695d;
   --danger: #b91c1c;
-  --border: #d9dfdc;
 }
 * { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
-h1, h2, h3 { margin: 0 0 0.5rem; }
-button { font: inherit; cursor: pointer; border: 1px solid var(--border); background: var(--card); padding: 0.45rem 0.8rem; border-radius: 6px; }
-button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
-button.primary:hover:not(:disabled) { background: var(--brand-dark); }
+body { margin: 0; font-family: 'Source Sans 3', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+h1, h2, h3 { margin: 0 0 0.5rem; font-family: 'Playfair Display', Georgia, serif; color: var(--verde-oscuro); }
+button { font: inherit; cursor: pointer; border: 1px solid var(--verde-medio); background: var(--card); color: var(--verde-medio); padding: 0.45rem 0.9rem; border-radius: 8px; }
+button:hover:not(:disabled) { background: var(--verde-suave); }
+button.primary { background: var(--naranja-aa); border-color: var(--naranja-aa); color: #fff; font-weight: 600; }
+button.primary:hover:not(:disabled) { background: var(--naranja-fuerte); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
-input, select, textarea { font: inherit; padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; }
-.card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid var(--naranja); outline-offset: 2px; }
+input, select, textarea { font: inherit; padding: 0.45rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
+.chip { display: inline-block; padding: 0.1rem 0.6rem; border-radius: 999px; background: var(--verde-suave); color: var(--verde-oscuro); font-size: 0.85rem; }
 .muted { color: var(--muted); }
 .error-text { color: var(--danger); }
+a { color: var(--verde-medio); }
