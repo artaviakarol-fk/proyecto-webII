@@ -21,4 +21,12 @@ final class RoleTest extends TestCase
         $this->assertSame(['caja'], Role::Cajero->abilities());
         $this->assertSame(['inventario'], Role::Bodeguero->abilities());
     }
+
+    /** The cliente only buys: its token carries no ability of the staff, and it is not part of the staff. */
+    public function test_cliente_only_buys_and_is_not_staff(): void
+    {
+        $this->assertSame(['comprar'], Role::Cliente->abilities());
+        $this->assertNotContains(Role::Cliente, Role::staff());
+        $this->assertSame([Role::Administrador, Role::Cajero, Role::Bodeguero], Role::staff());
+    }
 }

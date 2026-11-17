@@ -157,6 +157,90 @@
                 ]
             }
         },
+        "/negocios/{negocio}/registro": {
+            "post": {
+                "operationId": "identity.registration.store",
+                "description": "Public: it needs no token. The account is always created with the `cliente` role, whatever the request\nsends, and it answers the new account without a token; the person logs in afterwards with `POST /tokens`.\nAn email that already has an account answers 409, and a negocio that does not exist or is inactive, 404.",
+                "summary": "Register as cliente of a negocio",
+                "tags": [
+                    "ClienteRegistration"
+                ],
+                "parameters": [
+                    {
+                        "name": "negocio",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterClienteRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`CurrentUserResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/CurrentUserResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
         "/clientes/{cliente}/ampliaciones": {
             "post": {
                 "operationId": "credit.increases.store",
@@ -811,7 +895,12 @@
                             }
                         }
                     }
-                }
+                },
+                "x-abilities": [
+                    "administrar",
+                    "caja",
+                    "inventario"
+                ]
             }
         },
         "/clientes": {
@@ -1678,7 +1767,12 @@
                             }
                         }
                     }
-                }
+                },
+                "x-abilities": [
+                    "administrar",
+                    "caja",
+                    "inventario"
+                ]
             },
             "post": {
                 "operationId": "negocios.profile.logo.store",
@@ -3915,6 +4009,17 @@
                                 ],
                                 "minItems": 1,
                                 "maxItems": 1
+                            },
+                            {
+                                "type": "array",
+                                "prefixItems": [
+                                    {
+                                        "type": "string",
+                                        "const": "comprar"
+                                    }
+                                ],
+                                "minItems": 1,
+                                "maxItems": 1
                             }
                         ]
                     },
@@ -4708,6 +4813,31 @@
                     "monto"
                 ],
                 "title": "ReceiveCreditPaymentRequest"
+            },
+            "RegisterClienteRequest": {
+                "type": "object",
+                "properties": {
+                    "nombre": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "correo": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255
+                    },
+                    "contrasena": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 72
+                    }
+                },
+                "required": [
+                    "nombre",
+                    "correo",
+                    "contrasena"
+                ],
+                "title": "RegisterClienteRequest"
             },
             "RegisterReceiptRequest": {
                 "type": "object",

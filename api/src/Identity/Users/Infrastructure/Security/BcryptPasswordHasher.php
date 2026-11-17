@@ -22,4 +22,10 @@ final readonly class BcryptPasswordHasher implements PasswordHasher
 
         return Hash::driver(self::DRIVER)->check($plainPassword, $hash);
     }
+
+    /** Hash the password with bcrypt. */
+    public function hash(string $plainPassword): string
+    {
+        return Hash::driver(self::DRIVER)->make($plainPassword);
+    }
 }

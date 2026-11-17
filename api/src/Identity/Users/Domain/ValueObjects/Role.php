@@ -9,6 +9,17 @@ enum Role: string
     case Administrador = 'administrador';
     case Cajero = 'cajero';
     case Bodeguero = 'bodeguero';
+    case Cliente = 'cliente';
+
+    /**
+     * The roles of the people who work in the negocio; the cliente is a buyer, not part of the staff.
+     *
+     * @return list<self>
+     */
+    public static function staff(): array
+    {
+        return [self::Administrador, self::Cajero, self::Bodeguero];
+    }
 
     /**
      * Abilities granted to the access tokens of the role.
@@ -21,6 +32,7 @@ enum Role: string
             self::Administrador => ['administrar', 'caja', 'inventario'],
             self::Cajero => ['caja'],
             self::Bodeguero => ['inventario'],
+            self::Cliente => ['comprar'],
         };
     }
 }

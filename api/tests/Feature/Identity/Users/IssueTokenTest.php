@@ -47,6 +47,7 @@ final class IssueTokenTest extends TestCase
             'administrador' => [Role::Administrador, ['administrar', 'caja', 'inventario']],
             'cajero' => [Role::Cajero, ['caja']],
             'bodeguero' => [Role::Bodeguero, ['inventario']],
+            'cliente' => [Role::Cliente, ['comprar']],
         ];
     }
 
