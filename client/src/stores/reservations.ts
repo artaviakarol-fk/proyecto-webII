@@ -10,6 +10,8 @@ export const useReservationsStore = defineStore('reservations', () => {
   const total = ref(0)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  // Whether the side cart is open; the header button and the shop open it.
+  const drawerOpen = ref(false)
 
   const count = computed(() => items.value.reduce((units, item) => units + item.cantidad, 0))
 
@@ -43,7 +45,8 @@ export const useReservationsStore = defineStore('reservations', () => {
     items.value = []
     total.value = 0
     error.value = null
+    drawerOpen.value = false
   }
 
-  return { items, total, loading, error, count, load, reserve, release, clear }
+  return { items, total, loading, error, drawerOpen, count, load, reserve, release, clear }
 })
