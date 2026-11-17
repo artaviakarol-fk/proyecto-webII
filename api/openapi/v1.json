@@ -3132,6 +3132,144 @@
                 ]
             }
         },
+        "/compras": {
+            "post": {
+                "operationId": "sales.purchases.store",
+                "description": "The reservas become a sale and the gateway (ONVO or PayPal) is asked to charge it, all or nothing: if the stock is\nnot enough, liquor lacks the id number or the gateway refuses, the reservas stay active. It answers the payment;\nwhile it is pending (SINPE M\u00f3vil, PayPal) its `venta_id` is used to ask how it stands.",
+                "summary": "Buy what the cliente reserved and pay it with the gateway it chose",
+                "tags": [
+                    "Purchase"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PurchaseRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`PaymentResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PaymentResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "comprar"
+                ]
+            }
+        },
+        "/compras/{venta}/pago": {
+            "get": {
+                "operationId": "sales.purchases.show",
+                "summary": "Show how the payment of a purchase of the cliente stands; a purchase of somebody else answers 404",
+                "tags": [
+                    "Purchase"
+                ],
+                "parameters": [
+                    {
+                        "name": "venta",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`PaymentResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PaymentResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "comprar"
+                ]
+            }
+        },
         "/reservas": {
             "get": {
                 "operationId": "inventory.reservations.index",
@@ -5249,6 +5387,47 @@
                     "agotado"
                 ],
                 "title": "ProductResource"
+            },
+            "PurchaseRequest": {
+                "type": "object",
+                "description": "How the cliente pays what it reserved: the way of paying, the gateway of this payment and, when the gateway asks for\nit, the payment method created with the provider. Liquor also needs the id number of the buyer.",
+                "properties": {
+                    "metodo_pago": {
+                        "type": "string",
+                        "enum": [
+                            "tarjeta",
+                            "sinpe_movil"
+                        ]
+                    },
+                    "pasarela": {
+                        "type": "string",
+                        "enum": [
+                            "onvo",
+                            "paypal"
+                        ]
+                    },
+                    "metodo_proveedor_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "maxLength": 100
+                    },
+                    "cedula_comprador": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^[0-9\\s-]+$",
+                        "maxLength": 20
+                    }
+                },
+                "required": [
+                    "metodo_pago",
+                    "pasarela"
+                ],
+                "title": "PurchaseRequest"
             },
             "ReceiptResource": {
                 "type": "object",

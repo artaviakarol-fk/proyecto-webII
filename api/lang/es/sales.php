@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
 
     'sale_not_found' => 'La venta no existe.',
+    'purchase_without_reservations' => 'No tiene reservas activas para comprar: reserve productos primero o vuelva a reservar si vencieron.',
     'sale_without_lines' => 'La venta debe tener al menos una línea.',
     'duplicate_product' => 'Un producto solo puede aparecer una vez en la venta.',
     'quantity_out_of_range' => 'La cantidad debe ser un número entero entre 1 y :max.',
