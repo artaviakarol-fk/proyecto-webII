@@ -21,6 +21,8 @@ async function salir() {
     <nav>
       <RouterLink v-if="session.can('comprar')" :to="{ name: 'tienda' }">Tienda</RouterLink>
       <RouterLink v-if="session.can('caja')" :to="{ name: 'caja' }">Caja</RouterLink>
+      <RouterLink v-if="session.can('caja')" :to="{ name: 'ventas' }">Ventas</RouterLink>
+      <RouterLink v-if="session.can('caja')" :to="{ name: 'fiado' }">Fiado</RouterLink>
       <RouterLink v-if="session.can('administrar')" :to="{ name: 'cierre-diario' }">
         Cierre diario
       </RouterLink>
