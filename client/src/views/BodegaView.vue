@@ -104,7 +104,7 @@ onMounted(products.run)
         empty-text="No hay productos en el catálogo."
         @retry="products.run"
       >
-        <table>
+        <div class="table-wrap"><table>
           <thead>
             <tr><th>Código</th><th>Producto</th><th>Stock</th><th>Costo</th><th>Estado</th><th></th></tr>
           </thead>
@@ -118,10 +118,10 @@ onMounted(products.run)
                 <span v-if="p.agotado" class="chip agotado">Agotado</span>
                 <span v-else class="chip">Disponible</span>
               </td>
-              <td><button type="button" :disabled="p.stock <= 0" @click="startExpired(p)">Marcar vencidos</button></td>
+              <td><button class="sm" type="button" :disabled="p.stock <= 0" @click="startExpired(p)">Marcar vencidos</button></td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
       </StateBox>
     </section>
 
@@ -142,7 +142,7 @@ onMounted(products.run)
             <input v-model.number="line.cantidad" type="number" min="1" step="1" placeholder="Cantidad" required :aria-label="`Cantidad ${index + 1}`" />
             <input v-model.number="line.costo" type="number" min="0" step="0.01" placeholder="Costo unitario" required :aria-label="`Costo ${index + 1}`" />
           </div>
-          <button v-if="lines.length > 1" type="button" @click="removeLine(index)">Quitar</button>
+          <button v-if="lines.length > 1" class="sm" type="button" @click="removeLine(index)">Quitar</button>
         </fieldset>
         <button type="button" @click="addLine">Agregar otro producto</button>
         <button class="primary" type="submit" :disabled="busy">{{ busy ? 'Guardando…' : 'Registrar entrada' }}</button>
@@ -164,7 +164,10 @@ onMounted(products.run)
 </template>
 
 <style scoped>
-.bodega { display: grid; grid-template-columns: 1fr 360px; gap: 1rem; align-items: start; }
+.bodega { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px); gap: 1rem; align-items: start; }
+.bodega > * { min-width: 0; }
+.side input, .side select { width: 100%; box-sizing: border-box; }
+.table-wrap { overflow-x: auto; }
 .search { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
 .search input { flex: 1; }
 table { border-collapse: collapse; width: 100%; }
@@ -176,5 +179,5 @@ th, td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: 1px solid var
 fieldset { border: 1px solid var(--border); border-radius: 8px; display: grid; gap: 0.4rem; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
 .ok { color: var(--verde-medio); font-weight: 600; }
-@media (max-width: 900px) { .bodega { grid-template-columns: 1fr; } }
+@media (max-width: 1000px) { .bodega { grid-template-columns: minmax(0, 1fr); } }
 </style>
