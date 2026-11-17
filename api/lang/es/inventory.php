@@ -21,6 +21,9 @@ return [
     'expired_quantity_out_of_range' => 'Las unidades vencidas deben ser un número entero entre 1 y :max.',
     'expiry_reason_invalid' => 'El motivo es obligatorio y puede tener hasta :max caracteres.',
     'expired_units_exceed_sellable' => 'No se pueden marcar :quantity unidades como vencidas: el producto solo tiene :available unidades sin marcar.',
+    'reservation_quantity_out_of_range' => 'La cantidad a reservar debe ser un número entero entre 1 y :max.',
+    'reservation_exceeds_available' => 'No se pueden reservar :quantity unidades de :product: solo quedan :available disponibles.',
+    'reservation_not_found' => 'La reserva no existe o ya venció.',
     'stock_limit_exceeded' => 'La entrada dejaría un producto con más de :max unidades en stock.',
 
 ];

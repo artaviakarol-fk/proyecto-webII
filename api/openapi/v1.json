@@ -160,7 +160,7 @@
         "/catalogo": {
             "get": {
                 "operationId": "inventory.catalog.index",
-                "description": "Each product comes with its price and the units available to sell. The cost of the product is never sent.",
+                "description": "Each product comes with its price and the units available: the ones that can be sold minus the ones that\nreservas hold right now. The cost of the product is never sent.",
                 "summary": "List what the cliente can buy in its negocio, by pages, optionally searching by name",
                 "tags": [
                     "Catalog"
@@ -3132,6 +3132,187 @@
                 ]
             }
         },
+        "/reservas": {
+            "get": {
+                "operationId": "inventory.reservations.index",
+                "description": "A reserva that expired is not listed any more: its units are free again.",
+                "summary": "List the reservas the cliente still holds and what they add up to",
+                "tags": [
+                    "Reservation"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ReservationResource"
+                                            }
+                                        },
+                                        "total": {
+                                            "type": "number"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "total"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "comprar"
+                ]
+            },
+            "post": {
+                "operationId": "inventory.reservations.store",
+                "description": "The units are kept for the cliente for 15 minutes: nobody else can reserve or buy them. Reserving the same\nproduct again replaces the previous reserva. When the product does not have that many units free it answers\n409 and says how many are left.",
+                "summary": "Hold units of a product for a while, before paying",
+                "tags": [
+                    "Reservation"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReserveRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`ReservationResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReservationResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "comprar"
+                ]
+            }
+        },
+        "/reservas/{reserva}": {
+            "delete": {
+                "operationId": "inventory.reservations.destroy",
+                "summary": "Let go a reserva: its units are free again. A reserva of somebody else, or one already expired, answers 404",
+                "tags": [
+                    "Reservation"
+                ],
+                "parameters": [
+                    {
+                        "name": "reserva",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "comprar"
+                ]
+            }
+        },
         "/ventas": {
             "get": {
                 "operationId": "sales.index",
@@ -5324,6 +5505,62 @@
                     "dias"
                 ],
                 "title": "ReplaceOpeningHoursRequest"
+            },
+            "ReservationResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "producto_id": {
+                        "type": "string"
+                    },
+                    "nombre": {
+                        "type": "string"
+                    },
+                    "cantidad": {
+                        "type": "integer"
+                    },
+                    "precio_unitario": {
+                        "type": "number"
+                    },
+                    "subtotal": {
+                        "type": "number"
+                    },
+                    "expira_en": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "producto_id",
+                    "nombre",
+                    "cantidad",
+                    "precio_unitario",
+                    "subtotal",
+                    "expira_en"
+                ],
+                "title": "ReservationResource"
+            },
+            "ReserveRequest": {
+                "type": "object",
+                "description": "Units of a product the cliente wants to hold: \"producto_id\" and \"cantidad\". Who reserves comes from the token.",
+                "properties": {
+                    "producto_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "cantidad": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                    }
+                },
+                "required": [
+                    "producto_id",
+                    "cantidad"
+                ],
+                "title": "ReserveRequest"
             },
             "SaleDraftResource": {
                 "type": "object",

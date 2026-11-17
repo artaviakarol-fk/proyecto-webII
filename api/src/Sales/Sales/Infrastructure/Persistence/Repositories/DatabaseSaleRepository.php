@@ -28,6 +28,9 @@ final readonly class DatabaseSaleRepository implements SaleRepository
     /** Expired units that are still on the shelf do not count as sellable. */
     public const string EXPIRED_ON_THE_SHELF = 'activa';
 
+    /** Units held by a reserva that is still active are not for sale either. */
+    public const string ACTIVE_RESERVATION = 'activa';
+
     /** Receive the account that performs the operation, to record it in the inventory movements. */
     public function __construct(private CurrentUser $user) {}
 
@@ -173,7 +176,8 @@ final readonly class DatabaseSaleRepository implements SaleRepository
             }
 
             if ($delta > 0) {
-                $sellable = (int) $product->stock - $this->expiredUnits($negocioId, $productId);
+                // Units that clientes hold in a reserva are not for sale at the till either.
+                $sellable = (int) $product->stock - $this->expiredUnits($negocioId, $productId) - $this->reservedUnits($negocioId, $productId, $now);
 
                 if ($sellable < $delta) {
                     throw InsufficientStockException::create((string) $product->nombre, max(0, $sellable));
@@ -206,6 +210,17 @@ final readonly class DatabaseSaleRepository implements SaleRepository
             ->where('negocio_id', $negocioId)
             ->where('producto_id', $productId)
             ->where('estado', self::EXPIRED_ON_THE_SHELF)
+            ->sum('cantidad');
+    }
+
+    /** Add up the units of the product that active reservas, not yet expired, hold at this moment. */
+    private function reservedUnits(string $negocioId, string $productId, mixed $now): int
+    {
+        return (int) DB::table('reservas')
+            ->where('negocio_id', $negocioId)
+            ->where('producto_id', $productId)
+            ->where('estado', self::ACTIVE_RESERVATION)
+            ->where('expira_en', '>', $now)
             ->sum('cantidad');
     }
 
