@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import { homeFor } from '@/router'
 import { useSessionStore } from '@/stores/session'
 
 const session = useSessionStore()
@@ -19,8 +20,8 @@ async function submit() {
   error.value = null
   try {
     await session.login(correo.value, contrasena.value)
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/caja'
-    await router.push(redirect.startsWith('/') ? redirect : '/caja')
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null
+    await router.push(redirect?.startsWith('/') ? redirect : homeFor(session))
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'No se pudo iniciar sesión'
   } finally {
@@ -57,6 +58,12 @@ async function submit() {
     <button class="primary" type="submit" :disabled="loading">
       {{ loading ? 'Ingresando…' : 'Ingresar' }}
     </button>
+    <p class="muted">
+      ¿Quiere comprar?
+      <RouterLink :to="{ name: 'registro', query: route.query.negocio ? { negocio: route.query.negocio } : {} }">
+        Cree su cuenta de cliente
+      </RouterLink>
+    </p>
   </form>
 </template>
 

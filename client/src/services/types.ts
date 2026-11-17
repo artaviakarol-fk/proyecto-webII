@@ -12,8 +12,15 @@ export type DailyClosing = Schemas['DailyClosingResource']
 export type SaleDraft = Schemas['SaleDraftResource']
 export type CurrentUser = Schemas['CurrentUserResource']
 export type TokenResult = Schemas['TokenResource']
+export type CatalogProduct = Schemas['CatalogProductResource']
+export type Reservation = Schemas['ReservationResource']
+export type PurchaseRequest = Schemas['PurchaseRequest']
+export type RegisterClienteRequest = Schemas['RegisterClienteRequest']
 
-export type Ability = 'administrar' | 'caja' | 'inventario'
+export type GatewayId = PurchaseRequest['pasarela']
+export type PayMethod = PurchaseRequest['metodo_pago']
+
+export type Ability = 'administrar' | 'caja' | 'inventario' | 'comprar'
 
 /**
  * The contract types `lineas` and `no_encontrados` of the AI draft as `unknown[]`, because the API builds them
@@ -33,4 +40,23 @@ export interface DraftLine {
 export interface DraftNotFound {
   mencionado: string
   cantidad: number
+}
+
+/**
+ * The contract types the items of `GET /pagos/pasarelas` as `unknown[]`, because the API builds them with array_map.
+ * This is their real shape (PaymentGateways::options); replace it when the contract types them.
+ */
+export interface GatewayOption {
+  proveedor: GatewayId
+  nombre: string
+  metodos: PayMethod[]
+  requiere_metodo_cliente: boolean
+  llave_publica: string | null
+  configurada: boolean
+  predeterminada: boolean
+}
+
+export interface CatalogPage {
+  data: CatalogProduct[]
+  meta: { pagina: number; por_pagina: number; total: number; ultima_pagina: number }
 }

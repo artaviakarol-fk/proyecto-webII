@@ -7,6 +7,7 @@ declare module 'vue-router' {
   interface RouteMeta {
     public?: boolean
     ability?: Ability
+    home?: boolean
   }
 }
 
@@ -17,13 +18,19 @@ interface GuardSession {
 
 interface GuardTarget {
   fullPath: string
-  meta: { public?: boolean; ability?: Ability }
+  meta: { public?: boolean; ability?: Ability; home?: boolean }
+}
+
+/** The first page of each kind of account: the cliente shops, the staff works at the till. */
+export function homeFor(session: GuardSession): RouteLocationRaw {
+  return session.can('comprar') ? { name: 'tienda' } : { name: 'caja' }
 }
 
 /** Decides where a navigation goes: true to continue, or the redirect. */
 export function resolveAccess(to: GuardTarget, session: GuardSession): true | RouteLocationRaw {
-  if (to.meta.public) return session.isLogged ? { name: 'caja' } : true
+  if (to.meta.public) return session.isLogged ? homeFor(session) : true
   if (!session.isLogged) return { name: 'login', query: { redirect: to.fullPath } }
+  if (to.meta.home) return homeFor(session)
   if (to.meta.ability && !session.can(to.meta.ability)) return { name: 'forbidden' }
   return true
 }
@@ -31,12 +38,36 @@ export function resolveAccess(to: GuardTarget, session: GuardSession): true | Ro
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: '/', redirect: { name: 'caja' } },
+    { path: '/', name: 'home', component: () => import('@/views/ForbiddenView.vue'), meta: { home: true } },
     {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
       meta: { public: true },
+    },
+    {
+      path: '/registro',
+      name: 'registro',
+      component: () => import('@/views/RegistroView.vue'),
+      meta: { public: true },
+    },
+    {
+      path: '/tienda',
+      name: 'tienda',
+      component: () => import('@/views/TiendaView.vue'),
+      meta: { ability: 'comprar' },
+    },
+    {
+      path: '/pago',
+      name: 'pago',
+      component: () => import('@/views/PagoView.vue'),
+      meta: { ability: 'comprar' },
+    },
+    {
+      path: '/pago/estado/:venta?',
+      name: 'pago-estado',
+      component: () => import('@/views/PagoEstadoView.vue'),
+      meta: { ability: 'comprar' },
     },
     {
       path: '/caja',
