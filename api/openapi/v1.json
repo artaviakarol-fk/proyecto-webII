@@ -1579,6 +1579,61 @@
                 ]
             }
         },
+        "/vencidos": {
+            "get": {
+                "operationId": "inventory.expirations.index",
+                "summary": "List the units of the negocio found expired that are still on the shelf, the most recent first",
+                "tags": [
+                    "ExpiredUnits"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `ExpiredUnitsSummaryResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ExpiredUnitsSummaryResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "inventario"
+                ]
+            }
+        },
         "/ventas/{venta}/fiado": {
             "post": {
                 "operationId": "credit.fiado.store",
@@ -4918,6 +4973,46 @@
                     "stock_vendible"
                 ],
                 "title": "ExpiredUnitsResource"
+            },
+            "ExpiredUnitsSummaryResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "producto_id": {
+                        "type": "string"
+                    },
+                    "codigo": {
+                        "type": "string"
+                    },
+                    "producto": {
+                        "type": "string"
+                    },
+                    "cantidad": {
+                        "type": "integer"
+                    },
+                    "motivo": {
+                        "type": "string"
+                    },
+                    "registrada_por": {
+                        "type": "string"
+                    },
+                    "registrada_en": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "producto_id",
+                    "codigo",
+                    "producto",
+                    "cantidad",
+                    "motivo",
+                    "registrada_por",
+                    "registrada_en"
+                ],
+                "title": "ExpiredUnitsSummaryResource"
             },
             "FiadoSaleResource": {
                 "type": "object",

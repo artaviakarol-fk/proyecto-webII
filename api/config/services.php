@@ -54,7 +54,7 @@ return [
     // Google Gemini: reads the text of the cashier for the draft of a sale (US-308). Free tier key from Google AI Studio.
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
-        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.8-flash'),
         // Models to try, in order, when the first one is overloaded (503) or fails; comma separated.
         'fallback_models' => env('GEMINI_FALLBACK_MODELS', ''),
         'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com'),

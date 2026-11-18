@@ -282,6 +282,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vencidos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the units of the negocio found expired that are still on the shelf, the most recent first */
+        get: operations["inventory.expirations.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ventas/{venta}/fiado": {
         parameters: {
             query?: never;
@@ -965,6 +982,17 @@ export interface components {
             stock: number;
             unidades_vencidas: number;
             stock_vendible: number;
+        };
+        /** ExpiredUnitsSummaryResource */
+        ExpiredUnitsSummaryResource: {
+            id: string;
+            producto_id: string;
+            codigo: string;
+            producto: string;
+            cantidad: number;
+            motivo: string;
+            registrada_por: string;
+            registrada_en: string;
         };
         /** FiadoSaleResource */
         FiadoSaleResource: {
@@ -2342,6 +2370,46 @@ export interface operations {
                 };
             };
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "inventory.expirations.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Array of `ExpiredUnitsSummaryResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ExpiredUnitsSummaryResource"][];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
         };
     };
     "credit.fiado.store": {

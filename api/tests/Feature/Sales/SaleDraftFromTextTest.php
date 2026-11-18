@@ -29,7 +29,7 @@ final class SaleDraftFromTextTest extends TestCase
 
     private const string ENDPOINT = '/api/v1/ventas/borrador-ia';
 
-    private const string PROVIDER = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+    private const string PROVIDER = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent';
 
     private NegocioModel $negocio;
 
@@ -44,7 +44,7 @@ final class SaleDraftFromTextTest extends TestCase
     {
         parent::setUp();
 
-        config(['services.gemini.key' => 'gemini-test-key', 'services.gemini.model' => 'gemini-2.5-flash', 'services.gemini.fallback_models' => '', 'services.gemini.base_url' => 'https://generativelanguage.googleapis.com']);
+        config(['services.gemini.key' => 'gemini-test-key', 'services.gemini.model' => 'gemini-3.8-flash', 'services.gemini.fallback_models' => '', 'services.gemini.base_url' => 'https://generativelanguage.googleapis.com']);
         Sleep::fake();
 
         $this->negocio = NegocioModel::factory()->create();

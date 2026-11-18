@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/artaviakarol-fk/proyecto-webII/actions/workflows/ci.yml/badge.svg)](https://github.com/artaviakarol-fk/proyecto-webII/actions/workflows/ci.yml)
 
-Proyecto del curso **ISW-621 Web II**. API REST en **Laravel (PHP)** para la gestión de un minisúper: inventario, ventas, fiado con límite, proveedores y más. El frontend se hará después con Vue.js.
+Proyecto del curso **ISW-621 Web II**. API REST en **Laravel (PHP)** para la gestión de un minisúper: inventario, ventas, fiado con límite, proveedores y más, con un cliente web en **Vue 3 y TypeScript** que la consume.
 
 **Equipo:** Las Chicas Superpoderosas — Karol Artavia (`artaviakarol-fk`) y Jania (`jania02`).
 
@@ -11,6 +11,7 @@ Proyecto del curso **ISW-621 Web II**. API REST en **Laravel (PHP)** para la ges
 | Ruta | Contenido |
 |---|---|
 | [`api/`](api/) | API REST en Laravel. El código del producto vive en `api/src/`. |
+| [`client/`](client/) | Cliente web en Vue 3 con TypeScript. Los tipos de la API se generan desde `api/openapi/v1.json`. |
 | [`docs/architecture.md`](docs/architecture.md) | Estructura, capas, regla de dependencias, errores y rutas. |
 | [`docs/adr/`](docs/adr/) | Decisiones de arquitectura (ADR), una por archivo. |
 | [`docs/data-model.md`](docs/data-model.md) | Diagrama y detalle de cada tabla, formas normales y excepciones. |
@@ -46,9 +47,27 @@ El enunciado está pensado para un sistema de reservas de servicios, pero nuestr
 | Pruebas con Pest y CI en verde | Pint, Larastan (nivel 8) y Pest corren en cada pull request | `.github/workflows/ci.yml` |
 | Sistema desplegado | Un VPS con Docker y Caddy, con HTTPS automático | [Despliegue](#despliegue) |
 
+## Avance 2: qué entregamos y cómo se relaciona con la rúbrica
+
+| La rúbrica pide | Lo que hicimos en el Minisúper Teresita | Dónde verlo |
+|---|---|---|
+| **Seguridad y permisos:** autenticación con Sanctum | Cada sesión es un token de Sanctum con las habilidades de su rol. Cerrar sesión revoca el token | `POST /tokens`, `DELETE /tokens/actual` |
+| Permisos por rol | Cuatro roles: administrador (`administrar`, `caja`, `inventario`), cajero (`caja`), bodeguero (`inventario`) y cliente (`comprar`). Cada ruta exige su habilidad y responde `403` si no la tiene. El registro público siempre crea el rol cliente | `PermisosRolTest` (matriz de rutas por rol) |
+| Permisos por propiedad del recurso | Un cliente solo ve y cancela **sus** reservas y solo consulta el pago de **sus** compras; las ajenas responden `404` | `ReservationsTest`, `PurchasesTest` |
+| Aislamiento entre negocios que resiste intentos de burlarlo | El negocio sale del token, nunca de la petición, y PostgreSQL filtra cada tabla con Row Level Security. Pedir un recurso de otro negocio responde `404` | [Sesión y aislamiento](#sesión-y-aislamiento-por-negocio) |
+| **Cobro confirmado por webhook:** verifica el origen | ONVO: el secreto del encabezado `X-Webhook-Secret` se compara en tiempo constante (`hash_equals`). PayPal: la firma se verifica con `verify-webhook-signature`. Una notificación sin prueba responde `401` | `POST /webhooks/pagos/{negocio}` y `/webhooks/pagos/{negocio}/{pasarela}` |
+| Es idempotente | Cada evento se guarda en `webhook_eventos`; si el proveedor lo reenvía, se procesa una sola vez | `PaymentWebhookTest` |
+| El estado coincide con el del proveedor | El estado del pago nunca se toma de la notificación ni del navegador: la API se lo pregunta a la pasarela. La compra del cliente une **reserva → venta → pago → webhook** | `PaymentWebhookTest`, `POST /compras` |
+| **Cliente que consume la API:** reserva y paga | El cliente se registra, ve el catálogo con fotos, reserva por 15 minutos con control de concurrencia ("Comprar") y paga eligiendo ONVO o PayPal. El personal tiene caja, ventas, fiado, bodega y cierre diario | [`client/`](client/) |
+| Estados de carga, error y vacío | Las pantallas que cargan datos usan el componente `StateBox` (cargando, error con "Reintentar" y vacío); el inicio de sesión y el registro muestran su propio estado de carga y error | `client/src/__tests__` |
+| Tipos generados desde la documentación | `openapi-typescript` genera `client/src/services/schema.d.ts` desde `api/openapi/v1.json` | [Cliente web](#cliente-web) |
+| **Funcionalidad de IA:** datos estructurados | El cajero escribe la venta en texto libre y Gemini devuelve JSON con un esquema fijo (`responseSchema`) | `POST /ventas/borrador-ia`, botón "Dictar venta" en la caja |
+| Validados antes de usarse | La respuesta se vuelve a validar y se contrasta con el catálogo, el stock y el límite de fiado. Es solo un borrador: la venta no se registra hasta que el cajero presiona **Cobrar** | `SaleDraftFromTextTest` |
+| El sistema sigue funcionando si el proveedor falla | Si Gemini no responde se prueban los modelos de respaldo (`GEMINI_FALLBACK_MODELS`) y, si todos fallan, la API responde un `503` controlado y la venta se registra a mano | `SaleDraftFromTextTest` |
+
 ## Puesta en marcha
 
-Por ahora la API se ejecuta **en local con Docker** (API + PostgreSQL). El frontend se publicará más adelante en GitHub Pages.
+La API se ejecuta **en local con Docker** (API + PostgreSQL) y el cliente web con Node.js (ver [Cliente web](#cliente-web)).
 
 Requisitos: Docker Desktop.
 
@@ -67,6 +86,28 @@ La primera vez tarda unos minutos: crea los roles de PostgreSQL, instala depende
 - PostgreSQL de Docker: `localhost:5433` (usa el 5433 para no chocar con un PostgreSQL instalado en la compu)
 
 Para detenerlo: `docker compose down`.
+
+### Cliente web
+
+Requisitos: Node.js 22.18 o superior y la API corriendo.
+
+```bash
+cd client
+cp .env.example .env      # VITE_NEGOCIO_ID=019a0000-0000-7000-8000-000000000001 (Minisúper Teresita del db:seed)
+npm install
+npm run dev               # http://localhost:5173
+```
+
+En desarrollo, Vite reenvía `/api` a `http://localhost:8000`, así que la API no necesita CORS. Vite lee `client/.env` solo al arrancar.
+
+Si cambia la API, se regeneran la documentación y los tipos del cliente:
+
+```bash
+docker compose exec api composer openapi                                     # api/openapi/v1.json
+cd client && npx openapi-typescript ../api/openapi/v1.json -o src/services/schema.d.ts
+```
+
+Pruebas del cliente: `npm run type-check`, `npm run lint` y `npm run test:unit -- --run`.
 
 ### Despliegue
 
@@ -163,7 +204,7 @@ El archivo `.env` **no se sube al repositorio**. Se copia desde `api/.env.exampl
 
 ## Cobro con ONVO Pay y PayPal (Investigación 1)
 
-Una venta abierta se cobra con la pasarela que diga `PAYMENT_GATEWAY`. El monto sale del total de la venta en el servidor; el cliente nunca lo envía. Comparación de proveedores y decisiones: [docs/investigacion-1.md](docs/investigacion-1.md). Diseño: [ADR 0010](docs/adr/0010-payments-through-a-gateway-port.md).
+Cada pago puede elegir su pasarela (`onvo` o `paypal`); si no la elige, se usa la que diga `PAYMENT_GATEWAY`. Las pasarelas disponibles se consultan en `GET /pagos/pasarelas`. El monto sale del total de la venta en el servidor; el cliente nunca lo envía. Comparación de proveedores y decisiones: [docs/investigacion-1.md](docs/investigacion-1.md). Diseño: [ADR 0010](docs/adr/0010-payments-through-a-gateway-port.md).
 
 ### Variables de entorno
 
@@ -171,7 +212,7 @@ Copie `api/.env.example` a `api/.env` y llene solo las de la pasarela que va a u
 
 | Variable | Para qué |
 |---|---|
-| `PAYMENT_GATEWAY` | `onvo` (por defecto) o `paypal` |
+| `PAYMENT_GATEWAY` | Pasarela por defecto cuando el pago no elige una: `onvo` (por defecto) o `paypal` |
 | `ONVO_SECRET_KEY` | Llave secreta de prueba (`onvo_test_...`), en el panel de ONVO, modo prueba |
 | `ONVO_PUBLISHABLE_KEY` | Llave pública de prueba; la usa el cliente para crear el método de pago |
 | `ONVO_SINPE_NUMBER` | Número que se muestra para transferir por SINPE Móvil (opcional) |
@@ -181,13 +222,13 @@ Copie `api/.env.example` a `api/.env` y llene solo las de la pasarela que va a u
 
 ### Cambiar de pasarela
 
-Solo se cambia una línea del `.env`, sin tocar código:
+El cliente o el cajero elige la pasarela en cada pago (campo `pasarela`), sin tocar el `.env`. Para cambiar la pasarela **por defecto** se cambia una sola línea, sin tocar código:
 
 ```bash
 PAYMENT_GATEWAY=paypal   # o onvo
 ```
 
-Luego `php artisan config:clear` (o `docker compose restart api`). Los controladores no nombran a ningún proveedor: `PaymentsServiceProvider` es el único lugar que lo hace.
+Luego `php artisan config:clear` (o `docker compose restart api`). Los controladores no nombran a ningún proveedor: `PaymentGateways` es el único lugar que lo hace, y cada pago se consulta y se reembolsa con la pasarela que lo cobró.
 
 ### Flujo completo
 
