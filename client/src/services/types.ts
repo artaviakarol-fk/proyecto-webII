@@ -9,6 +9,18 @@ export type SaleSummary = Schemas['SaleSummaryResource']
 export type CreditPayment = Schemas['CreditPaymentResource']
 export type Receipt = Schemas['ReceiptResource']
 export type ExpiredUnits = Schemas['ExpiredUnitsResource']
+
+/** Units found expired that are still on the shelf (GET /vencidos). */
+export interface ExpiredEntry {
+  id: string
+  producto_id: string
+  codigo: string
+  producto: string
+  cantidad: number
+  motivo: string
+  registrada_por: string
+  registrada_en: string
+}
 export type SaleRequest = Schemas['SaleRequest']
 export type FiadoSale = Schemas['FiadoSaleResource']
 export type Payment = Schemas['PaymentResource']

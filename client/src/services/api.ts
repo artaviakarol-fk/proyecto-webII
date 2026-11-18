@@ -5,6 +5,7 @@ import type {
   Customer,
   CurrentUser,
   DailyClosing,
+  ExpiredEntry,
   ExpiredUnits,
   FiadoSale,
   GatewayOption,
@@ -127,6 +128,9 @@ export const registerReceipt = (body: {
   fecha: string
   lineas: { producto_id: string; cantidad: number; costo_unitario: number }[]
 }) => request<One<Receipt>>('POST', '/entradas', { body }).then((r) => r.data)
+
+export const listExpired = () =>
+  request<{ data: ExpiredEntry[] }>('GET', '/vencidos').then((r) => r.data)
 
 export const markExpired = (productId: string, cantidad: number, motivo: string) =>
   request<One<ExpiredUnits>>('POST', `/productos/${productId}/vencidos`, {

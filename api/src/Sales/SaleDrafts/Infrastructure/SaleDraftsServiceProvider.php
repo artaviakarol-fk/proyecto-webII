@@ -31,6 +31,7 @@ final class SaleDraftsServiceProvider extends ServiceProvider
             is_string($key = config('services.gemini.key')) && $key !== '' ? $key : null,
             config()->string('services.gemini.model'),
             config()->string('services.gemini.base_url'),
+            array_values(array_filter(array_map(trim(...), explode(',', config()->string('services.gemini.fallback_models', ''))))),
         ));
     }
 }
