@@ -79,3 +79,38 @@ describe('resolveAccess for the bodeguero', () => {
     })
   })
 })
+
+describe('resolveAccess for the platform and the forced password change', () => {
+  it('sends the superadmin to the negocios of the platform and keeps it out of the negocios', () => {
+    const superadmin = logged(['plataforma'])
+    expect(resolveAccess({ fullPath: '/login', meta: { public: true } }, superadmin)).toEqual({ name: 'plataforma' })
+    expect(resolveAccess({ fullPath: '/caja', meta: { ability: 'caja' } }, superadmin)).toEqual({ name: 'forbidden' })
+    expect(resolveAccess({ fullPath: '/plataforma', meta: { ability: 'plataforma' } }, logged(['administrar']))).toEqual({
+      name: 'forbidden',
+    })
+  })
+
+  it('keeps an account with a temporary password in the change of password', () => {
+    const temporary = { ...logged(['caja']), mustChangePassword: true }
+    expect(resolveAccess({ fullPath: '/caja', meta: { ability: 'caja' } }, temporary)).toEqual({ name: 'cambiar-contrasena' })
+    expect(resolveAccess({ name: 'cambiar-contrasena', fullPath: '/cambiar-contrasena', meta: {} }, temporary)).toBe(true)
+  })
+
+  it('sends an account that already changed it away from the change of password', () => {
+    expect(resolveAccess({ name: 'cambiar-contrasena', fullPath: '/cambiar-contrasena', meta: {} }, logged(['caja']))).toEqual({
+      name: 'caja',
+    })
+  })
+
+  it('brings the administration back from PayPal to its plan', () => {
+    const admin = logged(['administrar', 'caja', 'inventario'])
+    expect(resolveAccess({ name: 'pago-estado', fullPath: '/pago/estado', meta: { ability: 'comprar' } }, admin)).toEqual({
+      name: 'plan',
+      query: { volver: 'paypal' },
+    })
+  })
+
+  it('starts a role with only the administration permission in the staff', () => {
+    expect(resolveAccess({ fullPath: '/', meta: { home: true } }, logged(['administrar']))).toEqual({ name: 'personal' })
+  })
+})

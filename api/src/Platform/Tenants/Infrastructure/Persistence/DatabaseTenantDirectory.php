@@ -23,6 +23,9 @@ use stdClass;
  */
 final readonly class DatabaseTenantDirectory implements TenantDirectory
 {
+    /** The columns of a negocio and of its rent that the platform reads. */
+    private const array COLUMNS = ['negocios.id', 'negocios.nombre', 'negocios.estado', 'negocios.created_at', 'suscripciones.vence_el', 'suscripciones.en_prueba'];
+
     /**
      * One page of the negocios, the newest first, with the administrators of the whole page in one more query.
      *
@@ -31,13 +34,14 @@ final readonly class DatabaseTenantDirectory implements TenantDirectory
     public function list(?string $term, PageRequest $page): Page
     {
         $query = DB::table('negocios')
+            ->leftJoin('suscripciones', 'suscripciones.negocio_id', '=', 'negocios.id')
             ->when($term !== null && $term !== '', function (Builder $query) use ($term): void {
-                $query->where('nombre', 'ilike', '%'.addcslashes((string) $term, '%_\\').'%');
+                $query->where('negocios.nombre', 'ilike', '%'.addcslashes((string) $term, '%_\\').'%');
             });
 
         $total = $query->getCountForPagination();
         $rows = $total > $page->offset()
-            ? array_values($query->orderByDesc('created_at')->orderByDesc('id')->forPage($page->number, $page->size)->get(['id', 'nombre', 'estado', 'created_at'])->all())
+            ? array_values($query->orderByDesc('negocios.created_at')->orderByDesc('negocios.id')->forPage($page->number, $page->size)->get(self::COLUMNS)->all())
             : [];
 
         $administrators = $this->administratorsOf(array_map(fn (stdClass $row): string => (string) $row->id, $rows));
@@ -52,7 +56,10 @@ final readonly class DatabaseTenantDirectory implements TenantDirectory
     /** One negocio with its administrators. */
     public function find(NegocioId $id): ?TenantSummary
     {
-        $row = DB::table('negocios')->where('id', $id->value)->first(['id', 'nombre', 'estado', 'created_at']);
+        $row = DB::table('negocios')
+            ->leftJoin('suscripciones', 'suscripciones.negocio_id', '=', 'negocios.id')
+            ->where('negocios.id', $id->value)
+            ->first(self::COLUMNS);
 
         return $row === null ? null : $this->summary($row, $this->administratorsOf([$id->value])[$id->value] ?? []);
     }
@@ -101,6 +108,8 @@ final readonly class DatabaseTenantDirectory implements TenantDirectory
             $row->estado === NegocioModel::ACTIVE,
             CarbonImmutable::parse((string) $row->created_at),
             $administrators,
+            $row->vence_el === null ? null : CarbonImmutable::parse((string) $row->vence_el)->toDateTimeImmutable(),
+            (bool) $row->en_prueba,
         );
     }
 }

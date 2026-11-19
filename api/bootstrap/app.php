@@ -8,6 +8,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Src\Identity\Users\Infrastructure\Http\Middleware\EnsurePasswordIsChanged;
+use Src\Platform\Subscriptions\Infrastructure\Http\Middleware\EnsureNegocioIsServed;
 use Src\Shared\Infrastructure\Http\Middleware\AssignRequestId;
 use Src\Shared\Infrastructure\Http\Middleware\EncodeJsonAsUnicode;
 use Src\Shared\Infrastructure\Http\Problem\ProblemDetailsRenderer;
@@ -31,7 +32,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // La contraseña viaja tal cual: los espacios en sus extremos son parte de ella.
         $middleware->trimStrings(except: ['contrasena', 'contrasena_actual', 'contrasena_nueva', 'contrasena_temporal']);
         // Una cuenta con contraseña temporal solo puede cambiarla, ver quién es y cerrar la sesión.
-        $middleware->api(append: [EnsurePasswordIsChanged::class]);
+        // Un negocio que no pagó el alquiler: su personal y sus clientes no entran; su administración solo ve y paga.
+        $middleware->api(append: [EnsurePasswordIsChanged::class, EnsureNegocioIsServed::class]);
 
         $middleware->alias([
             'abilities' => CheckAbilities::class,

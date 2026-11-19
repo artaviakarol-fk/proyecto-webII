@@ -10,7 +10,9 @@ export const useSessionStore = defineStore('session', () => {
   const hasToken = ref(tokenStorage.get() !== null)
 
   const isLogged = computed(() => hasToken.value)
-  const abilities = computed<string[]>(() => user.value?.abilities ?? [])
+  const abilities = computed<string[]>(() => (user.value?.abilities ?? []) as string[])
+  // An account opened with a temporary password must choose its own before using anything else.
+  const mustChangePassword = computed(() => user.value?.debe_cambiar_contrasena === true)
 
   function can(ability: Ability): boolean {
     return abilities.value.includes(ability)
@@ -44,6 +46,12 @@ export const useSessionStore = defineStore('session', () => {
     }
   }
 
+  /** Changes the password of the account and reloads it, so the forced change is over. */
+  async function changePassword(current: string, next: string): Promise<void> {
+    await api.changePassword(current, next)
+    user.value = await api.currentUser()
+  }
+
   async function logout(): Promise<void> {
     try {
       await api.logout()
@@ -55,5 +63,5 @@ export const useSessionStore = defineStore('session', () => {
 
   setUnauthorizedHandler(clear)
 
-  return { user, isLogged, abilities, can, login, restore, logout }
+  return { user, isLogged, abilities, mustChangePassword, can, login, restore, changePassword, logout }
 })

@@ -24,7 +24,7 @@ beforeEach(() => {
 
 describe('session store', () => {
   it('logs in and exposes abilities', async () => {
-    vi.mocked(api.login).mockResolvedValue({ token: 't', tipo: 'Bearer', abilities: ['caja'] })
+    vi.mocked(api.login).mockResolvedValue({ token: 't', tipo: 'Bearer', abilities: ['caja'], debe_cambiar_contrasena: false })
     vi.mocked(api.currentUser).mockResolvedValue(cashier)
     const session = useSessionStore()
     await session.login('c@x.cr', 'pw')
@@ -35,7 +35,7 @@ describe('session store', () => {
   })
 
   it('clears the session on logout', async () => {
-    vi.mocked(api.login).mockResolvedValue({ token: 't', tipo: 'Bearer', abilities: ['caja'] })
+    vi.mocked(api.login).mockResolvedValue({ token: 't', tipo: 'Bearer', abilities: ['caja'], debe_cambiar_contrasena: false })
     vi.mocked(api.currentUser).mockResolvedValue(cashier)
     vi.mocked(api.logout).mockResolvedValue(undefined)
     const session = useSessionStore()

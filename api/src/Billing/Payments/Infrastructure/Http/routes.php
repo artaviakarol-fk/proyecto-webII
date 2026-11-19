@@ -21,9 +21,10 @@ Route::prefix('ventas/{venta}/pago')
         Route::post('/reembolso', 'refund')->middleware('abilities:administrar')->name('refund');
     });
 
-// La caja y el cliente ven qué pasarelas y medios de pago hay para elegir uno en cada pago.
+// La caja y el cliente ven qué pasarelas y medios de pago hay para elegir uno en cada pago; la administración, para
+// pagar el alquiler de la plataforma.
 Route::get('pagos/pasarelas', GatewayOptionsController::class)
-    ->middleware(['auth:sanctum', 'ability:caja,comprar'])
+    ->middleware(['auth:sanctum', 'ability:caja,comprar,administrar'])
     ->name('billing.payments.gateways');
 
 // La pasarela avisa el resultado de un cobro. No hay token: la URL dice a qué negocio pertenece el aviso y la firma o el

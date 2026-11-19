@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Src\Identity\Users\Domain\ValueObjects\Role;
 use Src\Identity\Users\Infrastructure\Persistence\Models\UserModel;
@@ -42,6 +43,11 @@ final class NegociosDemoSeeder extends Seeder
 
         foreach (self::NEGOCIOS as [$id, $name, $accounts]) {
             NegocioModel::query()->updateOrCreate(['id' => $id], ['nombre' => $name, 'estado' => NegocioModel::ACTIVE]);
+            // Teresita tiene el alquiler al día; La Esquina vence en 5 días, para ver el aviso amarillo en la demo.
+            DB::table('suscripciones')->updateOrInsert(
+                ['negocio_id' => $id],
+                ['vence_el' => $id === self::TERESITA_ID ? now()->addMonth() : now()->addDays(5), 'en_prueba' => false, 'created_at' => now(), 'updated_at' => now()],
+            );
 
             foreach ($accounts as [$email, $accountName, $role]) {
                 UserModel::query()->updateOrCreate(

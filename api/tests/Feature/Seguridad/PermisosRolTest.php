@@ -179,6 +179,12 @@ final class PermisosRolTest extends TestCase
             ['GET', '/plataforma/negocios', [Role::SuperAdmin]],
             ['POST', '/plataforma/negocios', [Role::SuperAdmin]],
             ['GET', '/plataforma/negocios/{id}', [Role::SuperAdmin]],
+            ['PATCH', '/plataforma/negocios/{id}', [Role::SuperAdmin]],
+            ['POST', '/plataforma/negocios/{id}/pagos', [Role::SuperAdmin]],
+            // Rent of the negocio: only its administration sees it and pays it.
+            ['GET', '/suscripcion', $administration],
+            ['POST', '/suscripcion/pagos', $administration],
+            ['GET', '/suscripcion/pagos/{id}', $administration],
             // Catalog: everybody reads it, only the administration changes it.
             ['GET', '/productos', $everyone],
             ['GET', '/productos/{id}', $everyone],

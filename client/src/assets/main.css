@@ -173,6 +173,11 @@ tr:last-child td { border-bottom: 0; }
 .subbar { background: var(--bg-card); border-bottom: 1px solid var(--border); font-size: 0.82rem; color: var(--suave); }
 .subbar div { max-width: 1400px; margin: 0 auto; padding: 0.45rem 1.5rem; }
 .subbar b { color: var(--texto); }
+.planbar { background: var(--oksoft); color: var(--ok); font-weight: 600; font-size: 0.9rem; border-bottom: 1px solid currentColor; }
+.planbar.warn { background: var(--warnsoft); color: var(--warn); }
+.planbar.bad { background: var(--badsoft); color: var(--bad); }
+.planbar div { max-width: 1400px; margin: 0 auto; padding: 0.55rem 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+.planbar a { color: inherit; }
 .page { flex: 1; width: 100%; max-width: 1400px; margin: 0 auto; padding: 1.25rem 1.5rem 3rem; }
 .site-footer { background: var(--bg-footer); color: rgba(255, 255, 255, 0.75); padding: 1.1rem 1.5rem; font-size: 0.8rem; text-align: center; }
 .site-footer b { font-family: var(--font-display); color: #fff; }

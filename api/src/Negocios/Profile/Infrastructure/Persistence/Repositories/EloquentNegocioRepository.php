@@ -35,6 +35,12 @@ final readonly class EloquentNegocioRepository implements NegocioRepository
         ]);
     }
 
+    /** Turn a negocio on or off. */
+    public function setActive(NegocioId $id, bool $active): void
+    {
+        NegocioModel::query()->whereKey($id->value)->update(['estado' => $active ? NegocioModel::ACTIVE : NegocioModel::INACTIVE]);
+    }
+
     /** Find a negocio by its identifier. */
     public function find(NegocioId $id): ?Negocio
     {

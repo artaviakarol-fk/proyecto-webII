@@ -36,7 +36,7 @@ export type RegisterClienteRequest = Schemas['RegisterClienteRequest']
 export type GatewayId = PurchaseRequest['pasarela']
 export type PayMethod = PurchaseRequest['metodo_pago']
 
-export type Ability = 'administrar' | 'caja' | 'inventario' | 'comprar'
+export type Ability = 'administrar' | 'caja' | 'inventario' | 'comprar' | 'plataforma'
 
 /**
  * The contract types `lineas` and `no_encontrados` of the AI draft as `unknown[]`, because the API builds them
@@ -83,3 +83,65 @@ export interface Page<T> {
 }
 
 export type SaleStatus = Schemas['SaleStatus']
+
+/** The three permissions a role of the staff can have. */
+export type Permission = 'administrar' | 'caja' | 'inventario'
+
+/** A role of the staff: the four by default and the ones the negocio created (GET /roles). */
+export interface StaffRole {
+  id: string
+  nombre: string
+  permisos: Permission[]
+  predeterminado: boolean
+  en_uso: number
+}
+
+/** An account of the staff of the negocio (GET /personal). */
+export interface StaffMember {
+  id: string
+  nombre: string
+  correo: string
+  rol: string
+  rol_id: string | null
+  rol_nombre: string
+  permisos: string[]
+  activo: boolean
+  debe_cambiar_contrasena: boolean
+}
+
+export type ServiceStatus = 'activo' | 'por_vencer' | 'en_gracia' | 'suspendido'
+
+/** A payment of the rent of the platform. */
+export interface SubscriptionPayment {
+  id: string
+  monto: number
+  meses: number
+  metodo: 'efectivo' | 'sinpe' | 'tarjeta' | 'sinpe_movil'
+  proveedor: 'manual' | 'onvo' | 'paypal'
+  estado: 'pendiente' | 'aprobado' | 'rechazado'
+  referencia: string | null
+  creado_el: string
+  url_aprobacion: string | null
+  instrucciones: { numero_sinpe: string; monto: number; mensaje: string } | null
+}
+
+/** The rent of the negocio (GET /suscripcion). */
+export interface Subscription {
+  estado: ServiceStatus
+  vence_el: string
+  dias_restantes: number
+  en_prueba: boolean
+  precio_mensual: number
+  aviso: string | null
+  pagos: SubscriptionPayment[]
+}
+
+/** A negocio as the platform sees it: never its sales, customers, fiado or stock. */
+export interface Tenant {
+  id: string
+  nombre: string
+  estado: 'activo' | 'inactivo'
+  creado_el: string
+  administradores: { nombre: string; correo: string; activo: boolean; debe_cambiar_contrasena: boolean }[]
+  servicio: { estado: ServiceStatus | null; vence_el: string | null; dias_restantes: number | null; en_prueba: boolean }
+}

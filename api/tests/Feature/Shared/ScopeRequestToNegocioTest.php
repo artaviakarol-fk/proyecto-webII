@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\Sanctum;
 use Src\Identity\Users\Infrastructure\Persistence\Models\UserModel;
+use Src\Negocios\Profile\Infrastructure\Persistence\Models\NegocioModel;
 use Src\Shared\Infrastructure\Tenancy\NegocioTransaction;
 use Tests\TestCase;
 
@@ -68,9 +69,14 @@ final class ScopeRequestToNegocioTest extends TestCase
         ];
     }
 
-    /** Authenticate an account built in memory, without touching the database. */
+    /** Authenticate an account built in memory, of a negocio that exists and has paid its rent. */
     private function actAs(string $negocioId): void
     {
+        // This test runs outside of a transaction, so the negocio stays from one test to the next.
+        if (! NegocioModel::query()->whereKey($negocioId)->exists()) {
+            NegocioModel::factory()->create(['id' => $negocioId]);
+        }
+        DB::table('suscripciones')->where('negocio_id', $negocioId)->update(['vence_el' => now()->addMonth()]);
         Sanctum::actingAs(UserModel::factory()->make(['negocio_id' => $negocioId]), ['*']);
     }
 }
