@@ -24,7 +24,7 @@ final class CurrentUserResource extends JsonResource
      *
      * The negocio is null only for a superadmin, who runs the platform.
      *
-     * @return array{id: string, nombre: string, correo: string, rol: string, abilities: list<string>, negocio_id: string|null, debe_cambiar_contrasena: bool}
+     * @return array{id: string, nombre: string, correo: string, rol: string, rol_nombre: string, abilities: list<string>, negocio_id: string|null, debe_cambiar_contrasena: bool}
      */
     public function toArray(Request $request): array
     {
@@ -33,7 +33,8 @@ final class CurrentUserResource extends JsonResource
             'nombre' => $this->user->name,
             'correo' => $this->user->email->value,
             'rol' => $this->user->role->value,
-            'abilities' => $this->user->role->abilities(),
+            'rol_nombre' => $this->user->roleName(),
+            'abilities' => $this->user->abilities(),
             'negocio_id' => $this->user->negocioId?->value,
             'debe_cambiar_contrasena' => $this->user->mustChangePassword,
         ];

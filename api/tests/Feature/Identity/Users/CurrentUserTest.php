@@ -31,6 +31,7 @@ final class CurrentUserTest extends TestCase
                 'nombre' => 'Ana Rojas',
                 'correo' => 'ana@minisuper.test',
                 'rol' => $role->value,
+                'rol_nombre' => $role->label(),
                 'abilities' => $abilities,
                 'negocio_id' => $user->negocio_id,
                 'debe_cambiar_contrasena' => false,

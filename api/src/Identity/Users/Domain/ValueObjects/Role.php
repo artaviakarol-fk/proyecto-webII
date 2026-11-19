@@ -12,6 +12,13 @@ enum Role: string
     case Administrador = 'administrador';
     case Cajero = 'cajero';
     case Bodeguero = 'bodeguero';
+
+    /** Default role for whoever attends the till and also receives the merchandise. */
+    case Supervisor = 'supervisor';
+
+    /** A role that the negocio created itself; its permissions are the ones of that role, see CustomRole. */
+    case Personalizado = 'personalizado';
+
     case Cliente = 'cliente';
 
     /**
@@ -21,11 +28,23 @@ enum Role: string
      */
     public static function staff(): array
     {
-        return [self::Administrador, self::Cajero, self::Bodeguero];
+        return [self::Administrador, self::Cajero, self::Bodeguero, self::Supervisor, self::Personalizado];
     }
 
     /**
-     * Abilities granted to the access tokens of the role.
+     * The roles that every negocio has from the start and that nobody can change. An administrator gives them to
+     * its staff or creates roles of its own.
+     *
+     * @return list<self>
+     */
+    public static function defaults(): array
+    {
+        return [self::Administrador, self::Cajero, self::Bodeguero, self::Supervisor];
+    }
+
+    /**
+     * Abilities granted to the access tokens of the role. A role of the negocio has none here: its permissions are
+     * the ones the negocio chose for it.
      *
      * @return list<string>
      */
@@ -33,10 +52,26 @@ enum Role: string
     {
         return match ($this) {
             self::SuperAdmin => ['plataforma'],
-            self::Administrador => ['administrar', 'caja', 'inventario'],
-            self::Cajero => ['caja'],
-            self::Bodeguero => ['inventario'],
+            self::Administrador => [Permission::Administrar->value, Permission::Caja->value, Permission::Inventario->value],
+            self::Cajero => [Permission::Caja->value],
+            self::Bodeguero => [Permission::Inventario->value],
+            self::Supervisor => [Permission::Caja->value, Permission::Inventario->value],
+            self::Personalizado => [],
             self::Cliente => ['comprar'],
+        };
+    }
+
+    /** The name a person reads. */
+    public function label(): string
+    {
+        return match ($this) {
+            self::SuperAdmin => 'Superadmin',
+            self::Administrador => 'Administrador',
+            self::Cajero => 'Cajero',
+            self::Bodeguero => 'Bodeguero',
+            self::Supervisor => 'Supervisor',
+            self::Personalizado => 'Personalizado',
+            self::Cliente => 'Cliente',
         };
     }
 }

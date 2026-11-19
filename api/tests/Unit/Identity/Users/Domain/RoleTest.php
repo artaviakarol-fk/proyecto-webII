@@ -27,6 +27,25 @@ final class RoleTest extends TestCase
     {
         $this->assertSame(['comprar'], Role::Cliente->abilities());
         $this->assertNotContains(Role::Cliente, Role::staff());
-        $this->assertSame([Role::Administrador, Role::Cajero, Role::Bodeguero], Role::staff());
+        $this->assertSame([Role::Administrador, Role::Cajero, Role::Bodeguero, Role::Supervisor, Role::Personalizado], Role::staff());
+    }
+
+    /** The supervisor attends the till and receives the merchandise, but does not administrate. */
+    public function test_supervisor_has_till_and_warehouse(): void
+    {
+        $this->assertSame(['caja', 'inventario'], Role::Supervisor->abilities());
+    }
+
+    /** Every negocio starts with the same four roles, which nobody can change. */
+    public function test_default_roles_of_every_negocio(): void
+    {
+        $this->assertSame([Role::Administrador, Role::Cajero, Role::Bodeguero, Role::Supervisor], Role::defaults());
+    }
+
+    /** The superadmin only reaches the platform. */
+    public function test_superadmin_only_reaches_the_platform(): void
+    {
+        $this->assertSame(['plataforma'], Role::SuperAdmin->abilities());
+        $this->assertNotContains(Role::SuperAdmin, Role::staff());
     }
 }

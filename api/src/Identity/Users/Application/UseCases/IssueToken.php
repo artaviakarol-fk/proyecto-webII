@@ -31,7 +31,7 @@ final readonly class IssueToken
             throw InvalidCredentialsException::create();
         }
 
-        $abilities = $user->role->abilities();
+        $abilities = $user->abilities();
 
         return new IssuedToken($this->tokens->issue($user->id, $command->deviceName, $abilities), $abilities, $user->mustChangePassword);
     }

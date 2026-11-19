@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require base_path('src/Shared/Infrastructure/Http/routes.php');
 require base_path('src/Identity/Users/Infrastructure/Http/routes.php');
+require base_path('src/Identity/Staff/Infrastructure/Http/routes.php');
+require base_path('src/Identity/StaffRoles/Infrastructure/Http/routes.php');
 require base_path('src/Negocios/Profile/Infrastructure/Http/routes.php');
 require base_path('src/Negocios/OpeningHours/Infrastructure/Http/routes.php');
 require base_path('src/Inventory/Products/Infrastructure/Http/routes.php');
