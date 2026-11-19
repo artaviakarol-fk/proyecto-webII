@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import AccessibilityMenu from '@/components/AccessibilityMenu.vue'
 import ReservationsDrawer from '@/components/ReservationsDrawer.vue'
@@ -13,6 +13,7 @@ const session = useSessionStore()
 const reservations = useReservationsStore()
 const subscription = useSubscriptionStore()
 const router = useRouter()
+const route = useRoute()
 
 // What each kind of account can and cannot do, shown under the header like in the prototype.
 const permissions: Record<string, string> = {
@@ -40,7 +41,11 @@ const permissionText = computed(() => {
   }
   return permissions[user.rol] ?? ''
 })
-const showChrome = computed(() => session.isLogged && !session.mustChangePassword)
+// The header appears once the account is known and the page is not the login or the registration, so logging in
+// goes straight from the login screen to the protected page without showing the login inside the header.
+const showChrome = computed(
+  () => session.user !== null && !session.mustChangePassword && route.meta.public !== true,
+)
 const warning = computed(() => {
   const plan = subscription.current
   return plan?.aviso ? { text: plan.aviso, tone: SERVICE_STATUS[plan.estado].tone } : null
