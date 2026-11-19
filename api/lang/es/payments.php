@@ -10,6 +10,7 @@ return [
     'payment_already_started' => 'La venta ya tiene un pago pendiente o pagado.',
     'payment_already_settled' => 'El pago ya tiene un resultado final y no puede cambiar.',
     'payment_rejected' => 'El pago fue rechazado (código: :code). Intente con otro medio de pago.',
+    'gateway_not_configured' => 'Esa pasarela de pago no está configurada. Elija otra forma de pago.',
     'gateway_unavailable' => 'La pasarela de pago no está disponible en este momento. Intente de nuevo en unos segundos.',
     'webhook_invalid' => 'La notificación no se pudo comprobar como enviada por la pasarela de pago.',
     'invalid_charge_reference' => 'La referencia del cobro no es válida.',

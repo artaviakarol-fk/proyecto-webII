@@ -11,4 +11,13 @@ interface ExpiredUnitsCounter
 {
     /** Units of a product of the negocio marked as expired and still on the shelf. */
     public function of(ProductId $productId, NegocioId $negocioId): int;
+
+    /**
+     * The same count for many products at once, with one query: the units by the id of each product. A product
+     * without expired units is not in the answer.
+     *
+     * @param  list<ProductId>  $productIds
+     * @return array<string, int>
+     */
+    public function ofMany(array $productIds, NegocioId $negocioId): array;
 }

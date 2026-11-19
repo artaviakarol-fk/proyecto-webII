@@ -10,6 +10,7 @@ use Src\Inventory\Products\Application\Contracts\ReservedUnitsCounter;
 use Src\Inventory\Products\Application\DTOs\CatalogItem;
 use Src\Inventory\Products\Domain\Entities\Product;
 use Src\Inventory\Products\Domain\ValueObjects\Availability;
+use Src\Inventory\Shared\Domain\ValueObjects\ProductId;
 use Src\Shared\Domain\ValueObjects\Page;
 use Src\Shared\Domain\ValueObjects\PageRequest;
 
@@ -30,11 +31,22 @@ final readonly class ListCatalog
      */
     public function execute(?string $term, PageRequest $page, DateTimeImmutable $now): Page
     {
-        return $this->listProducts->execute($term, $page)->map(
+        $products = $this->listProducts->execute($term, $page);
+        $first = $products->items[0] ?? null;
+        if ($first === null) {
+            return new Page([], $products->total, $products->request);
+        }
+
+        // Two grouped queries for the whole page instead of two queries for every product.
+        $ids = array_map(fn (Product $product): ProductId => $product->id, $products->items);
+        $expired = $this->expiredUnits->ofMany($ids, $first->negocioId);
+        $reserved = $this->reservedUnits->ofMany($ids, $first->negocioId, $now);
+
+        return $products->map(
             fn (Product $product): CatalogItem => new CatalogItem(
                 $product,
-                new Availability($product->details->stock, $this->expiredUnits->of($product->id, $product->negocioId)),
-                $this->reservedUnits->of($product->id, $product->negocioId, $now),
+                new Availability($product->details->stock, $expired[$product->id->value] ?? 0),
+                $reserved[$product->id->value] ?? 0,
             ),
         );
     }

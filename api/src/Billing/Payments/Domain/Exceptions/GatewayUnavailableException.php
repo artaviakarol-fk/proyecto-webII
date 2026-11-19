@@ -13,4 +13,10 @@ final class GatewayUnavailableException extends ServiceUnavailableException
     {
         return new self('payments.gateway_unavailable');
     }
+
+    /** The provider has no valid credentials in this installation, so it cannot charge. */
+    public static function notConfigured(): self
+    {
+        return new self('payments.gateway_not_configured');
+    }
 }
