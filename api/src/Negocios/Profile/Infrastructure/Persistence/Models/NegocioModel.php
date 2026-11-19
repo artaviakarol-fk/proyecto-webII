@@ -27,4 +27,6 @@ final class NegocioModel extends Model
     use HasFactory, HasUuids;
 
     public const string ACTIVE = 'activo';
+
+    public const string INACTIVE = 'inactivo';
 }

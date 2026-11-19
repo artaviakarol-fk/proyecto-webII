@@ -7,6 +7,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
+use Src\Identity\Users\Infrastructure\Http\Middleware\EnsurePasswordIsChanged;
 use Src\Shared\Infrastructure\Http\Middleware\AssignRequestId;
 use Src\Shared\Infrastructure\Http\Middleware\EncodeJsonAsUnicode;
 use Src\Shared\Infrastructure\Http\Problem\ProblemDetailsRenderer;
@@ -28,7 +29,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // La API no tiene página de login: sin token responde 401 en lugar de redirigir.
         $middleware->redirectGuestsTo(fn () => null);
         // La contraseña viaja tal cual: los espacios en sus extremos son parte de ella.
-        $middleware->trimStrings(except: ['contrasena']);
+        $middleware->trimStrings(except: ['contrasena', 'contrasena_actual', 'contrasena_nueva', 'contrasena_temporal']);
+        // Una cuenta con contraseña temporal solo puede cambiarla, ver quién es y cerrar la sesión.
+        $middleware->api(append: [EnsurePasswordIsChanged::class]);
 
         $middleware->alias([
             'abilities' => CheckAbilities::class,

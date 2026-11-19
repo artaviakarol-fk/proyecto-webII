@@ -41,7 +41,8 @@ final class UserFactory extends Factory
     /** Give the account a role. */
     public function role(Role $role): static
     {
-        return $this->state(['rol' => $role->value]);
+        // A superadmin runs the platform and belongs to no negocio.
+        return $this->state($role === Role::SuperAdmin ? ['rol' => $role->value, 'negocio_id' => null] : ['rol' => $role->value]);
     }
 
     /** Deactivate the account. */

@@ -21,4 +21,7 @@ interface UserRepository
 
     /** Store a new account. */
     public function save(User $user): void;
+
+    /** Store the new password of an existing account. */
+    public function savePassword(User $user): void;
 }

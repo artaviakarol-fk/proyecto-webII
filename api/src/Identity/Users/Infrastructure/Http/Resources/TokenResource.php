@@ -24,7 +24,7 @@ final class TokenResource extends JsonResource
     /**
      * Expose the token, the way to send it and what it allows.
      *
-     * @return array<string, string|list<string>>
+     * @return array{token: string, tipo: string, abilities: list<string>, debe_cambiar_contrasena: bool}
      */
     public function toArray(Request $request): array
     {
@@ -32,6 +32,7 @@ final class TokenResource extends JsonResource
             'token' => $this->token->plainTextToken,
             'tipo' => self::TYPE,
             'abilities' => $this->token->abilities,
+            'debe_cambiar_contrasena' => $this->token->mustChangePassword,
         ];
     }
 }

@@ -6,6 +6,9 @@ namespace Src\Identity\Users\Domain\ValueObjects;
 
 enum Role: string
 {
+    /** Runs the platform: opens negocios and their first administrator. It never sees the data of a negocio. */
+    case SuperAdmin = 'superadmin';
+
     case Administrador = 'administrador';
     case Cajero = 'cajero';
     case Bodeguero = 'bodeguero';
@@ -29,6 +32,7 @@ enum Role: string
     public function abilities(): array
     {
         return match ($this) {
+            self::SuperAdmin => ['plataforma'],
             self::Administrador => ['administrar', 'caja', 'inventario'],
             self::Cajero => ['caja'],
             self::Bodeguero => ['inventario'],

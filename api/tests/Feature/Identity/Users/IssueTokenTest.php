@@ -30,7 +30,7 @@ final class IssueTokenTest extends TestCase
         $token = $response->json('data.token');
         $response
             ->assertCreated()
-            ->assertExactJson(['data' => ['token' => $token, 'tipo' => 'Bearer', 'abilities' => $abilities]]);
+            ->assertExactJson(['data' => ['token' => $token, 'tipo' => 'Bearer', 'abilities' => $abilities, 'debe_cambiar_contrasena' => false]]);
 
         $this->assertDatabaseHas('personal_access_tokens', ['tokenable_id' => $user->id, 'name' => 'Caja 1']);
         $this->assertTrue(PersonalAccessToken::findToken($token)?->tokenable?->is($user));

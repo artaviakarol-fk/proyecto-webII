@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
 
     'not_found' => 'El negocio no existe.',
+    'invalid_name' => 'El nombre del negocio es obligatorio y puede tener hasta 120 caracteres.',
     'logo_not_found' => 'El negocio todavía no tiene logo.',
     'schedule_day_invalid' => 'El día de la semana no es válido.',
     'schedule_time_invalid' => 'La hora debe tener el formato HH:MM, entre 00:00 y 23:59.',

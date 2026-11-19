@@ -14,15 +14,19 @@ final readonly class User
 {
     public const int NAME_MAX_LENGTH = 120;
 
-    /** Hold the state of an account, of the staff or of a cliente; every account belongs to one negocio. */
+    /**
+     * Hold the state of an account. Every account belongs to one negocio, except the superadmins, who run the platform
+     * and belong to none. An account opened by somebody else must change its temporary password before anything else.
+     */
     private function __construct(
         public UserId $id,
-        public NegocioId $negocioId,
+        public ?NegocioId $negocioId,
         public string $name,
         public Email $email,
         public string $passwordHash,
         public Role $role,
         public bool $active,
+        public bool $mustChangePassword,
     ) {}
 
     /**
@@ -36,25 +40,58 @@ final readonly class User
         Email $email,
         string $passwordHash,
     ): self {
+        return new self($id, $negocioId, self::validName($name), $email, $passwordHash, Role::Cliente, true, false);
+    }
+
+    /**
+     * Open the first administrator of a new negocio. The platform chooses a temporary password and gives it to the
+     * owner of the negocio, so the account must change it the first time it logs in.
+     */
+    public static function openNegocioAdministrator(
+        UserId $id,
+        NegocioId $negocioId,
+        string $name,
+        Email $email,
+        string $temporaryPasswordHash,
+    ): self {
+        return new self($id, $negocioId, self::validName($name), $email, $temporaryPasswordHash, Role::Administrador, true, true);
+    }
+
+    /** Open an account that runs the platform; it belongs to no negocio. */
+    public static function openSuperAdmin(UserId $id, string $name, Email $email, string $passwordHash): self
+    {
+        return new self($id, null, self::validName($name), $email, $passwordHash, Role::SuperAdmin, true, false);
+    }
+
+    /** Rebuild an account from its stored state. */
+    public static function reconstitute(
+        UserId $id,
+        ?NegocioId $negocioId,
+        string $name,
+        Email $email,
+        string $passwordHash,
+        Role $role,
+        bool $active,
+        bool $mustChangePassword = false,
+    ): self {
+        return new self($id, $negocioId, $name, $email, $passwordHash, $role, $active, $mustChangePassword);
+    }
+
+    /** The same account with the password the person chose; a temporary password is no longer pending. */
+    public function withPassword(string $passwordHash): self
+    {
+        return new self($this->id, $this->negocioId, $this->name, $this->email, $passwordHash, $this->role, $this->active, false);
+    }
+
+    /** A name is required and has a maximum length. */
+    private static function validName(string $name): string
+    {
         $name = trim($name);
 
         if ($name === '' || mb_strlen($name) > self::NAME_MAX_LENGTH) {
             throw new InvalidValueException('identity.invalid_name');
         }
 
-        return new self($id, $negocioId, $name, $email, $passwordHash, Role::Cliente, true);
-    }
-
-    /** Rebuild an account from its stored state. */
-    public static function reconstitute(
-        UserId $id,
-        NegocioId $negocioId,
-        string $name,
-        Email $email,
-        string $passwordHash,
-        Role $role,
-        bool $active,
-    ): self {
-        return new self($id, $negocioId, $name, $email, $passwordHash, $role, $active);
+        return $name;
     }
 }
