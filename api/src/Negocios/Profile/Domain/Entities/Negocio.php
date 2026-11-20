@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Src\Negocios\Profile\Domain\Entities;
 
+use Src\Shared\Domain\Exceptions\InvalidValueException;
 use Src\Shared\Domain\ValueObjects\NegocioId;
 
 final class Negocio
@@ -15,6 +16,20 @@ final class Negocio
         public private(set) ?string $logoPath,
         public readonly bool $active,
     ) {}
+
+    public const int NAME_MAX_LENGTH = 120;
+
+    /** Open a new negocio on the platform; it starts active and without a logo. */
+    public static function open(NegocioId $id, string $name): self
+    {
+        $name = trim($name);
+
+        if ($name === '' || mb_strlen($name) > self::NAME_MAX_LENGTH) {
+            throw new InvalidValueException('negocios.invalid_name');
+        }
+
+        return new self($id, $name, null, true);
+    }
 
     /** Rebuild a negocio from its stored state. */
     public static function reconstitute(NegocioId $id, string $name, ?string $logoPath, bool $active): self

@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\NegociosDemoSeeder;
+use Database\Seeders\PlataformaDemoSeeder;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\RefreshDatabaseAsOwner;
 use Tests\Support\Shared\ScopesQueriesToNegocio;
@@ -37,7 +38,7 @@ final class DemoDataTest extends TestCase
         $this->seed(DatabaseSeeder::class);
 
         $this->assertDatabaseCount('negocios', 2);
-        $this->assertDatabaseCount('users', 5);
+        $this->assertDatabaseCount('users', 7);
         $this->scopeQueriesTo(NegociosDemoSeeder::TERESITA_ID);
         $this->assertDatabaseCount('productos', 5);
         $this->assertDatabaseCount('clientes', 4);
@@ -54,5 +55,20 @@ final class DemoDataTest extends TestCase
             'contrasena' => NegociosDemoSeeder::PASSWORD,
             'dispositivo' => 'Demo',
         ])->assertCreated();
+    }
+
+    /** Each developer has her own superadmin, without a negocio, that only reaches the platform. */
+    public function test_demo_superadmins_log_in_with_the_platform_ability(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        foreach (PlataformaDemoSeeder::SUPERADMINS as [$email]) {
+            $this->assertDatabaseHas('users', ['correo' => $email, 'rol' => 'superadmin', 'negocio_id' => null]);
+            $this->postJson('/api/v1/tokens', [
+                'correo' => $email,
+                'contrasena' => NegociosDemoSeeder::PASSWORD,
+                'dispositivo' => 'Demo',
+            ])->assertCreated()->assertJsonPath('data.abilities', ['plataforma']);
+        }
     }
 }

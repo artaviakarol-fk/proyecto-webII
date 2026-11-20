@@ -14,4 +14,10 @@ interface NegocioRepository
 
     /** Persist the changes of a negocio. */
     public function save(Negocio $negocio): void;
+
+    /** Answer the identifier of the next negocio. */
+    public function nextId(): NegocioId;
+
+    /** Store a new negocio. */
+    public function add(Negocio $negocio): void;
 }

@@ -172,6 +172,10 @@ final class PermisosRolTest extends TestCase
         $buyers = [Role::Cliente];
 
         return [
+            // Platform: only the superadmins open and see negocios; no role of a negocio reaches it.
+            ['GET', '/plataforma/negocios', [Role::SuperAdmin]],
+            ['POST', '/plataforma/negocios', [Role::SuperAdmin]],
+            ['GET', '/plataforma/negocios/{id}', [Role::SuperAdmin]],
             // Catalog: everybody reads it, only the administration changes it.
             ['GET', '/productos', $everyone],
             ['GET', '/productos/{id}', $everyone],

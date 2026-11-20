@@ -33,6 +33,7 @@ final class CurrentUserTest extends TestCase
                 'rol' => $role->value,
                 'abilities' => $abilities,
                 'negocio_id' => $user->negocio_id,
+                'debe_cambiar_contrasena' => false,
             ]]);
     }
 

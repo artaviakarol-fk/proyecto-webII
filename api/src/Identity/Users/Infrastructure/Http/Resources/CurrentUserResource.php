@@ -22,7 +22,9 @@ final class CurrentUserResource extends JsonResource
     /**
      * Expose who is logged in, their role, what the role allows and their negocio; never the password.
      *
-     * @return array{id: string, nombre: string, correo: string, rol: string, abilities: list<string>, negocio_id: string}
+     * The negocio is null only for a superadmin, who runs the platform.
+     *
+     * @return array{id: string, nombre: string, correo: string, rol: string, abilities: list<string>, negocio_id: string|null, debe_cambiar_contrasena: bool}
      */
     public function toArray(Request $request): array
     {
@@ -32,7 +34,8 @@ final class CurrentUserResource extends JsonResource
             'correo' => $this->user->email->value,
             'rol' => $this->user->role->value,
             'abilities' => $this->user->role->abilities(),
-            'negocio_id' => $this->user->negocioId->value,
+            'negocio_id' => $this->user->negocioId?->value,
+            'debe_cambiar_contrasena' => $this->user->mustChangePassword,
         ];
     }
 }

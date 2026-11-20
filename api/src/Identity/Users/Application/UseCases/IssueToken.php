@@ -33,6 +33,6 @@ final readonly class IssueToken
 
         $abilities = $user->role->abilities();
 
-        return new IssuedToken($this->tokens->issue($user->id, $command->deviceName, $abilities), $abilities);
+        return new IssuedToken($this->tokens->issue($user->id, $command->deviceName, $abilities), $abilities, $user->mustChangePassword);
     }
 }

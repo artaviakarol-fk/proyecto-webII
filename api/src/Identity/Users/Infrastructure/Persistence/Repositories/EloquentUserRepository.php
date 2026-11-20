@@ -42,12 +42,22 @@ final readonly class EloquentUserRepository implements UserRepository
     {
         UserModel::query()->create([
             'id' => $user->id->value,
-            'negocio_id' => $user->negocioId->value,
+            'negocio_id' => $user->negocioId?->value,
             'nombre' => $user->name,
             'correo' => $user->email->value,
             'password' => $user->passwordHash,
             'rol' => $user->role->value,
             'activo' => $user->active,
+            'debe_cambiar_contrasena' => $user->mustChangePassword,
+        ]);
+    }
+
+    /** Write the password of an existing account and whether a temporary one is still pending. */
+    public function savePassword(User $user): void
+    {
+        UserModel::query()->whereKey($user->id->value)->update([
+            'password' => $user->passwordHash,
+            'debe_cambiar_contrasena' => $user->mustChangePassword,
         ]);
     }
 
@@ -56,12 +66,13 @@ final readonly class EloquentUserRepository implements UserRepository
     {
         return User::reconstitute(
             new UserId($model->id),
-            new NegocioId($model->negocio_id),
+            $model->negocio_id === null ? null : new NegocioId($model->negocio_id),
             $model->nombre,
             new Email($model->correo),
             $model->password,
             Role::from($model->rol),
             $model->activo,
+            $model->debe_cambiar_contrasena,
         );
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Shared;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -35,16 +36,27 @@ final class AuthenticatedNegocioContextTest extends TestCase
         $this->assertSame($negocio->id, $this->app->make(NegocioContext::class)->current()->value);
     }
 
+    /** A superadmin runs the platform and has no negocio, so no data of a negocio can be reached with its account. */
+    public function test_superadmin_has_no_negocio_to_work_on(): void
+    {
+        Sanctum::actingAs(UserModel::factory()->role(Role::SuperAdmin)->create());
+
+        $this->expectException(AuthorizationException::class);
+        $this->app->make(NegocioContext::class)->current();
+    }
+
     /**
-     * Roles of the staff.
+     * Roles of the accounts that belong to a negocio.
      *
      * @return array<string, array{Role}>
      */
     public static function roles(): array
     {
+        $roles = array_values(array_filter(Role::cases(), fn (Role $role): bool => $role !== Role::SuperAdmin));
+
         return array_combine(
-            array_map(fn (Role $role): string => $role->value, Role::cases()),
-            array_map(fn (Role $role): array => [$role], Role::cases()),
+            array_map(fn (Role $role): string => $role->value, $roles),
+            array_map(fn (Role $role): array => [$role], $roles),
         );
     }
 

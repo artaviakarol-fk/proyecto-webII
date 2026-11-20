@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Context;
 use Illuminate\Validation\ValidationException;
 use Src\Shared\Domain\Exceptions\AuthenticationFailedException;
 use Src\Shared\Domain\Exceptions\DomainException;
+use Src\Shared\Domain\Exceptions\ForbiddenException;
 use Src\Shared\Domain\Exceptions\InvalidValueException;
 use Src\Shared\Domain\Exceptions\NotFoundException;
 use Src\Shared\Domain\Exceptions\ServiceUnavailableException;
@@ -51,6 +52,7 @@ final readonly class ProblemDetailsRenderer
     {
         return match (true) {
             $exception instanceof NotFoundException => ProblemType::NotFound,
+            $exception instanceof ForbiddenException => ProblemType::Forbidden,
             $exception instanceof ServiceUnavailableException => ProblemType::ServiceUnavailable,
             $exception instanceof InvalidValueException => ProblemType::InvalidData,
             $exception instanceof AuthenticationFailedException => ProblemType::InvalidCredentials,

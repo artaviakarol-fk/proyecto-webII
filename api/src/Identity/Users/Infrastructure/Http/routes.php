@@ -22,6 +22,7 @@ Route::middleware('auth:sanctum')
     ->controller(TokenController::class)
     ->group(function (): void {
         Route::get('usuario', 'show')->name('user.show');
+        Route::put('usuario/contrasena', 'updatePassword')->middleware('throttle:10,1')->name('password.update');
         Route::delete('tokens/actual', 'destroyCurrent')->name('tokens.destroy-current');
         Route::delete('tokens', 'destroyAll')->name('tokens.destroy-all');
     });
