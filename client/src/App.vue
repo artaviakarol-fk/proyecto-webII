@@ -3,6 +3,8 @@ import { computed, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import AccessibilityMenu from '@/components/AccessibilityMenu.vue'
+import BrandLogo from '@/components/BrandLogo.vue'
+import CartIcon from '@/components/CartIcon.vue'
 import ReservationsDrawer from '@/components/ReservationsDrawer.vue'
 import { useReservationsStore } from '@/stores/reservations'
 import { useSessionStore } from '@/stores/session'
@@ -89,7 +91,7 @@ async function salir() {
 <template>
   <header v-if="showChrome" class="site-header">
     <div class="header-inner">
-      <div class="logo"><span class="logo-icon" aria-hidden="true">🛒</span><span>Tu<strong>MiniSúper</strong></span></div>
+      <BrandLogo :size="34" />
       <nav class="nav-list" aria-label="Secciones">
         <RouterLink v-if="session.can('plataforma')" class="nav-link" :to="{ name: 'plataforma' }">Negocios</RouterLink>
         <RouterLink v-if="session.can('comprar')" class="nav-link" :to="{ name: 'tienda' }">Tienda</RouterLink>
@@ -104,8 +106,15 @@ async function salir() {
         <RouterLink v-if="session.can('administrar')" class="nav-link" :to="{ name: 'plan' }">Plan</RouterLink>
       </nav>
       <div class="hright">
-        <button v-if="session.can('comprar')" class="hbtn cartb" type="button" @click="reservations.drawerOpen = true">
-          🛒 Mi compra<template v-if="reservations.count > 0"> ({{ reservations.count }})</template>
+        <button
+          v-if="session.can('comprar')"
+          class="cartbtn"
+          type="button"
+          :aria-label="`Mi compra: ${reservations.count} ${reservations.count === 1 ? 'producto' : 'productos'}`"
+          @click="reservations.drawerOpen = true"
+        >
+          <CartIcon />
+          <span v-if="reservations.count > 0" class="badge">{{ reservations.count }}</span>
         </button>
         <div>
           <b>{{ session.user?.nombre }}</b>
@@ -127,7 +136,7 @@ async function salir() {
   </div>
   <main :class="{ page: showChrome }"><RouterView /></main>
   <footer v-if="showChrome" class="site-footer">
-    <b>🛒 TuMiniSúper</b> · Minisúper Teresita · Sistema de caja, inventario, fiado y pedidos en línea
+    <b>TuMiniSúper</b> · Minisúper Teresita · Sistema de caja, inventario, fiado y pedidos en línea
   </footer>
   <ReservationsDrawer v-if="session.can('comprar')" />
   <AccessibilityMenu />

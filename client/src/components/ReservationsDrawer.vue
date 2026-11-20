@@ -22,7 +22,7 @@ async function goToPay() {
     <aside class="drawer" aria-label="Mi compra">
       <div class="dh">
         <h3>Mi compra</h3>
-        <button class="hbtn" type="button" @click="reservations.drawerOpen = false">Cerrar ✕</button>
+        <button class="hbtn" type="button" @click="reservations.drawerOpen = false">Cerrar</button>
       </div>
       <div class="db">
         <StateBox

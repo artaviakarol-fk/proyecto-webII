@@ -85,8 +85,11 @@ export const draftSale = (texto: string) =>
 export const registerCliente = (negocioId: string, body: RegisterClienteRequest) =>
   request<One<CurrentUser>>('POST', `/negocios/${negocioId}/registro`, { body }).then((r) => r.data)
 
-export const listCatalog = (buscar?: string, pagina = 1) =>
-  request<CatalogPage>('GET', '/catalogo', { query: { buscar, pagina, por_pagina: 24 } })
+export const listCatalog = (buscar?: string, pagina = 1, categoria?: string | null) =>
+  request<CatalogPage>('GET', '/catalogo', { query: { buscar, pagina, por_pagina: 24, categoria: categoria ?? undefined } })
+
+export const listCatalogCategories = () =>
+  request<{ data: string[] }>('GET', '/catalogo/categorias').then((r) => r.data)
 
 export const catalogPhoto = (productId: string) => requestBlob(`/catalogo/${productId}/foto`)
 

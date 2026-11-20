@@ -46,11 +46,28 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List what the cliente can buy in its negocio, by pages, optionally searching by name
+         * List what the cliente can buy in its negocio, by pages, optionally searching by name and only of a category
          * @description Each product comes with its price and the units available: the ones that can be sold minus the ones that
          *     reservas hold right now. The cost of the product is never sent.
          */
         get: operations["inventory.catalog.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalogo/categorias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The categories of the products of the negocio, to show them as filters in the shop */
+        get: operations["inventory.catalog.categories"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1925,6 +1942,8 @@ export interface operations {
                 por_pagina?: number;
                 /** @description Texto que se busca en el nombre o el código. */
                 buscar?: string | null;
+                /** @description Solo los productos de esta categoría, escrita como la devuelve la lista de categorías. */
+                categoria?: string | null;
             };
             header?: never;
             path?: never;
@@ -1967,6 +1986,45 @@ export interface operations {
                 };
             };
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "inventory.catalog.categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: string[];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
         };
     };
     "identity.registration.store": {
@@ -3395,6 +3453,8 @@ export interface operations {
                 por_pagina?: number;
                 /** @description Texto que se busca en el nombre o el código. */
                 buscar?: string | null;
+                /** @description Solo los productos de esta categoría, escrita como la devuelve la lista de categorías. */
+                categoria?: string | null;
             };
             header?: never;
             path?: never;

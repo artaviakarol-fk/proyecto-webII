@@ -100,10 +100,11 @@ final readonly class EloquentProductRepository implements ProductRepository
     }
 
     /** One page of the live products of the negocio ordered by name, optionally matching a name or code. */
-    public function search(NegocioId $negocioId, ?string $term, PageRequest $page): Page
+    public function search(NegocioId $negocioId, ?string $term, PageRequest $page, ?string $category = null): Page
     {
         $query = ProductModel::query()
             ->where('negocio_id', $negocioId->value)
+            ->when($category !== null, fn (Builder $query) => $query->where('categoria', $category))
             ->when($term !== null, function (Builder $query) use ($term): void {
                 $pattern = '%'.addcslashes((string) $term, '%_\\').'%';
                 $query->where(fn (Builder $match) => $match
@@ -112,6 +113,24 @@ final readonly class EloquentProductRepository implements ProductRepository
             });
 
         return EloquentPages::of($query->orderBy('nombre')->orderBy('id'), $page, $this->toDomain(...));
+    }
+
+    /**
+     * The categories the live products of the negocio use, in alphabetical order.
+     *
+     * @return list<string>
+     */
+    public function categories(NegocioId $negocioId): array
+    {
+        $categories = ProductModel::query()
+            ->where('negocio_id', $negocioId->value)
+            ->whereNotNull('categoria')
+            ->distinct()
+            ->orderBy('categoria')
+            ->pluck('categoria')
+            ->all();
+
+        return array_values(array_filter($categories, is_string(...)));
     }
 
     /** Soft delete the product: it leaves the catalog but its sales keep pointing to it. */
