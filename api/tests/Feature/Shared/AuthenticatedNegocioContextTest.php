@@ -52,7 +52,7 @@ final class AuthenticatedNegocioContextTest extends TestCase
      */
     public static function roles(): array
     {
-        $roles = array_values(array_filter(Role::cases(), fn (Role $role): bool => $role !== Role::SuperAdmin));
+        $roles = array_values(array_filter(Role::cases(), fn (Role $role): bool => ! in_array($role, [Role::SuperAdmin, Role::Personalizado], true)));
 
         return array_combine(
             array_map(fn (Role $role): string => $role->value, $roles),

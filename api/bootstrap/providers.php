@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Providers\AppServiceProvider;
 use Src\Billing\Payments\Infrastructure\PaymentsServiceProvider;
 use Src\Credit\Customers\Infrastructure\CustomersServiceProvider;
+use Src\Identity\StaffRoles\Infrastructure\StaffRolesServiceProvider;
 use Src\Identity\Users\Infrastructure\UsersServiceProvider;
 use Src\Inventory\Expirations\Infrastructure\ExpirationsServiceProvider;
 use Src\Inventory\Products\Infrastructure\ProductsServiceProvider;
@@ -23,6 +24,7 @@ return [
     AppServiceProvider::class,
     SharedServiceProvider::class,
     UsersServiceProvider::class,
+    StaffRolesServiceProvider::class,
     ProfileServiceProvider::class,
     OpeningHoursServiceProvider::class,
     ProductsServiceProvider::class,

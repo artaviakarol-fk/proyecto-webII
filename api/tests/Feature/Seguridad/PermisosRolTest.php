@@ -133,8 +133,11 @@ final class PermisosRolTest extends TestCase
     {
         $cases = [];
 
+        // A role of the negocio has the permissions its negocio chose; it is tested in Identity/StaffRoles.
+        $roles = array_values(array_filter(Role::cases(), fn (Role $role): bool => $role !== Role::Personalizado));
+
         foreach (self::matrix() as [$method, $uri, $allowedRoles]) {
-            foreach (Role::cases() as $role) {
+            foreach ($roles as $role) {
                 $cases["{$role->value} {$method} {$uri}"] = [$role, $method, $uri, in_array($role, $allowedRoles, true)];
             }
         }
@@ -165,10 +168,10 @@ final class PermisosRolTest extends TestCase
      */
     private static function matrix(): array
     {
-        $everyone = [Role::Administrador, Role::Cajero, Role::Bodeguero];
+        $everyone = [Role::Administrador, Role::Cajero, Role::Bodeguero, Role::Supervisor];
         $administration = [Role::Administrador];
-        $till = [Role::Administrador, Role::Cajero];
-        $warehouse = [Role::Administrador, Role::Bodeguero];
+        $till = [Role::Administrador, Role::Cajero, Role::Supervisor];
+        $warehouse = [Role::Administrador, Role::Bodeguero, Role::Supervisor];
         $buyers = [Role::Cliente];
 
         return [
@@ -200,7 +203,7 @@ final class PermisosRolTest extends TestCase
             ['GET', '/ventas/{id}/pago', $till],
             ['POST', '/ventas/{id}/pago/reembolso', $administration],
             // Gateways to choose when paying: the till and the cliente.
-            ['GET', '/pagos/pasarelas', [Role::Administrador, Role::Cajero, Role::Cliente]],
+            ['GET', '/pagos/pasarelas', [Role::Administrador, Role::Cajero, Role::Supervisor, Role::Cliente]],
             // Reports: only the administration sees the income of the day.
             ['GET', '/reportes/cierre-diario', $administration],
             // Fiado: the till reads the customers and what they owe; only the administration changes them.
@@ -233,6 +236,15 @@ final class PermisosRolTest extends TestCase
             ['GET', '/negocio/horario', $everyone],
             ['PUT', '/negocio/horario', $administration],
             ['POST', '/negocio/logo', $administration],
+            // Staff and roles of the negocio: only the administration.
+            ['GET', '/personal', $administration],
+            ['POST', '/personal', $administration],
+            ['PATCH', '/personal/{id}', $administration],
+            ['POST', '/personal/{id}/contrasena-temporal', $administration],
+            ['GET', '/roles', $administration],
+            ['POST', '/roles', $administration],
+            ['PUT', '/roles/{id}', $administration],
+            ['DELETE', '/roles/{id}', $administration],
         ];
     }
 

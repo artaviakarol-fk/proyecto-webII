@@ -21,11 +21,12 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string $correo
  * @property string $password
  * @property string $rol
+ * @property string|null $rol_id
  * @property bool $activo
  * @property bool $debe_cambiar_contrasena
  */
 #[Table('users')]
-#[Fillable(['id', 'negocio_id', 'nombre', 'correo', 'password', 'rol', 'activo', 'debe_cambiar_contrasena'])]
+#[Fillable(['id', 'negocio_id', 'nombre', 'correo', 'password', 'rol', 'rol_id', 'activo', 'debe_cambiar_contrasena'])]
 #[Hidden(['password'])]
 #[UseFactory(UserFactory::class)]
 final class UserModel extends Authenticatable
@@ -40,6 +41,7 @@ final class UserModel extends Authenticatable
      */
     protected $attributes = [
         'debe_cambiar_contrasena' => false,
+        'rol_id' => null,
     ];
 
     /**
