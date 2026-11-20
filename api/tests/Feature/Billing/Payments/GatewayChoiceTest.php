@@ -84,6 +84,32 @@ final class GatewayChoiceTest extends TestCase
         $this->getJson('/api/v1/pagos/pasarelas')->assertOk()->assertJsonPath('data.1.configurada', false);
     }
 
+    /** ONVO without its secret key used to break the whole listing; now it is only reported as not configured. */
+    public function test_onvo_without_its_secret_key_is_reported_as_not_configured(): void
+    {
+        config(['services.onvo.secret' => '']);
+
+        $this->getJson('/api/v1/pagos/pasarelas')
+            ->assertOk()
+            ->assertJsonPath('data.0.proveedor', 'onvo')
+            ->assertJsonPath('data.0.configurada', false)
+            ->assertJsonPath('data.0.metodos', [])
+            ->assertJsonPath('data.1.configurada', true);
+    }
+
+    /** Charging with a gateway that has no credentials answers a clear 503 instead of an unexpected error. */
+    public function test_charging_with_a_gateway_without_credentials_answers_a_clear_problem(): void
+    {
+        config(['services.onvo.secret' => '']);
+        Http::fake();
+
+        $this->postJson($this->endpoint(), ['metodo_pago' => 'sinpe_movil', 'pasarela' => 'onvo', 'metodo_proveedor_id' => 'pm_1'])
+            ->assertServiceUnavailable()
+            ->assertJsonPath('detail', 'Esa pasarela de pago no está configurada. Elija otra forma de pago.');
+
+        Http::assertNothingSent();
+    }
+
     /** The warehouse has nothing to do with payments. */
     public function test_the_warehouse_does_not_see_the_options(): void
     {

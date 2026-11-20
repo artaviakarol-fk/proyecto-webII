@@ -19,6 +19,7 @@ Proyecto del curso **ISW-621 Web II**. API REST en **Laravel (PHP)** para la ges
 | [`docs/patterns.md`](docs/patterns.md) | Patrones de diseño adoptados, previstos y descartados. |
 | [`docs/ubiquitous-language.md`](docs/ubiquitous-language.md) | Glosario del negocio: el mismo término en el código, la base y la API. |
 | [`docs/despliegue.md`](docs/despliegue.md) | Despliegue en el VPS con Docker y Caddy. |
+| [`docs/rendimiento.md`](docs/rendimiento.md) | Cómo medir cuánto tarda la API (`scripts/medir-rendimiento.sh`), qué se encontró y qué se cambió. |
 
 ## Arquitectura
 

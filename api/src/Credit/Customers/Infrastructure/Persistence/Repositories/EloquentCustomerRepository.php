@@ -13,7 +13,6 @@ use Src\Credit\Customers\Domain\ValueObjects\CustomerId;
 use Src\Credit\Customers\Domain\ValueObjects\CustomerName;
 use Src\Credit\Customers\Domain\ValueObjects\LimitIncrease;
 use Src\Credit\Customers\Domain\ValueObjects\PhoneNumber;
-use Src\Credit\Customers\Infrastructure\Persistence\Models\CreditIncreaseModel;
 use Src\Credit\Customers\Infrastructure\Persistence\Models\CustomerModel;
 use Src\Shared\Domain\ValueObjects\Money;
 use Src\Shared\Domain\ValueObjects\NegocioId;
@@ -73,6 +72,7 @@ final readonly class EloquentCustomerRepository implements CustomerRepository
     public function search(NegocioId $negocioId, ?string $term, ?bool $active, PageRequest $page): Page
     {
         $query = CustomerModel::query()
+            ->with('activeIncreases')
             ->where('negocio_id', $negocioId->value)
             ->when($active !== null, fn (Builder $query) => $query->where('activo', $active))
             ->when($term !== null, function (Builder $query) use ($term): void {
@@ -110,12 +110,10 @@ final readonly class EloquentCustomerRepository implements CustomerRepository
     {
         $increases = [];
 
-        $rows = CreditIncreaseModel::query()
-            ->where('negocio_id', $model->negocio_id)
-            ->where('cliente_id', $model->id)
-            ->whereNull('revertida_at')
-            ->where('vigente_hasta', '>', now())
-            ->get(['monto', 'vigente_hasta']);
+        // A page of customers brings the increases of all of them in one query; a single customer asks for its own.
+        $rows = $model->relationLoaded('activeIncreases')
+            ? $model->activeIncreases
+            : $model->activeIncreases()->where('negocio_id', $model->negocio_id)->get(['monto', 'vigente_hasta']);
 
         foreach ($rows as $increase) {
             $increases[] = new LimitIncrease(Money::fromDecimal($increase->monto), $increase->vigente_hasta);

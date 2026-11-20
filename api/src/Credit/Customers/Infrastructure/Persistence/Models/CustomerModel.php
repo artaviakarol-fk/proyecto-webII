@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * saldo_actual is read-only for the application: it is not fillable and the role cannot write it.
@@ -30,6 +31,18 @@ final class CustomerModel extends Model
 {
     /** @use HasFactory<CustomerFactory> */
     use HasFactory, HasUuids;
+
+    /**
+     * The increases of the limit that were not reverted and have not expired yet.
+     *
+     * @return HasMany<CreditIncreaseModel, $this>
+     */
+    public function activeIncreases(): HasMany
+    {
+        return $this->hasMany(CreditIncreaseModel::class, 'cliente_id')
+            ->whereNull('revertida_at')
+            ->where('vigente_hasta', '>', now());
+    }
 
     /**
      * Cast the columns to native types; amounts stay as exact decimal strings.

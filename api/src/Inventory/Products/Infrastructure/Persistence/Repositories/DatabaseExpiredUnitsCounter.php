@@ -22,4 +22,27 @@ final readonly class DatabaseExpiredUnitsCounter implements ExpiredUnitsCounter
             ->where('estado', self::ON_THE_SHELF)
             ->sum('cantidad');
     }
+
+    /**
+     * Add up the expired units on the shelf of many products with one grouped query.
+     *
+     * @param  list<ProductId>  $productIds
+     * @return array<string, int>
+     */
+    public function ofMany(array $productIds, NegocioId $negocioId): array
+    {
+        if ($productIds === []) {
+            return [];
+        }
+
+        return DB::table('unidades_vencidas')
+            ->where('negocio_id', $negocioId->value)
+            ->whereIn('producto_id', array_map(fn (ProductId $id): string => $id->value, $productIds))
+            ->where('estado', self::ON_THE_SHELF)
+            ->groupBy('producto_id')
+            ->selectRaw('producto_id, sum(cantidad) as unidades')
+            ->pluck('unidades', 'producto_id')
+            ->map(fn (mixed $units): int => (int) $units)
+            ->all();
+    }
 }

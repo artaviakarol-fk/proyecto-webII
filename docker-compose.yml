@@ -15,6 +15,9 @@ services:
       DB_ADMIN_PASSWORD: ${DB_ADMIN_PASSWORD:?Define DB_ADMIN_PASSWORD en el archivo .env}
     volumes:
       - ./api:/var/www/html
+      # Las dependencias de PHP viven en un volumen de Docker y no en la carpeta de Windows:
+      # PHP las lee en cada petición, y leerlas desde la carpeta montada era lo que más tardaba.
+      - api_vendor:/var/www/html/vendor
     depends_on:
       db:
         condition: service_healthy
@@ -41,3 +44,4 @@ services:
 
 volumes:
   pgdata:
+  api_vendor:
