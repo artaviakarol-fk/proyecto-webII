@@ -9,7 +9,7 @@ import { createCardMethod, createSinpeMethod } from '@/services/onvo'
 import type { GatewayId, PayMethod } from '@/services/types'
 import { useReservationsStore } from '@/stores/reservations'
 import { useSessionStore } from '@/stores/session'
-import { digitsOnly, parseExpiry } from '@/utils/card'
+import { digitsOnly, nationalId, parseExpiry, sinpePhone } from '@/utils/card'
 import { formatMoney } from '@/utils/money'
 import { goTo, lastSale } from '@/utils/navigation'
 
@@ -57,7 +57,7 @@ async function onvoMethodId(option: NonNullable<typeof chosen.value>): Promise<s
   if (method.value === 'sinpe_movil') {
     return createSinpeMethod(
       key,
-      { identification: digitsOnly(sinpe.value.identification), phone: digitsOnly(sinpe.value.phone) },
+      { identification: nationalId(sinpe.value.identification), phone: sinpePhone(sinpe.value.phone) },
       billing,
     )
   }

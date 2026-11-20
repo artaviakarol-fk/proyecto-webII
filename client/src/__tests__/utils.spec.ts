@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { digitsOnly, parseExpiry } from '@/utils/card'
+import { digitsOnly, nationalId, parseExpiry, sinpePhone } from '@/utils/card'
 import { formatCountdown, secondsLeft } from '@/utils/countdown'
 
 describe('countdown', () => {
@@ -30,5 +30,23 @@ describe('card helpers', () => {
   it('rejects a wrong month or format', () => {
     expect(parseExpiry('13/29')).toBeNull()
     expect(parseExpiry('0829')).toBeNull()
+  })
+})
+
+describe('SINPE Móvil data for ONVO', () => {
+  it('sends the phone with the country code', () => {
+    expect(sinpePhone('+50688888888')).toBe('+50688888888')
+    expect(sinpePhone('8888-8888')).toBe('+50688888888')
+    expect(sinpePhone('+506 8888 4444')).toBe('+50688884444')
+  })
+
+  it('sends a national id with dashes as 0#-####-####', () => {
+    expect(nationalId('208820914')).toBe('02-0882-0914')
+    expect(nationalId('2-0882-0914')).toBe('02-0882-0914')
+    expect(nationalId('02-0882-0914')).toBe('02-0882-0914')
+  })
+
+  it('leaves an id that is not a national one as it was typed', () => {
+    expect(nationalId(' 155812345678 ')).toBe('155812345678')
   })
 })
