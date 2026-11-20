@@ -161,7 +161,7 @@
             "get": {
                 "operationId": "inventory.catalog.index",
                 "description": "Each product comes with its price and the units available: the ones that can be sold minus the ones that\nreservas hold right now. The cost of the product is never sent.",
-                "summary": "List what the cliente can buy in its negocio, by pages, optionally searching by name",
+                "summary": "List what the cliente can buy in its negocio, by pages, optionally searching by name and only of a category",
                 "tags": [
                     "Catalog"
                 ],
@@ -195,6 +195,18 @@
                                 "null"
                             ],
                             "maxLength": 120
+                        }
+                    },
+                    {
+                        "name": "categoria",
+                        "in": "query",
+                        "description": "Solo los productos de esta categor\u00eda, escrita como la devuelve la lista de categor\u00edas.",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 60
                         }
                     }
                 ],
@@ -256,6 +268,61 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "comprar"
+                ]
+            }
+        },
+        "/catalogo/categorias": {
+            "get": {
+                "operationId": "inventory.catalog.categories",
+                "summary": "The categories of the products of the negocio, to show them as filters in the shop",
+                "tags": [
+                    "Catalog"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
                     },
                     "403": {
                         "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
@@ -2459,6 +2526,18 @@
                                 "null"
                             ],
                             "maxLength": 120
+                        }
+                    },
+                    {
+                        "name": "categoria",
+                        "in": "query",
+                        "description": "Solo los productos de esta categor\u00eda, escrita como la devuelve la lista de categor\u00edas.",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 60
                         }
                     }
                 ],

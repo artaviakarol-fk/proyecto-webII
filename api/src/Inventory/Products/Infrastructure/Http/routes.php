@@ -39,5 +39,6 @@ Route::prefix('catalogo')
     ->name('inventory.catalog.')
     ->group(function (): void {
         Route::get('/', CatalogController::class)->name('index');
+        Route::get('categorias', [CatalogController::class, 'categories'])->name('categories');
         Route::get('{producto}/foto', [ProductPhotoController::class, 'show'])->name('photo.show')->whereUuid('producto');
     });

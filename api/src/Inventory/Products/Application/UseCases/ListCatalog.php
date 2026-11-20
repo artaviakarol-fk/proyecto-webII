@@ -25,13 +25,13 @@ final readonly class ListCatalog
 
     /**
      * One page of what a cliente can buy in the current negocio: each product with the units that can really be
-     * sold (the stock minus the units marked as expired) and the units other reservas hold at this moment.
+     * sold (the stock minus the units marked as expired) and the units other reservas hold at this moment. With a category, only its products.
      *
      * @return Page<CatalogItem>
      */
-    public function execute(?string $term, PageRequest $page, DateTimeImmutable $now): Page
+    public function execute(?string $term, PageRequest $page, DateTimeImmutable $now, ?string $category = null): Page
     {
-        $products = $this->listProducts->execute($term, $page);
+        $products = $this->listProducts->execute($term, $page, $category);
         $first = $products->items[0] ?? null;
         if ($first === null) {
             return new Page([], $products->total, $products->request);

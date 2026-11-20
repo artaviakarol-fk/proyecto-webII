@@ -20,7 +20,15 @@ final class ListProductsRequest extends ListRequest
             ...parent::rules(),
             /** Texto que se busca en el nombre o el código. */
             'buscar' => ['nullable', 'string', 'max:120'],
+            /** Solo los productos de esta categoría, escrita como la devuelve la lista de categorías. */
+            'categoria' => ['nullable', 'string', 'max:60'],
         ];
+    }
+
+    /** The category to keep, if any. */
+    public function category(): ?string
+    {
+        return $this->filled('categoria') ? $this->string('categoria')->toString() : null;
     }
 
     /** Text to look for in the name or the code. */

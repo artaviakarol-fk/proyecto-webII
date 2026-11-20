@@ -23,23 +23,6 @@ const registroLink = computed(() => ({
   query: route.query.negocio ? { negocio: route.query.negocio } : {},
 }))
 
-// Demonstration accounts of the seeder (fictitious data); they are only shown when developing.
-const demo = import.meta.env.DEV
-  ? [
-      { correo: 'admin@teresita.test', rol: 'Administrador' },
-      { correo: 'caja@teresita.test', rol: 'Cajero' },
-      { correo: 'bodega@teresita.test', rol: 'Bodeguero' },
-      { correo: 'admin@laesquina.test', rol: 'Administrador (plan por vencer)' },
-      { correo: 'jania@tuminisuper.test', rol: 'Superadmin de la plataforma' },
-    ]
-  : []
-
-function fill(email: string) {
-  tab.value = 'personal'
-  correo.value = email
-  contrasena.value = 'password'
-}
-
 async function submit() {
   loading.value = true
   error.value = null
@@ -97,13 +80,6 @@ async function submit() {
       ¿Primera vez? <RouterLink :to="registroLink">Crear cuenta de cliente</RouterLink>
     </p>
     <p v-else class="muted center">Las cuentas del personal las crea el administrador de cada negocio.</p>
-
-    <div v-if="demo.length > 0" class="demo">
-      <b>Cuentas de demostración · contraseña password</b>
-      <button v-for="account in demo" :key="account.correo" type="button" @click="fill(account.correo)">
-        <span>{{ account.correo }}</span><span>{{ account.rol }}</span>
-      </button>
-    </div>
   </AuthLayout>
 </template>
 

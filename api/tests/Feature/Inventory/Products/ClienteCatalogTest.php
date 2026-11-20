@@ -124,6 +124,26 @@ final class ClienteCatalogTest extends TestCase
             ->assertJsonPath('meta.ultima_pagina', 2);
     }
 
+    /** The shop lists the categories of the negocio once each, and filters the catalog by one of them. */
+    public function test_catalog_is_filtered_by_category(): void
+    {
+        ProductModel::factory()->create(['negocio_id' => $this->negocio->id, 'nombre' => 'Arroz 1 kg', 'categoria' => 'Abarrotes']);
+        ProductModel::factory()->create(['negocio_id' => $this->negocio->id, 'nombre' => 'Frijoles', 'categoria' => 'Abarrotes']);
+        ProductModel::factory()->create(['negocio_id' => $this->negocio->id, 'nombre' => 'Sin categoría', 'categoria' => null]);
+        $other = NegocioModel::factory()->create();
+        ProductModel::factory()->create(['negocio_id' => $other->id, 'categoria' => 'Licores']);
+
+        $this->getJson(self::ENDPOINT.'/categorias')
+            ->assertOk()
+            ->assertExactJson(['data' => ['Abarrotes', 'Lácteos']]);
+
+        $this->getJson(self::ENDPOINT.'?categoria=Abarrotes')
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.nombre', 'Arroz 1 kg')
+            ->assertJsonPath('data.1.nombre', 'Frijoles');
+    }
+
     /** A product with photo links to the photo route of the catalog, which the cliente can download. */
     public function test_cliente_downloads_the_photo_through_the_catalog(): void
     {

@@ -67,11 +67,13 @@ final class InMemoryProductRepository implements ProductRepository
      *
      * @return Page<Product>
      */
-    public function search(NegocioId $negocioId, ?string $term, PageRequest $page): Page
+    public function search(NegocioId $negocioId, ?string $term, PageRequest $page, ?string $category = null): Page
     {
         $matches = array_filter(
             $this->products,
-            fn (Product $product): bool => $product->negocioId->equals($negocioId) && ($term === null
+            fn (Product $product): bool => $product->negocioId->equals($negocioId)
+                && ($category === null || $product->details->category?->value === $category)
+                && ($term === null
                 || mb_stripos($product->details->name->value, $term) !== false
                 || mb_stripos($product->details->code->value, $term) !== false),
         );
@@ -79,6 +81,21 @@ final class InMemoryProductRepository implements ProductRepository
         usort($matches, fn (Product $a, Product $b): int => [$a->details->name->value, $a->id->value] <=> [$b->details->name->value, $b->id->value]);
 
         return Pages::of(array_values($matches), $page);
+    }
+
+    /** @return list<string> */
+    public function categories(NegocioId $negocioId): array
+    {
+        $categories = [];
+        foreach ($this->products as $product) {
+            if ($product->negocioId->equals($negocioId) && $product->details->category !== null) {
+                $categories[$product->details->category->value] = true;
+            }
+        }
+        $names = array_keys($categories);
+        sort($names);
+
+        return $names;
     }
 
     /** Take the product out of the catalog. */

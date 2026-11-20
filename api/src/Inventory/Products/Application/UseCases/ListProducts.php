@@ -19,14 +19,25 @@ final readonly class ListProducts
     ) {}
 
     /**
-     * One page of the catalog of the current negocio, optionally searching by name or code.
+     * One page of the catalog of the current negocio, optionally searching by name or code and only of a category.
      *
      * @return Page<Product>
      */
-    public function execute(?string $term, PageRequest $page): Page
+    public function execute(?string $term, PageRequest $page, ?string $category = null): Page
     {
         $term = $term === null || trim($term) === '' ? null : trim($term);
+        $category = $category === null || trim($category) === '' ? null : trim($category);
 
-        return $this->products->search($this->context->current(), $term, $page);
+        return $this->products->search($this->context->current(), $term, $page, $category);
+    }
+
+    /**
+     * The categories of the products of the current negocio, to filter by them.
+     *
+     * @return list<string>
+     */
+    public function categories(): array
+    {
+        return $this->products->categories($this->context->current());
     }
 }

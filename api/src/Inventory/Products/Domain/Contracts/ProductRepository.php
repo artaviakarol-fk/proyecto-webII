@@ -29,11 +29,19 @@ interface ProductRepository
     public function find(ProductId $id, NegocioId $negocioId): ?Product;
 
     /**
-     * One page of the live products of the negocio ordered by name, optionally matching a name or code.
+     * One page of the live products of the negocio ordered by name, optionally matching a name or code and only of
+     * one category.
      *
      * @return Page<Product>
      */
-    public function search(NegocioId $negocioId, ?string $term, PageRequest $page): Page;
+    public function search(NegocioId $negocioId, ?string $term, PageRequest $page, ?string $category = null): Page;
+
+    /**
+     * The categories the live products of the negocio use, in alphabetical order.
+     *
+     * @return list<string>
+     */
+    public function categories(NegocioId $negocioId): array;
 
     /** Remove the product from the catalog, keeping its history (soft delete). */
     public function delete(Product $product): void;

@@ -181,6 +181,10 @@ Cuentas de demostración (`php artisan db:seed`, contraseña `password`, datos f
 | Minisúper Teresita | `bodega@teresita.test` | bodeguero |
 | Minisúper La Esquina | `admin@laesquina.test` | administrador |
 | Minisúper La Esquina | `caja@laesquina.test` | cajero |
+| Plataforma | `jania@tuminisuper.test` | superadmin |
+| Plataforma | `karol@tuminisuper.test` | superadmin |
+
+La pantalla de inicio de sesión no muestra estas cuentas; para probar como cliente, cree una en "Crear cuenta de cliente".
 
 ## Flujo de trabajo
 
