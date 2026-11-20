@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Src\Identity\Users\Application\UseCases;
 
 use Src\Identity\Users\Application\DTOs\RegisterClienteCommand;
+use Src\Identity\Users\Domain\Contracts\NegocioServiceAccess;
 use Src\Identity\Users\Domain\Contracts\PasswordHasher;
 use Src\Identity\Users\Domain\Contracts\UserRepository;
 use Src\Identity\Users\Domain\Entities\User;
 use Src\Identity\Users\Domain\Exceptions\EmailAlreadyRegisteredException;
+use Src\Identity\Users\Domain\Exceptions\ServiceSuspendedException;
 use Src\Identity\Users\Domain\ValueObjects\Email;
 use Src\Negocios\Profile\Domain\Contracts\NegocioRepository;
 use Src\Negocios\Profile\Domain\Exceptions\NegocioNotFoundException;
@@ -21,6 +23,7 @@ final readonly class RegisterCliente
         private UserRepository $users,
         private PasswordHasher $passwords,
         private NegocioRepository $negocios,
+        private NegocioServiceAccess $service,
     ) {}
 
     /**
@@ -33,6 +36,11 @@ final readonly class RegisterCliente
 
         if ($this->negocios->find($negocioId)?->active !== true) {
             throw NegocioNotFoundException::create();
+        }
+
+        // The online store of a negocio whose service is suspended is closed.
+        if (! $this->service->serves($negocioId)) {
+            throw ServiceSuspendedException::create();
         }
 
         $email = new Email($command->email);

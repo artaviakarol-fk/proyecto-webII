@@ -21,6 +21,12 @@ import type {
   SaleSummary,
   SaleDraft,
   SaleRequest,
+  StaffMember,
+  StaffRole,
+  Permission,
+  Subscription,
+  SubscriptionPayment,
+  Tenant,
   TokenResult,
 } from './types'
 
@@ -136,3 +142,62 @@ export const markExpired = (productId: string, cantidad: number, motivo: string)
   request<One<ExpiredUnits>>('POST', `/productos/${productId}/vencidos`, {
     body: { cantidad, motivo },
   }).then((r) => r.data)
+
+export const changePassword = (contrasenaActual: string, contrasenaNueva: string) =>
+  request<void>('PUT', '/usuario/contrasena', {
+    body: { contrasena_actual: contrasenaActual, contrasena_nueva: contrasenaNueva },
+  })
+
+// Personal y roles del negocio (solo la administración).
+export const listStaff = () => request<Many<StaffMember>>('GET', '/personal').then((r) => r.data)
+
+export const openStaffAccount = (body: { nombre: string; correo: string; contrasena_temporal: string; rol: string }) =>
+  request<One<StaffMember>>('POST', '/personal', { body }).then((r) => r.data)
+
+export const changeStaffAccess = (id: string, body: { rol?: string; activo?: boolean }) =>
+  request<One<StaffMember>>('PATCH', `/personal/${id}`, { body }).then((r) => r.data)
+
+export const resetStaffPassword = (id: string, contrasenaTemporal: string) =>
+  request<One<StaffMember>>('POST', `/personal/${id}/contrasena-temporal`, {
+    body: { contrasena_temporal: contrasenaTemporal },
+  }).then((r) => r.data)
+
+export const listStaffRoles = () => request<Many<StaffRole>>('GET', '/roles').then((r) => r.data)
+
+export const createStaffRole = (nombre: string, permisos: Permission[]) =>
+  request<One<StaffRole>>('POST', '/roles', { body: { nombre, permisos } }).then((r) => r.data)
+
+export const updateStaffRole = (id: string, nombre: string, permisos: Permission[]) =>
+  request<One<StaffRole>>('PUT', `/roles/${id}`, { body: { nombre, permisos } }).then((r) => r.data)
+
+export const deleteStaffRole = (id: string) => request<void>('DELETE', `/roles/${id}`)
+
+// Alquiler de la plataforma (la administración del negocio).
+export const getSubscription = () => request<One<Subscription>>('GET', '/suscripcion').then((r) => r.data)
+
+export const paySubscription = (body: {
+  meses: number
+  pasarela: 'onvo' | 'paypal'
+  metodo_pago: 'tarjeta' | 'sinpe_movil'
+  metodo_proveedor_id: string | null
+}) => request<One<SubscriptionPayment>>('POST', '/suscripcion/pagos', { body }).then((r) => r.data)
+
+export const refreshSubscriptionPayment = (id: string) =>
+  request<One<SubscriptionPayment>>('GET', `/suscripcion/pagos/${id}`).then((r) => r.data)
+
+// Plataforma (solo superadmin): negocios, su estado y su alquiler.
+export const listTenants = (buscar?: string, pagina = 1) =>
+  request<Page<Tenant>>('GET', '/plataforma/negocios', { query: { buscar, pagina, por_pagina: 20 } })
+
+export const registerNegocio = (body: {
+  nombre: string
+  administrador: { nombre: string; correo: string; contrasena_temporal: string }
+}) => request<One<Tenant>>('POST', '/plataforma/negocios', { body }).then((r) => r.data)
+
+export const setTenantActive = (id: string, activo: boolean) =>
+  request<One<Tenant>>('PATCH', `/plataforma/negocios/${id}`, {
+    body: { estado: activo ? 'activo' : 'inactivo' },
+  }).then((r) => r.data)
+
+export const registerManualPayment = (id: string, body: { meses: number; metodo: 'efectivo' | 'sinpe'; referencia: string | null }) =>
+  request<One<SubscriptionPayment>>('POST', `/plataforma/negocios/${id}/pagos`, { body }).then((r) => r.data)

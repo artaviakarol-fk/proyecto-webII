@@ -23,7 +23,7 @@ final class TenantResource extends JsonResource
     /**
      * What the platform sees of a negocio: never its sales, customers, fiado or stock.
      *
-     * @return array{id: string, nombre: string, estado: string, creado_el: string, administradores: list<array{nombre: string, correo: string, activo: bool, debe_cambiar_contrasena: bool}>}
+     * @return array{id: string, nombre: string, estado: string, creado_el: string, administradores: list<array{nombre: string, correo: string, activo: bool, debe_cambiar_contrasena: bool}>, servicio: array{estado: string|null, vence_el: string|null, dias_restantes: int|null, en_prueba: bool}}
      */
     public function toArray(Request $request): array
     {
@@ -38,6 +38,12 @@ final class TenantResource extends JsonResource
                 'activo' => $administrator->active,
                 'debe_cambiar_contrasena' => $administrator->mustChangePassword,
             ], $this->tenant->administrators),
+            'servicio' => [
+                'estado' => $this->tenant->status?->value,
+                'vence_el' => $this->tenant->paidUntil?->setTimezone(new \DateTimeZone((string) config('app.timezone')))->format(DATE_ATOM),
+                'dias_restantes' => $this->tenant->daysLeft,
+                'en_prueba' => $this->tenant->trial,
+            ],
         ];
     }
 }

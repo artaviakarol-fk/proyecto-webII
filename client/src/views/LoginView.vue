@@ -29,6 +29,8 @@ const demo = import.meta.env.DEV
       { correo: 'admin@teresita.test', rol: 'Administrador' },
       { correo: 'caja@teresita.test', rol: 'Cajero' },
       { correo: 'bodega@teresita.test', rol: 'Bodeguero' },
+      { correo: 'admin@laesquina.test', rol: 'Administrador (plan por vencer)' },
+      { correo: 'jania@tuminisuper.test', rol: 'Superadmin de la plataforma' },
     ]
   : []
 

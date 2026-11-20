@@ -1770,7 +1770,8 @@
                 },
                 "x-abilities": [
                     "caja",
-                    "comprar"
+                    "comprar",
+                    "administrar"
                 ]
             }
         },
@@ -1941,6 +1942,92 @@
                     }
                 },
                 "security": []
+            }
+        },
+        "/plataforma/negocios/{negocio}/pagos": {
+            "post": {
+                "operationId": "platform.payments.store",
+                "description": "Only a superadmin. It is approved at once and its months are added to the date of the negocio.",
+                "summary": "Register a payment of the rent received in cash or by SINPE to the number of the platform",
+                "tags": [
+                    "ManualSubscriptionPayment"
+                ],
+                "parameters": [
+                    {
+                        "name": "negocio",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ManualPaymentRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`SubscriptionPaymentResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SubscriptionPaymentResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "plataforma"
+                ]
             }
         },
         "/negocio/logo": {
@@ -4321,6 +4408,1118 @@
                 ]
             }
         },
+        "/personal": {
+            "get": {
+                "operationId": "identity.staff.index",
+                "summary": "The staff of the negocio, active or not, ordered by name. The clientes are not staff and are not listed",
+                "tags": [
+                    "Staff"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            },
+            "post": {
+                "operationId": "identity.staff.store",
+                "description": "The person logs in with the temporary password and must change it before anything else. An email that already\nhas an account answers 409.",
+                "summary": "Open an account of the staff, including another administrator",
+                "tags": [
+                    "Staff"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OpenStaffAccountRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`StaffResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/StaffResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/personal/{usuario}": {
+            "patch": {
+                "operationId": "identity.staff.update",
+                "description": "The sessions of the account are closed, so it logs in again with what it can do now. An administrator cannot\nchange its own access, and the negocio always keeps at least one active administrator (409).",
+                "summary": "Change the role of an account of the staff, or turn it off or on",
+                "tags": [
+                    "Staff"
+                ],
+                "parameters": [
+                    {
+                        "name": "usuario",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangeStaffAccessRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`StaffResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/StaffResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/personal/{usuario}/contrasena-temporal": {
+            "post": {
+                "operationId": "identity.staff.reset-password",
+                "summary": "Give a temporary password to somebody of the staff who forgot theirs; its sessions are closed",
+                "tags": [
+                    "Staff"
+                ],
+                "parameters": [
+                    {
+                        "name": "usuario",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResetStaffPasswordRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/roles": {
+            "get": {
+                "operationId": "identity.roles.index",
+                "description": "First the four default roles (administrador, cajero, bodeguero, supervisor), which every negocio has and nobody\ncan change, and then the roles the negocio created.",
+                "summary": "The roles the administrator can give to its staff",
+                "tags": [
+                    "StaffRole"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            },
+            "post": {
+                "operationId": "identity.roles.store",
+                "description": "A name and at least one of the permissions that exist: \"administrar\", \"caja\" and \"inventario\". A name already\nused in the negocio answers 409.",
+                "summary": "Create a role of the negocio",
+                "tags": [
+                    "StaffRole"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SaveStaffRoleRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`StaffRoleResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/StaffRoleResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/roles/{rol}": {
+            "put": {
+                "operationId": "identity.roles.update",
+                "description": "Whoever has the role logs in again to receive the new permissions. Taking the permission to administrate away\nfrom the only administrators of the negocio answers 409.",
+                "summary": "Rename a role of the negocio or change its permissions",
+                "tags": [
+                    "StaffRole"
+                ],
+                "parameters": [
+                    {
+                        "name": "rol",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SaveStaffRoleRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`StaffRoleResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/StaffRoleResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            },
+            "delete": {
+                "operationId": "identity.roles.destroy",
+                "summary": "Delete a role of the negocio that nobody has; one that somebody still has answers 409",
+                "tags": [
+                    "StaffRole"
+                ],
+                "parameters": [
+                    {
+                        "name": "rol",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/suscripcion": {
+            "get": {
+                "operationId": "platform.subscription.show",
+                "description": "The state is \"activo\", \"por_vencer\" (7 days or less), \"en_gracia\" (the date passed; everything still works for\n3 days) or \"suspendido\" (only the administration enters, to see and to pay).",
+                "summary": "The rent of the negocio: its state, until when it is paid, the days left, the warning to show and the payments",
+                "tags": [
+                    "Subscription"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SubscriptionResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SubscriptionResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/suscripcion/pagos": {
+            "post": {
+                "operationId": "platform.subscription.pay",
+                "description": "Cash and SINPE to the number of the platform are registered by a superadmin. A payment that waits for the\nprovider answers \"pendiente\", with where to approve it (PayPal) or where to send the SINPE.",
+                "summary": "Pay months of the rent with ONVO (card or SINPE M\u00f3vil) or PayPal",
+                "tags": [
+                    "Subscription"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaySubscriptionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`SubscriptionPaymentResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SubscriptionPaymentResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/suscripcion/pagos/{pago}": {
+            "get": {
+                "operationId": "platform.subscription.refresh",
+                "summary": "Follow a payment of the rent: the state is asked to the provider, and when it was paid the months are added",
+                "tags": [
+                    "Subscription"
+                ],
+                "parameters": [
+                    {
+                        "name": "pago",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SubscriptionPaymentResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SubscriptionPaymentResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "administrar"
+                ]
+            }
+        },
+        "/webhooks/suscripciones/{pasarela}": {
+            "post": {
+                "operationId": "platform.webhooks.subscription",
+                "description": "It is accepted only when the provider proves it is its own (401 otherwise), and the state is always asked to the\nprovider. A notification that arrives twice adds the months once.",
+                "summary": "Notification of a provider about a payment of the rent of the platform",
+                "tags": [
+                    "SubscriptionWebhook"
+                ],
+                "parameters": [
+                    {
+                        "name": "pasarela",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/plataforma/negocios": {
+            "get": {
+                "operationId": "platform.negocios.index",
+                "description": "Only a superadmin reaches it. It shows the name, the state, who manages each negocio and where it is with the rent,\nnever its data.",
+                "summary": "The negocios of the platform, the newest first, with their administrators",
+                "tags": [
+                    "Tenant"
+                ],
+                "parameters": [
+                    {
+                        "name": "pagina",
+                        "in": "query",
+                        "description": "N\u00famero de p\u00e1gina, desde 1.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "por_pagina",
+                        "in": "query",
+                        "description": "Elementos por p\u00e1gina, de 1 a 50. Por defecto, 15.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 50
+                        }
+                    },
+                    {
+                        "name": "buscar",
+                        "in": "query",
+                        "description": "Parte del nombre del negocio.",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 120
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "pagina": {
+                                                    "type": "integer"
+                                                },
+                                                "por_pagina": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "ultima_pagina": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "pagina",
+                                                "por_pagina",
+                                                "total",
+                                                "ultima_pagina"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "plataforma"
+                ]
+            },
+            "post": {
+                "operationId": "platform.negocios.store",
+                "description": "The administrator logs in with the temporary password and must change it before anything else; then it opens\nthe accounts of its own staff. An email that already has an account answers 409.",
+                "summary": "Open a negocio with its first administrator",
+                "tags": [
+                    "Tenant"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterNegocioRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`TenantResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TenantResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "plataforma"
+                ]
+            }
+        },
+        "/plataforma/negocios/{negocio}": {
+            "get": {
+                "operationId": "platform.negocios.show",
+                "summary": "One negocio of the platform with its administrators and its rent",
+                "tags": [
+                    "Tenant"
+                ],
+                "parameters": [
+                    {
+                        "name": "negocio",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`TenantResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TenantResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "plataforma"
+                ]
+            },
+            "patch": {
+                "operationId": "platform.negocios.update",
+                "description": "A negocio turned off is suspended whatever date it paid until: its staff and its clientes cannot use it and its\nadministrators can only see and pay. None of its data is deleted.",
+                "summary": "Turn a negocio off (\"inactivo\") or on again (\"activo\")",
+                "tags": [
+                    "Tenant"
+                ],
+                "parameters": [
+                    {
+                        "name": "negocio",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateTenantRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`TenantResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TenantResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El recurso no existe o pertenece a otro negocio.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "plataforma"
+                ]
+            }
+        },
         "/tokens": {
             "post": {
                 "operationId": "identity.tokens.store",
@@ -4446,6 +5645,54 @@
                 }
             }
         },
+        "/usuario/contrasena": {
+            "put": {
+                "operationId": "identity.password.update",
+                "description": "The current password is required, even when it is the temporary one the platform gave. While an account has a\ntemporary password every other route answers 403, except seeing who it is and logging out.",
+                "summary": "Change the password of the account behind the token",
+                "tags": [
+                    "Token"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePasswordRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/tokens/actual": {
             "delete": {
                 "operationId": "identity.tokens.destroy-current",
@@ -4525,6 +5772,25 @@
                 ],
                 "title": "CatalogProductResource"
             },
+            "ChangePasswordRequest": {
+                "type": "object",
+                "properties": {
+                    "contrasena_actual": {
+                        "type": "string",
+                        "maxLength": 72
+                    },
+                    "contrasena_nueva": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 72
+                    }
+                },
+                "required": [
+                    "contrasena_actual",
+                    "contrasena_nueva"
+                ],
+                "title": "ChangePasswordRequest"
+            },
             "ChangeSalePriceRequest": {
                 "type": "object",
                 "properties": {
@@ -4537,6 +5803,21 @@
                     "precio_venta"
                 ],
                 "title": "ChangeSalePriceRequest"
+            },
+            "ChangeStaffAccessRequest": {
+                "type": "object",
+                "properties": {
+                    "rol": {
+                        "type": "string",
+                        "description": "Un rol por defecto (\"administrador\", \"cajero\", \"bodeguero\", \"supervisor\") o el id de un rol del negocio.",
+                        "maxLength": 60
+                    },
+                    "activo": {
+                        "type": "boolean",
+                        "description": "false desactiva la cuenta: no puede iniciar sesi\u00f3n y sus sesiones se cierran."
+                    }
+                },
+                "title": "ChangeStaffAccessRequest"
             },
             "CreditIncreaseResource": {
                 "type": "object",
@@ -4717,64 +5998,21 @@
                     "rol": {
                         "type": "string"
                     },
+                    "rol_nombre": {
+                        "type": "string"
+                    },
                     "abilities": {
-                        "anyOf": [
-                            {
-                                "type": "array",
-                                "prefixItems": [
-                                    {
-                                        "type": "string",
-                                        "const": "administrar"
-                                    },
-                                    {
-                                        "type": "string",
-                                        "const": "caja"
-                                    },
-                                    {
-                                        "type": "string",
-                                        "const": "inventario"
-                                    }
-                                ],
-                                "minItems": 3,
-                                "maxItems": 3
-                            },
-                            {
-                                "type": "array",
-                                "prefixItems": [
-                                    {
-                                        "type": "string",
-                                        "const": "caja"
-                                    }
-                                ],
-                                "minItems": 1,
-                                "maxItems": 1
-                            },
-                            {
-                                "type": "array",
-                                "prefixItems": [
-                                    {
-                                        "type": "string",
-                                        "const": "inventario"
-                                    }
-                                ],
-                                "minItems": 1,
-                                "maxItems": 1
-                            },
-                            {
-                                "type": "array",
-                                "prefixItems": [
-                                    {
-                                        "type": "string",
-                                        "const": "comprar"
-                                    }
-                                ],
-                                "minItems": 1,
-                                "maxItems": 1
-                            }
-                        ]
+                        "type": "array",
+                        "items": {}
                     },
                     "negocio_id": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "debe_cambiar_contrasena": {
+                        "type": "boolean"
                     }
                 },
                 "required": [
@@ -4782,8 +6020,10 @@
                     "nombre",
                     "correo",
                     "rol",
+                    "rol_nombre",
                     "abilities",
-                    "negocio_id"
+                    "negocio_id",
+                    "debe_cambiar_contrasena"
                 ],
                 "title": "CurrentUserResource"
             },
@@ -5167,6 +6407,37 @@
                 ],
                 "title": "IssueTokenRequest"
             },
+            "ManualPaymentRequest": {
+                "type": "object",
+                "properties": {
+                    "meses": {
+                        "type": "integer",
+                        "description": "Meses que se pagaron, de 1 a 12. Por defecto, 1.",
+                        "minimum": 1,
+                        "maximum": 12
+                    },
+                    "metodo": {
+                        "type": "string",
+                        "description": "\"efectivo\" o \"sinpe\" (SINPE M\u00f3vil al n\u00famero de la plataforma).",
+                        "enum": [
+                            "efectivo",
+                            "sinpe"
+                        ]
+                    },
+                    "referencia": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Comprobante del SINPE u otra referencia, si la hay.",
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "metodo"
+                ],
+                "title": "ManualPaymentRequest"
+            },
             "MarkExpiredRequest": {
                 "type": "object",
                 "description": "Units of a product found expired: \"cantidad\" and the \"motivo\". The product comes from the URL.",
@@ -5214,6 +6485,38 @@
                 ],
                 "title": "NegocioResource"
             },
+            "OpenStaffAccountRequest": {
+                "type": "object",
+                "properties": {
+                    "nombre": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "correo": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255
+                    },
+                    "contrasena_temporal": {
+                        "type": "string",
+                        "description": "Contrase\u00f1a temporal: la persona la tiene que cambiar la primera vez que entra.",
+                        "minLength": 8,
+                        "maxLength": 72
+                    },
+                    "rol": {
+                        "type": "string",
+                        "description": "Un rol por defecto (\"administrador\", \"cajero\", \"bodeguero\", \"supervisor\") o el id de un rol del negocio.",
+                        "maxLength": 60
+                    }
+                },
+                "required": [
+                    "nombre",
+                    "correo",
+                    "contrasena_temporal",
+                    "rol"
+                ],
+                "title": "OpenStaffAccountRequest"
+            },
             "OpeningHoursResource": {
                 "type": "object",
                 "properties": {
@@ -5234,6 +6537,47 @@
                     "zona_horaria"
                 ],
                 "title": "OpeningHoursResource"
+            },
+            "PaySubscriptionRequest": {
+                "type": "object",
+                "properties": {
+                    "meses": {
+                        "type": "integer",
+                        "description": "Meses que se pagan, de 1 a 12. Por defecto, 1.",
+                        "minimum": 1,
+                        "maximum": 12
+                    },
+                    "pasarela": {
+                        "type": "string",
+                        "description": "\"onvo\" o \"paypal\".",
+                        "enum": [
+                            "onvo",
+                            "paypal"
+                        ]
+                    },
+                    "metodo_pago": {
+                        "type": "string",
+                        "description": "\"tarjeta\" o \"sinpe_movil\" (SINPE solo con ONVO).",
+                        "enum": [
+                            "tarjeta",
+                            "sinpe_movil"
+                        ]
+                    },
+                    "metodo_proveedor_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Id del m\u00e9todo de pago que el cliente cre\u00f3 en ONVO con la llave p\u00fablica. PayPal no lo usa.",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "pasarela",
+                    "metodo_pago"
+                ],
+                "title": "PaySubscriptionRequest"
             },
             "PaymentResource": {
                 "type": "object",
@@ -5332,6 +6676,16 @@
                     "referencia_reembolso"
                 ],
                 "title": "PaymentResource"
+            },
+            "Permission": {
+                "type": "string",
+                "description": "What a role of the staff can be allowed to do. They are the abilities the routes already check, so a role made of them can never ask for something the API does not know how to check.\n| |\n|---|\n| `administrar` <br/> Manage the negocio: prices, reports, the staff and its roles. |\n| `caja` <br/> Sell, charge, sell on credit and receive payments of the credit. |\n| `inventario` <br/> Receive merchandise and mark expired units. |",
+                "enum": [
+                    "administrar",
+                    "caja",
+                    "inventario"
+                ],
+                "title": "Permission"
             },
             "Problema": {
                 "type": "object",
@@ -5670,6 +7024,48 @@
                 ],
                 "title": "RegisterClienteRequest"
             },
+            "RegisterNegocioRequest": {
+                "type": "object",
+                "properties": {
+                    "nombre": {
+                        "type": "string",
+                        "description": "Nombre del negocio, por ejemplo \"Minis\u00faper La Esquina\".",
+                        "maxLength": 120
+                    },
+                    "administrador": {
+                        "type": "object",
+                        "properties": {
+                            "nombre": {
+                                "type": "string",
+                                "description": "Nombre de la persona que va a administrar el negocio.",
+                                "maxLength": 120
+                            },
+                            "correo": {
+                                "type": "string",
+                                "format": "email",
+                                "description": "Correo con el que el administrador inicia sesi\u00f3n.",
+                                "maxLength": 255
+                            },
+                            "contrasena_temporal": {
+                                "type": "string",
+                                "description": "Contrase\u00f1a temporal: el administrador la tiene que cambiar la primera vez que entra.",
+                                "minLength": 8,
+                                "maxLength": 72
+                            }
+                        },
+                        "required": [
+                            "nombre",
+                            "correo",
+                            "contrasena_temporal"
+                        ]
+                    }
+                },
+                "required": [
+                    "nombre",
+                    "administrador"
+                ],
+                "title": "RegisterNegocioRequest"
+            },
             "RegisterReceiptRequest": {
                 "type": "object",
                 "description": "A delivery of goods. Each line brings either \"producto_id\" (a product of the catalog) or\n\"producto\" (the data of a new one), plus \"cantidad\" and \"costo_unitario\".",
@@ -5835,6 +7231,20 @@
                     "cantidad"
                 ],
                 "title": "ReserveRequest"
+            },
+            "ResetStaffPasswordRequest": {
+                "type": "object",
+                "properties": {
+                    "contrasena_temporal": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 72
+                    }
+                },
+                "required": [
+                    "contrasena_temporal"
+                ],
+                "title": "ResetStaffPasswordRequest"
             },
             "SaleDraftResource": {
                 "type": "object",
@@ -6202,6 +7612,29 @@
                 ],
                 "title": "SaleSummaryResource"
             },
+            "SaveStaffRoleRequest": {
+                "type": "object",
+                "properties": {
+                    "nombre": {
+                        "type": "string",
+                        "description": "Nombre del rol, por ejemplo \"Encargado de turno\". No puede llamarse como un rol por defecto.",
+                        "maxLength": 60
+                    },
+                    "permisos": {
+                        "type": "array",
+                        "description": "Permisos del rol: \"administrar\", \"caja\" o \"inventario\". Al menos uno.",
+                        "items": {
+                            "$ref": "#/components/schemas/Permission"
+                        },
+                        "minItems": 1
+                    }
+                },
+                "required": [
+                    "nombre",
+                    "permisos"
+                ],
+                "title": "SaveStaffRoleRequest"
+            },
             "SellOnFiadoRequest": {
                 "type": "object",
                 "description": "The customer an open sale is charged to.",
@@ -6216,6 +7649,83 @@
                     "cliente_id"
                 ],
                 "title": "SellOnFiadoRequest"
+            },
+            "StaffResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "nombre": {
+                        "type": "string"
+                    },
+                    "correo": {
+                        "type": "string"
+                    },
+                    "rol": {
+                        "type": "string"
+                    },
+                    "rol_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "rol_nombre": {
+                        "type": "string"
+                    },
+                    "permisos": {
+                        "type": "array",
+                        "items": {}
+                    },
+                    "activo": {
+                        "type": "boolean"
+                    },
+                    "debe_cambiar_contrasena": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "id",
+                    "nombre",
+                    "correo",
+                    "rol",
+                    "rol_id",
+                    "rol_nombre",
+                    "permisos",
+                    "activo",
+                    "debe_cambiar_contrasena"
+                ],
+                "title": "StaffResource"
+            },
+            "StaffRoleResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "nombre": {
+                        "type": "string"
+                    },
+                    "permisos": {
+                        "type": "array",
+                        "items": {}
+                    },
+                    "predeterminado": {
+                        "type": "boolean"
+                    },
+                    "en_uso": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "id",
+                    "nombre",
+                    "permisos",
+                    "predeterminado",
+                    "en_uso"
+                ],
+                "title": "StaffRoleResource"
             },
             "StartPaymentRequest": {
                 "type": "object",
@@ -6253,6 +7763,180 @@
                 ],
                 "title": "StartPaymentRequest"
             },
+            "SubscriptionPaymentResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "monto": {
+                        "type": "number"
+                    },
+                    "meses": {
+                        "type": "integer"
+                    },
+                    "metodo": {
+                        "type": "string"
+                    },
+                    "proveedor": {
+                        "type": "string"
+                    },
+                    "estado": {
+                        "type": "string"
+                    },
+                    "referencia": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "creado_el": {
+                        "type": "string"
+                    },
+                    "url_aprobacion": {},
+                    "instrucciones": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "numero_sinpe": {
+                                "type": "string"
+                            },
+                            "monto": {
+                                "type": "number"
+                            },
+                            "mensaje": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "numero_sinpe",
+                            "monto",
+                            "mensaje"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "monto",
+                    "meses",
+                    "metodo",
+                    "proveedor",
+                    "estado",
+                    "referencia",
+                    "creado_el",
+                    "url_aprobacion",
+                    "instrucciones"
+                ],
+                "title": "SubscriptionPaymentResource"
+            },
+            "SubscriptionResource": {
+                "type": "object",
+                "properties": {
+                    "estado": {
+                        "type": "string"
+                    },
+                    "vence_el": {
+                        "type": "string"
+                    },
+                    "dias_restantes": {
+                        "type": "integer"
+                    },
+                    "en_prueba": {
+                        "type": "boolean"
+                    },
+                    "precio_mensual": {
+                        "type": "number"
+                    },
+                    "aviso": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "pagos": {
+                        "type": "array",
+                        "items": {}
+                    }
+                },
+                "required": [
+                    "estado",
+                    "vence_el",
+                    "dias_restantes",
+                    "en_prueba",
+                    "precio_mensual",
+                    "aviso",
+                    "pagos"
+                ],
+                "title": "SubscriptionResource"
+            },
+            "TenantResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "nombre": {
+                        "type": "string"
+                    },
+                    "estado": {
+                        "type": "string",
+                        "enum": [
+                            "activo",
+                            "inactivo"
+                        ]
+                    },
+                    "creado_el": {
+                        "type": "string"
+                    },
+                    "administradores": {
+                        "type": "array",
+                        "items": {}
+                    },
+                    "servicio": {
+                        "type": "object",
+                        "properties": {
+                            "estado": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "vence_el": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "dias_restantes": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "en_prueba": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "estado",
+                            "vence_el",
+                            "dias_restantes",
+                            "en_prueba"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "nombre",
+                    "estado",
+                    "creado_el",
+                    "administradores",
+                    "servicio"
+                ],
+                "title": "TenantResource"
+            },
             "TokenResource": {
                 "type": "object",
                 "properties": {
@@ -6268,14 +7952,35 @@
                         "items": {
                             "type": "string"
                         }
+                    },
+                    "debe_cambiar_contrasena": {
+                        "type": "boolean"
                     }
                 },
                 "required": [
                     "token",
                     "tipo",
-                    "abilities"
+                    "abilities",
+                    "debe_cambiar_contrasena"
                 ],
                 "title": "TokenResource"
+            },
+            "UpdateTenantRequest": {
+                "type": "object",
+                "properties": {
+                    "estado": {
+                        "type": "string",
+                        "description": "\"activo\" o \"inactivo\".",
+                        "enum": [
+                            "activo",
+                            "inactivo"
+                        ]
+                    }
+                },
+                "required": [
+                    "estado"
+                ],
+                "title": "UpdateTenantRequest"
             },
             "UploadImageRequest": {
                 "type": "object",

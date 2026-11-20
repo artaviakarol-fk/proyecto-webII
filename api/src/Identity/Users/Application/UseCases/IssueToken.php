@@ -6,10 +6,12 @@ namespace Src\Identity\Users\Application\UseCases;
 
 use Src\Identity\Users\Application\DTOs\IssuedToken;
 use Src\Identity\Users\Application\DTOs\IssueTokenCommand;
+use Src\Identity\Users\Domain\Contracts\NegocioServiceAccess;
 use Src\Identity\Users\Domain\Contracts\PasswordHasher;
 use Src\Identity\Users\Domain\Contracts\TokenIssuer;
 use Src\Identity\Users\Domain\Contracts\UserRepository;
 use Src\Identity\Users\Domain\Exceptions\InvalidCredentialsException;
+use Src\Identity\Users\Domain\Exceptions\ServiceSuspendedException;
 use Src\Identity\Users\Domain\ValueObjects\Email;
 
 final readonly class IssueToken
@@ -19,6 +21,7 @@ final readonly class IssueToken
         private UserRepository $users,
         private PasswordHasher $passwords,
         private TokenIssuer $tokens,
+        private NegocioServiceAccess $service,
     ) {}
 
     /** Issue a token with the abilities of the role when the credentials belong to an active account. */
@@ -29,6 +32,11 @@ final readonly class IssueToken
 
         if ($user === null || ! $passwordMatches || ! $user->active) {
             throw InvalidCredentialsException::create();
+        }
+
+        // A negocio that did not pay its rent is not served: only its administrators enter, to see and to pay.
+        if ($user->negocioId !== null && ! $user->administrates() && ! $this->service->serves($user->negocioId)) {
+            throw ServiceSuspendedException::create();
         }
 
         $abilities = $user->abilities();

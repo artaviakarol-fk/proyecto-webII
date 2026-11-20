@@ -40,7 +40,7 @@ final class ListTenantsTest extends TestCase
         $byName = collect($response->json('data'))->keyBy('nombre');
         $this->assertSame(['admin@teresita.test'], array_column($byName['Minisúper Teresita']['administradores'], 'correo'));
         $this->assertSame(['admin@laesquina.test'], array_column($byName['Minisúper La Esquina']['administradores'], 'correo'));
-        $this->assertSame(['id', 'nombre', 'estado', 'creado_el', 'administradores'], array_keys($response->json('data.0')));
+        $this->assertSame(['id', 'nombre', 'estado', 'creado_el', 'administradores', 'servicio'], array_keys($response->json('data.0')));
     }
 
     /** The listing can look for a part of the name. */

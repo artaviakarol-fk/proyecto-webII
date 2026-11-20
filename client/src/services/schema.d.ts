@@ -391,6 +391,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/plataforma/negocios/{negocio}/pagos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register a payment of the rent received in cash or by SINPE to the number of the platform
+         * @description Only a superadmin. It is approved at once and its months are added to the date of the negocio.
+         */
+        post: operations["platform.payments.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/negocio/logo": {
         parameters: {
             query?: never;
@@ -787,6 +807,242 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/personal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The staff of the negocio, active or not, ordered by name. The clientes are not staff and are not listed */
+        get: operations["identity.staff.index"];
+        put?: never;
+        /**
+         * Open an account of the staff, including another administrator
+         * @description The person logs in with the temporary password and must change it before anything else. An email that already
+         *     has an account answers 409.
+         */
+        post: operations["identity.staff.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/personal/{usuario}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change the role of an account of the staff, or turn it off or on
+         * @description The sessions of the account are closed, so it logs in again with what it can do now. An administrator cannot
+         *     change its own access, and the negocio always keeps at least one active administrator (409).
+         */
+        patch: operations["identity.staff.update"];
+        trace?: never;
+    };
+    "/personal/{usuario}/contrasena-temporal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Give a temporary password to somebody of the staff who forgot theirs; its sessions are closed */
+        post: operations["identity.staff.reset-password"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The roles the administrator can give to its staff
+         * @description First the four default roles (administrador, cajero, bodeguero, supervisor), which every negocio has and nobody
+         *     can change, and then the roles the negocio created.
+         */
+        get: operations["identity.roles.index"];
+        put?: never;
+        /**
+         * Create a role of the negocio
+         * @description A name and at least one of the permissions that exist: "administrar", "caja" and "inventario". A name already
+         *     used in the negocio answers 409.
+         */
+        post: operations["identity.roles.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/roles/{rol}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Rename a role of the negocio or change its permissions
+         * @description Whoever has the role logs in again to receive the new permissions. Taking the permission to administrate away
+         *     from the only administrators of the negocio answers 409.
+         */
+        put: operations["identity.roles.update"];
+        post?: never;
+        /** Delete a role of the negocio that nobody has; one that somebody still has answers 409 */
+        delete: operations["identity.roles.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/suscripcion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The rent of the negocio: its state, until when it is paid, the days left, the warning to show and the payments
+         * @description The state is "activo", "por_vencer" (7 days or less), "en_gracia" (the date passed; everything still works for
+         *     3 days) or "suspendido" (only the administration enters, to see and to pay).
+         */
+        get: operations["platform.subscription.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/suscripcion/pagos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pay months of the rent with ONVO (card or SINPE Móvil) or PayPal
+         * @description Cash and SINPE to the number of the platform are registered by a superadmin. A payment that waits for the
+         *     provider answers "pendiente", with where to approve it (PayPal) or where to send the SINPE.
+         */
+        post: operations["platform.subscription.pay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/suscripcion/pagos/{pago}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Follow a payment of the rent: the state is asked to the provider, and when it was paid the months are added */
+        get: operations["platform.subscription.refresh"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks/suscripciones/{pasarela}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Notification of a provider about a payment of the rent of the platform
+         * @description It is accepted only when the provider proves it is its own (401 otherwise), and the state is always asked to the
+         *     provider. A notification that arrives twice adds the months once.
+         */
+        post: operations["platform.webhooks.subscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plataforma/negocios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The negocios of the platform, the newest first, with their administrators
+         * @description Only a superadmin reaches it. It shows the name, the state, who manages each negocio and where it is with the rent,
+         *     never its data.
+         */
+        get: operations["platform.negocios.index"];
+        put?: never;
+        /**
+         * Open a negocio with its first administrator
+         * @description The administrator logs in with the temporary password and must change it before anything else; then it opens
+         *     the accounts of its own staff. An email that already has an account answers 409.
+         */
+        post: operations["platform.negocios.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plataforma/negocios/{negocio}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One negocio of the platform with its administrators and its rent */
+        get: operations["platform.negocios.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Turn a negocio off ("inactivo") or on again ("activo")
+         * @description A negocio turned off is suspended whatever date it paid until: its staff and its clientes cannot use it and its
+         *     administrators can only see and pay. None of its data is deleted.
+         */
+        patch: operations["platform.negocios.update"];
+        trace?: never;
+    };
     "/tokens": {
         parameters: {
             query?: never;
@@ -826,6 +1082,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/usuario/contrasena": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change the password of the account behind the token
+         * @description The current password is required, even when it is the temporary one the platform gave. While an account has a
+         *     temporary password every other route answers 403, except seeing who it is and logging out.
+         */
+        put: operations["identity.password.update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tokens/actual": {
         parameters: {
             query?: never;
@@ -858,9 +1135,21 @@ export interface components {
             es_licor: boolean;
             foto: string | null;
         };
+        /** ChangePasswordRequest */
+        ChangePasswordRequest: {
+            contrasena_actual: string;
+            contrasena_nueva: string;
+        };
         /** ChangeSalePriceRequest */
         ChangeSalePriceRequest: {
             precio_venta: number;
+        };
+        /** ChangeStaffAccessRequest */
+        ChangeStaffAccessRequest: {
+            /** @description Un rol por defecto ("administrador", "cajero", "bodeguero", "supervisor") o el id de un rol del negocio. */
+            rol?: string;
+            /** @description false desactiva la cuenta: no puede iniciar sesión y sus sesiones se cierran. */
+            activo?: boolean;
         };
         /** CreditIncreaseResource */
         CreditIncreaseResource: {
@@ -908,18 +1197,10 @@ export interface components {
             nombre: string;
             correo: string;
             rol: string;
-            abilities: [
-                "administrar",
-                "caja",
-                "inventario"
-            ] | [
-                "caja"
-            ] | [
-                "inventario"
-            ] | [
-                "comprar"
-            ];
-            negocio_id: string;
+            rol_nombre: string;
+            abilities: unknown[];
+            negocio_id: string | null;
+            debe_cambiar_contrasena: boolean;
         };
         /**
          * CustomerRequest
@@ -1041,6 +1322,18 @@ export interface components {
             contrasena: string;
             dispositivo: string;
         };
+        /** ManualPaymentRequest */
+        ManualPaymentRequest: {
+            /** @description Meses que se pagaron, de 1 a 12. Por defecto, 1. */
+            meses?: number;
+            /**
+             * @description "efectivo" o "sinpe" (SINPE Móvil al número de la plataforma).
+             * @enum {string}
+             */
+            metodo: "efectivo" | "sinpe";
+            /** @description Comprobante del SINPE u otra referencia, si la hay. */
+            referencia?: string | null;
+        };
         /**
          * MarkExpiredRequest
          * @description Units of a product found expired: "cantidad" and the "motivo". The product comes from the URL.
@@ -1056,12 +1349,39 @@ export interface components {
             logo: string | null;
             activo: boolean;
         };
+        /** OpenStaffAccountRequest */
+        OpenStaffAccountRequest: {
+            nombre: string;
+            /** Format: email */
+            correo: string;
+            /** @description Contraseña temporal: la persona la tiene que cambiar la primera vez que entra. */
+            contrasena_temporal: string;
+            /** @description Un rol por defecto ("administrador", "cajero", "bodeguero", "supervisor") o el id de un rol del negocio. */
+            rol: string;
+        };
         /** OpeningHoursResource */
         OpeningHoursResource: {
             dias: string;
             abierto_ahora: boolean;
             /** @constant */
             zona_horaria: "America/Costa_Rica";
+        };
+        /** PaySubscriptionRequest */
+        PaySubscriptionRequest: {
+            /** @description Meses que se pagan, de 1 a 12. Por defecto, 1. */
+            meses?: number;
+            /**
+             * @description "onvo" o "paypal".
+             * @enum {string}
+             */
+            pasarela: "onvo" | "paypal";
+            /**
+             * @description "tarjeta" o "sinpe_movil" (SINPE solo con ONVO).
+             * @enum {string}
+             */
+            metodo_pago: "tarjeta" | "sinpe_movil";
+            /** @description Id del método de pago que el cliente creó en ONVO con la llave pública. PayPal no lo usa. */
+            metodo_proveedor_id?: string | null;
         };
         /** PaymentResource */
         PaymentResource: {
@@ -1084,6 +1404,17 @@ export interface components {
             url_aprobacion: string | null;
             referencia_reembolso: string | null;
         };
+        /**
+         * Permission
+         * @description What a role of the staff can be allowed to do. They are the abilities the routes already check, so a role made of them can never ask for something the API does not know how to check.
+         *     | |
+         *     |---|
+         *     | `administrar` <br/> Manage the negocio: prices, reports, the staff and its roles. |
+         *     | `caja` <br/> Sell, charge, sell on credit and receive payments of the credit. |
+         *     | `inventario` <br/> Receive merchandise and mark expired units. |
+         * @enum {string}
+         */
+        Permission: "administrar" | "caja" | "inventario";
         /**
          * Problema
          * @description Documento de problema (RFC 9457, `application/problem+json`).
@@ -1186,6 +1517,22 @@ export interface components {
             correo: string;
             contrasena: string;
         };
+        /** RegisterNegocioRequest */
+        RegisterNegocioRequest: {
+            /** @description Nombre del negocio, por ejemplo "Minisúper La Esquina". */
+            nombre: string;
+            administrador: {
+                /** @description Nombre de la persona que va a administrar el negocio. */
+                nombre: string;
+                /**
+                 * Format: email
+                 * @description Correo con el que el administrador inicia sesión.
+                 */
+                correo: string;
+                /** @description Contraseña temporal: el administrador la tiene que cambiar la primera vez que entra. */
+                contrasena_temporal: string;
+            };
+        };
         /**
          * RegisterReceiptRequest
          * @description A delivery of goods. Each line brings either "producto_id" (a product of the catalog) or
@@ -1235,6 +1582,10 @@ export interface components {
             /** Format: uuid */
             producto_id: string;
             cantidad: number;
+        };
+        /** ResetStaffPasswordRequest */
+        ResetStaffPasswordRequest: {
+            contrasena_temporal: string;
         };
         /** SaleDraftResource */
         SaleDraftResource: {
@@ -1326,6 +1677,13 @@ export interface components {
             cobrada_en: string | null;
             anulada_en: string | null;
         };
+        /** SaveStaffRoleRequest */
+        SaveStaffRoleRequest: {
+            /** @description Nombre del rol, por ejemplo "Encargado de turno". No puede llamarse como un rol por defecto. */
+            nombre: string;
+            /** @description Permisos del rol: "administrar", "caja" o "inventario". Al menos uno. */
+            permisos: components["schemas"]["Permission"][];
+        };
         /**
          * SellOnFiadoRequest
          * @description The customer an open sale is charged to.
@@ -1336,6 +1694,26 @@ export interface components {
              * @description Cliente activo del negocio al que se carga la venta.
              */
             cliente_id: string;
+        };
+        /** StaffResource */
+        StaffResource: {
+            id: string;
+            nombre: string;
+            correo: string;
+            rol: string;
+            rol_id: string | null;
+            rol_nombre: string;
+            permisos: unknown[];
+            activo: boolean;
+            debe_cambiar_contrasena: boolean;
+        };
+        /** StaffRoleResource */
+        StaffRoleResource: {
+            id: string;
+            nombre: string;
+            permisos: unknown[];
+            predeterminado: boolean;
+            en_uso: number;
         };
         /**
          * StartPaymentRequest
@@ -1350,12 +1728,63 @@ export interface components {
             pasarela?: "onvo" | "paypal" | null;
             metodo_proveedor_id?: string | null;
         };
+        /** SubscriptionPaymentResource */
+        SubscriptionPaymentResource: {
+            id: string;
+            monto: number;
+            meses: number;
+            metodo: string;
+            proveedor: string;
+            estado: string;
+            referencia: string | null;
+            creado_el: string;
+            url_aprobacion: unknown;
+            instrucciones: {
+                numero_sinpe: string;
+                monto: number;
+                mensaje: string;
+            } | null;
+        };
+        /** SubscriptionResource */
+        SubscriptionResource: {
+            estado: string;
+            vence_el: string;
+            dias_restantes: number;
+            en_prueba: boolean;
+            precio_mensual: number;
+            aviso: string | null;
+            pagos: unknown[];
+        };
+        /** TenantResource */
+        TenantResource: {
+            id: string;
+            nombre: string;
+            /** @enum {string} */
+            estado: "activo" | "inactivo";
+            creado_el: string;
+            administradores: unknown[];
+            servicio: {
+                estado: string | null;
+                vence_el: string | null;
+                dias_restantes: number | null;
+                en_prueba: boolean;
+            };
+        };
         /** TokenResource */
         TokenResource: {
             token: string;
             /** @constant */
             tipo: "Bearer";
             abilities: string[];
+            debe_cambiar_contrasena: boolean;
+        };
+        /** UpdateTenantRequest */
+        UpdateTenantRequest: {
+            /**
+             * @description "activo" o "inactivo".
+             * @enum {string}
+             */
+            estado: "activo" | "inactivo";
         };
         /**
          * UploadImageRequest
@@ -2630,6 +3059,62 @@ export interface operations {
                     "application/json": components["schemas"]["HealthResource"];
                 };
             };
+        };
+    };
+    "platform.payments.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                negocio: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description `SubscriptionPaymentResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SubscriptionPaymentResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description El recurso no existe o pertenece a otro negocio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
         };
     };
     "negocios.profile.logo.show": {
@@ -4217,6 +4702,773 @@ export interface operations {
             };
         };
     };
+    "identity.staff.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: unknown[];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+        };
+    };
+    "identity.staff.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenStaffAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description `StaffResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StaffResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "identity.staff.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                usuario: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ChangeStaffAccessRequest"];
+            };
+        };
+        responses: {
+            /** @description `StaffResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StaffResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description El recurso no existe o pertenece a otro negocio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "identity.staff.reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                usuario: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetStaffPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description El recurso no existe o pertenece a otro negocio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "identity.roles.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: unknown[];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+        };
+    };
+    "identity.roles.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveStaffRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description `StaffRoleResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StaffRoleResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "identity.roles.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rol: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveStaffRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description `StaffRoleResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StaffRoleResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description El recurso no existe o pertenece a otro negocio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "identity.roles.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rol: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description El recurso no existe o pertenece a otro negocio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+        };
+    };
+    "platform.subscription.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `SubscriptionResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SubscriptionResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+        };
+    };
+    "platform.subscription.pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaySubscriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description `SubscriptionPaymentResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SubscriptionPaymentResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "platform.subscription.refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pago: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `SubscriptionPaymentResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SubscriptionPaymentResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description El recurso no existe o pertenece a otro negocio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+        };
+    };
+    "platform.webhooks.subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pasarela: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description El recurso no existe o pertenece a otro negocio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+        };
+    };
+    "platform.negocios.index": {
+        parameters: {
+            query?: {
+                /** @description Número de página, desde 1. */
+                pagina?: number;
+                /** @description Elementos por página, de 1 a 50. Por defecto, 15. */
+                por_pagina?: number;
+                /** @description Parte del nombre del negocio. */
+                buscar?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: unknown[];
+                        meta: {
+                            pagina: number;
+                            por_pagina: number;
+                            total: number;
+                            ultima_pagina: number;
+                        };
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "platform.negocios.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterNegocioRequest"];
+            };
+        };
+        responses: {
+            /** @description `TenantResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TenantResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "platform.negocios.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                negocio: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `TenantResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TenantResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description El recurso no existe o pertenece a otro negocio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+        };
+    };
+    "platform.negocios.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                negocio: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTenantRequest"];
+            };
+        };
+        responses: {
+            /** @description `TenantResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TenantResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description El recurso no existe o pertenece a otro negocio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "identity.tokens.store": {
         parameters: {
             query?: never;
@@ -4318,6 +5570,47 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problema"];
                 };
             };
+        };
+    };
+    "identity.password.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
         };
     };
     "identity.tokens.destroy-current": {

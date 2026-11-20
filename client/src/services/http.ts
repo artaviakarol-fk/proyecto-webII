@@ -54,7 +54,7 @@ export const tokenStorage = {
 type Query = Record<string, string | number | null | undefined>
 
 export async function request<T>(
-  method: 'GET' | 'POST' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   options: { body?: unknown; query?: Query } = {},
 ): Promise<T> {

@@ -14,4 +14,5 @@ Route::prefix('plataforma/negocios')
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
         Route::get('{negocio}', 'show')->whereUuid('negocio')->name('show');
+        Route::patch('{negocio}', 'update')->whereUuid('negocio')->name('update');
     });

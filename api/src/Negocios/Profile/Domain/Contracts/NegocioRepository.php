@@ -20,4 +20,7 @@ interface NegocioRepository
 
     /** Store a new negocio. */
     public function add(Negocio $negocio): void;
+
+    /** Turn a negocio on or off. */
+    public function setActive(NegocioId $id, bool $active): void;
 }

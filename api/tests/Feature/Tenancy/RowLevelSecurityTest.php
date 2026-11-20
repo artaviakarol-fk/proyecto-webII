@@ -46,12 +46,17 @@ final class RowLevelSecurityTest extends TestCase
         $this->assertSame(config('database.connections.pgsql.username'), DB::scalar('select current_user'));
     }
 
-    /** Every table with a negocio_id column, except the accounts, has row-level security enabled, forced and its policy. */
+    /**
+     * Every table with a negocio_id column has row-level security enabled, forced and its policy. The exceptions are
+     * the accounts and the rent of the platform: they are read before a negocio is known (login, superadmin), so
+     * their code filters by negocio.
+     */
     public function test_every_table_of_the_negocios_is_protected_by_its_policy(): void
     {
         $tables = array_column(DB::select(
             "select table_name from information_schema.columns
-             where table_schema = 'public' and column_name = 'negocio_id' and table_name <> 'users'",
+             where table_schema = 'public' and column_name = 'negocio_id'
+               and table_name not in ('users', 'suscripciones', 'pagos_suscripcion')",
         ), 'table_name');
 
         $this->assertContains(self::TABLE, $tables);
