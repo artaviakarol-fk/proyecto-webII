@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use Src\Sales\Sales\Infrastructure\Http\Controllers\SaleController;
 
-// La caja (cajero y administración) vende en efectivo.
+// La caja (cajero y administración) vende en efectivo, con tarjeta en el datáfono o con SINPE Móvil recibido.
 Route::prefix('ventas')
     ->middleware(['auth:sanctum', 'negocio', 'abilities:caja'])
     ->name('sales.')

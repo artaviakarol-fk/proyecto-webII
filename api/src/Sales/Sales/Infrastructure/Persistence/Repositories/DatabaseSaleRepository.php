@@ -64,7 +64,7 @@ final readonly class DatabaseSaleRepository implements SaleRepository
             ))
             ->all();
 
-        return Sale::reconstitute($id, $negocioId, (string) $row->cajero_id, SaleStatus::from((string) $row->estado), array_values($lines), $row->cedula_comprador === null ? null : new BuyerIdNumber((string) $row->cedula_comprador), (string) $row->metodo_pago);
+        return Sale::reconstitute($id, $negocioId, (string) $row->cajero_id, SaleStatus::from((string) $row->estado), array_values($lines), $row->cedula_comprador === null ? null : new BuyerIdNumber((string) $row->cedula_comprador), (string) $row->metodo_pago, $row->referencia_pago === null ? null : (string) $row->referencia_pago);
     }
 
     /**
@@ -95,6 +95,7 @@ final readonly class DatabaseSaleRepository implements SaleRepository
             $columns = [
                 'cajero_id' => $sale->cashierId,
                 'metodo_pago' => $sale->paymentMethod,
+                'referencia_pago' => $sale->paymentReference,
                 'cedula_comprador' => $sale->buyer?->value,
                 'estado' => $sale->status->value,
                 'total' => $sale->total()->toDecimal(),

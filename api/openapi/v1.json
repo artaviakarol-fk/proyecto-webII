@@ -4033,7 +4033,7 @@
         "/ventas/{venta}/cobrar": {
             "post": {
                 "operationId": "sales.pay",
-                "summary": "Close an open sale as paid in cash",
+                "summary": "Close an open sale as paid at the register: in cash, by card on the dat\u00e1fono or by a SINPE transfer received",
                 "tags": [
                     "Sale"
                 ],
@@ -4047,6 +4047,15 @@
                         }
                     }
                 ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaySaleRequest"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "`SaleResource`",
@@ -4075,6 +4084,9 @@
                                 }
                             }
                         }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     },
                     "403": {
                         "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
@@ -6617,6 +6629,28 @@
                 ],
                 "title": "OpeningHoursResource"
             },
+            "PaySaleRequest": {
+                "type": "object",
+                "description": "How the cashier collects: in cash by default, or by card (dat\u00e1fono) or SINPE M\u00f3vil with the reference of the payment.",
+                "properties": {
+                    "metodo_pago": {
+                        "type": "string",
+                        "description": "Forma de cobro en caja: efectivo (por defecto), tarjeta (dat\u00e1fono) o sinpe_movil (transferencia recibida).",
+                        "enum": [
+                            "efectivo",
+                            "tarjeta",
+                            "sinpe_movil"
+                        ]
+                    },
+                    "referencia": {
+                        "type": "string",
+                        "description": "N\u00famero de autorizaci\u00f3n del dat\u00e1fono o de comprobante de la transferencia SINPE. Obligatorio con tarjeta y SINPE M\u00f3vil.",
+                        "minLength": 1,
+                        "maxLength": 60
+                    }
+                },
+                "title": "PaySaleRequest"
+            },
             "PaySubscriptionRequest": {
                 "type": "object",
                 "properties": {
@@ -7501,6 +7535,17 @@
                     "metodo_pago": {
                         "type": "string"
                     },
+                    "origen_pago": {
+                        "type": "string",
+                        "description": "D\u00f3nde se cobr\u00f3: caja (efectivo, fiado, dat\u00e1fono o SINPE recibido) o pasarela (ONVO o PayPal)."
+                    },
+                    "referencia_pago": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "N\u00famero de autorizaci\u00f3n del dat\u00e1fono o de comprobante SINPE; solo en cobros hechos en caja con tarjeta o SINPE."
+                    },
                     "cajero": {
                         "type": "object",
                         "properties": {
@@ -7609,6 +7654,8 @@
                     "id",
                     "estado",
                     "metodo_pago",
+                    "origen_pago",
+                    "referencia_pago",
                     "cajero",
                     "cedula_comprador",
                     "creada_en",
@@ -7640,6 +7687,10 @@
                     },
                     "metodo_pago": {
                         "type": "string"
+                    },
+                    "origen_pago": {
+                        "type": "string",
+                        "description": "D\u00f3nde se cobr\u00f3: caja (efectivo, fiado, dat\u00e1fono o SINPE recibido) o pasarela (ONVO o PayPal)."
                     },
                     "cajero": {
                         "type": "object",
@@ -7682,6 +7733,7 @@
                     "id",
                     "estado",
                     "metodo_pago",
+                    "origen_pago",
                     "cajero",
                     "cantidad_lineas",
                     "total",

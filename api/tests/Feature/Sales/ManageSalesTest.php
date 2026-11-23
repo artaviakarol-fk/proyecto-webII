@@ -63,6 +63,8 @@ final class ManageSalesTest extends TestCase
                 'id' => $id,
                 'estado' => 'abierta',
                 'metodo_pago' => 'efectivo',
+                'origen_pago' => 'caja',
+                'referencia_pago' => null,
                 'cajero' => ['id' => $this->cajero->id, 'nombre' => 'Ana Caja'],
                 'cedula_comprador' => null,
                 'creada_en' => '2026-10-15T09:30:00-06:00',
