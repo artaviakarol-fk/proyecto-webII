@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Src\Inventory\Reservations\Application\UseCases;
 
+use Src\Inventory\Reservations\Application\Contracts\ReservationFeed;
 use Src\Inventory\Reservations\Application\Contracts\ReservationReader;
 use Src\Inventory\Reservations\Application\DTOs\ReservationDetails;
 use Src\Inventory\Reservations\Application\DTOs\ReserveCommand;
@@ -24,6 +25,7 @@ final readonly class ReserveProduct
         private TransactionRunner $transaction,
         private ReservationRepository $reservations,
         private ReservationReader $reader,
+        private ReservationFeed $feed,
     ) {}
 
     /**
@@ -43,9 +45,14 @@ final readonly class ReserveProduct
 
         $this->transaction->run(fn () => $this->reservations->save($reservation));
 
-        return array_find(
+        $details = array_find(
             $this->reader->activeOf($reservation->negocioId, $reservation->userId, $command->now),
             fn (ReservationDetails $details): bool => $details->id === $reservation->id->value,
         ) ?? throw ReservationNotFoundException::create();
+
+        // After the commit: the screens of the staff must not show a reserva that was rolled back.
+        $this->feed->reservationHeld($reservation->negocioId->value, $details);
+
+        return $details;
     }
 }
