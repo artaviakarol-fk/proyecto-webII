@@ -11,6 +11,8 @@ use Src\Inventory\Reservations\Application\DTOs\ReservationDetails;
 use Src\Inventory\Reservations\Application\UseCases\CancelReservation;
 use Src\Inventory\Reservations\Application\UseCases\ListMyReservations;
 use Src\Inventory\Reservations\Application\UseCases\ReserveProduct;
+use Src\Inventory\Reservations\Infrastructure\Broadcasting\ReservaCancelada;
+use Src\Inventory\Reservations\Infrastructure\Broadcasting\ReservaCreada;
 use Src\Inventory\Reservations\Infrastructure\Http\Requests\ReserveRequest;
 use Src\Inventory\Reservations\Infrastructure\Http\Resources\ReservationResource;
 
@@ -42,16 +44,36 @@ final readonly class ReservationController
      */
     public function store(ReserveRequest $request, ReserveProduct $reserveProduct): JsonResponse
     {
-        return new ReservationResource($reserveProduct->execute($request->toCommand()))
+        $reservation = $reserveProduct->execute($request->toCommand());
+
+        // The agenda of the staff learns about it right away; it is sent after the commit of the request.
+        ReservaCreada::dispatch(
+            $reservation->id,
+            $this->negocioOf($request),
+            $reservation->productId,
+            $reservation->quantity,
+            $reservation->expiresAt->format(DATE_ATOM),
+        );
+
+        return new ReservationResource($reservation)
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
     /** Let go a reserva: its units are free again. A reserva of somebody else, or one already expired, answers 404. */
-    public function destroy(string $reserva, CancelReservation $cancelReservation): Response
+    public function destroy(Request $request, string $reserva, CancelReservation $cancelReservation): Response
     {
-        $cancelReservation->execute(mb_strtolower($reserva), now()->toDateTimeImmutable());
+        $reservaId = mb_strtolower($reserva);
+        $cancelReservation->execute($reservaId, now()->toDateTimeImmutable());
+
+        ReservaCancelada::dispatch($reservaId, $this->negocioOf($request));
 
         return response()->noContent();
+    }
+
+    /** The negocio of the account behind the token: never one sent by the browser. */
+    private function negocioOf(Request $request): string
+    {
+        return (string) $request->user()?->getAttribute('negocio_id');
     }
 }

@@ -35,9 +35,13 @@ final class SharedServiceProvider extends ServiceProvider
         TransactionRunner::class => DatabaseTransactionRunner::class,
     ];
 
-    /** Adjust the generated API contract. */
+    /** Load the rules of the private channels and adjust the generated API contract. */
     public function boot(): void
     {
+        // Las reglas de los canales privados de Reverb. La ruta que firma el permiso es POST /api/v1/broadcasting/auth,
+        // con el token de Sanctum, y está en Http/routes.php para que quede en la documentación.
+        require base_path('routes/channels.php');
+
         Scramble::configure()
             ->withOperationTransformers([
                 RequiredAbilitiesTransformer::class,

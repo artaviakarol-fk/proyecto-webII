@@ -157,6 +157,56 @@
                 ]
             }
         },
+        "/broadcasting/auth": {
+            "post": {
+                "operationId": "broadcasting.auth",
+                "description": "The client of Reverb (Laravel Echo or pusher-js) calls it with the same token of the API, the `socket_id` of\nits connection and the `channel_name`. The rule of the channel in routes/channels.php decides: the staff of the\nnegocio gets the signature, anybody else 403. The secret of Reverb signs it and never leaves the server.",
+                "summary": "Sign the permission to listen to a private channel",
+                "tags": [
+                    "BroadcastingAuth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "auth": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "auth"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/catalogo": {
             "get": {
                 "operationId": "inventory.catalog.index",
@@ -8079,6 +8129,25 @@
             }
         },
         "responses": {
+            "AuthenticationException": {
+                "description": "Unauthenticated",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
             "ValidationException": {
                 "description": "Validation error",
                 "content": {
@@ -8104,25 +8173,6 @@
                             "required": [
                                 "message",
                                 "errors"
-                            ]
-                        }
-                    }
-                }
-            },
-            "AuthenticationException": {
-                "description": "Unauthenticated",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "message": {
-                                    "type": "string",
-                                    "description": "Error overview."
-                                }
-                            },
-                            "required": [
-                                "message"
                             ]
                         }
                     }
