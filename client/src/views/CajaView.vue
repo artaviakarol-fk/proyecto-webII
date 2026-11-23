@@ -4,11 +4,13 @@ import { computed, onMounted, ref, watch } from 'vue'
 import StateBox from '@/components/StateBox.vue'
 import { useAsync } from '@/composables/useAsync'
 import * as api from '@/services/api'
-import type { Payment, Product, SaleDraft } from '@/services/types'
+import type { Product, SaleDraft } from '@/services/types'
 import { draftLines, draftNotFound, mergeDraftIntoCart, type CartLine } from '@/utils/draft'
 import { formatMoney } from '@/utils/money'
+import { authorizationCode, MAX_REFERENCE } from '@/utils/register'
 
-type Method = 'efectivo' | 'fiado' | 'sinpe_movil'
+type Method = 'efectivo' | 'fiado' | 'tarjeta' | 'sinpe_movil'
+type Datafono = 'esperando' | 'aprobada' | 'rechazada'
 const MAX_TEXT = 500
 
 const search = ref('')
@@ -31,8 +33,11 @@ const cedula = ref('')
 const submitting = ref(false)
 const submitError = ref<string | null>(null)
 const confirmation = ref<string | null>(null)
-const sinpe = ref<Payment | null>(null)
-const sinpeSaleId = ref<string | null>(null)
+// The simulated datáfono answers the card payment, and the cashier records the SINPE transfer that arrived.
+const datafono = ref<Datafono>('esperando')
+const authorization = ref('')
+const voucher = ref('')
+const transferReceived = ref(false)
 
 const total = computed(() => cart.value.reduce((sum, l) => sum + l.product.precio_venta * l.qty, 0))
 const needsCedula = computed(() => cart.value.some((l) => l.product.es_licor))
@@ -47,16 +52,34 @@ const exceedsLimit = computed(
 )
 const notFound = computed(() => (drafted.value ? draftNotFound(drafted.value) : []))
 const canDictate = computed(
-  () => dictation.value.trim() !== '' && !draft.loading.value && !submitting.value && !sinpe.value,
+  () => dictation.value.trim() !== '' && !draft.loading.value && !submitting.value,
 )
+const paymentReady = computed(() => {
+  if (method.value === 'fiado') return !!customerId.value && !exceedsLimit.value
+  if (method.value === 'tarjeta') return datafono.value === 'aprobada'
+  if (method.value === 'sinpe_movil') return transferReceived.value && voucher.value.trim() !== ''
+  return true
+})
 const canPay = computed(
   () =>
     cart.value.length > 0 &&
     !submitting.value &&
-    !sinpe.value &&
     (!needsCedula.value || cedula.value.trim() !== '') &&
-    (method.value !== 'fiado' || (!!customerId.value && !exceedsLimit.value)),
+    paymentReady.value,
 )
+
+/** The datáfono answers: an approval prints an authorization code, a refusal asks for another card. */
+function useDatafono(answer: 'aprobada' | 'rechazada') {
+  datafono.value = answer
+  authorization.value = answer === 'aprobada' ? authorizationCode() : ''
+}
+
+function resetRegisterPayment() {
+  datafono.value = 'esperando'
+  authorization.value = ''
+  voucher.value = ''
+  transferReceived.value = false
+}
 
 function add(product: Product) {
   const line = cart.value.find((l) => l.product.id === product.id)
@@ -95,30 +118,33 @@ async function pay() {
       lineas: cart.value.map((l) => ({ producto_id: l.product.id, cantidad: l.qty })),
       cedula_comprador: needsCedula.value ? cedula.value || null : null,
     })
-    if (method.value === 'efectivo') {
-      await api.chargeCash(sale.id)
-      done(`Venta cobrada en efectivo: ${formatMoney(sale.total)}`)
-    } else if (method.value === 'fiado') {
-      const fiado = await api.chargeFiado(sale.id, customerId.value)
-      done(`Venta a fiado de ${fiado.cliente.nombre}: ${formatMoney(fiado.total)}`)
-    } else {
-      sinpe.value = await api.startSinpe(sale.id)
-      sinpeSaleId.value = sale.id
+    try {
+      if (method.value === 'efectivo') {
+        await api.chargeCash(sale.id)
+        done(`Venta cobrada en efectivo: ${formatMoney(sale.total)}`)
+      } else if (method.value === 'fiado') {
+        const fiado = await api.chargeFiado(sale.id, customerId.value)
+        done(`Venta a fiado de ${fiado.cliente.nombre}: ${formatMoney(fiado.total)}`)
+      } else if (method.value === 'tarjeta') {
+        await api.chargeAtRegister(sale.id, {
+          metodo_pago: 'tarjeta',
+          referencia: authorization.value,
+        })
+        done(`Venta cobrada con tarjeta (${authorization.value}): ${formatMoney(sale.total)}`)
+      } else {
+        const reference = voucher.value.trim()
+        await api.chargeAtRegister(sale.id, { metodo_pago: 'sinpe_movil', referencia: reference })
+        done(`Venta cobrada por SINPE Móvil (comprobante ${reference}): ${formatMoney(sale.total)}`)
+      }
+    } catch (e) {
+      // The sale was opened but not collected: cancel it so no open sale keeps the units of the stock.
+      await api.cancelSale(sale.id).catch(() => undefined)
+      throw e
     }
   } catch (e) {
     submitError.value = e instanceof Error ? e.message : 'No se pudo registrar la venta'
   } finally {
     submitting.value = false
-  }
-}
-
-async function refreshSinpe() {
-  if (!sinpeSaleId.value) return
-  submitError.value = null
-  try {
-    sinpe.value = await api.getPayment(sinpeSaleId.value)
-  } catch (e) {
-    submitError.value = e instanceof Error ? e.message : 'No se pudo consultar el pago'
   }
 }
 
@@ -128,8 +154,7 @@ function done(message: string) {
   cart.value = []
   cedula.value = ''
   customerId.value = ''
-  sinpe.value = null
-  sinpeSaleId.value = null
+  resetRegisterPayment()
   void products.run()
 }
 
@@ -139,6 +164,7 @@ watch(search, () => {
   timer = setTimeout(products.run, 300)
 })
 watch(method, (m) => {
+  resetRegisterPayment()
   if (m === 'fiado' && !customers.data.value) void customers.run()
 })
 onMounted(products.run)
@@ -227,10 +253,11 @@ onMounted(products.run)
 
           <label>
             Método de pago
-            <select v-model="method" :disabled="!!sinpe">
+            <select v-model="method">
               <option value="efectivo">Efectivo</option>
               <option value="fiado">Fiado</option>
-              <option value="sinpe_movil">SINPE Móvil</option>
+              <option value="tarjeta">Tarjeta (datáfono)</option>
+              <option value="sinpe_movil">SINPE Móvil (transferencia recibida)</option>
             </select>
           </label>
 
@@ -265,15 +292,45 @@ onMounted(products.run)
             </StateBox>
           </div>
 
-          <div v-if="sinpe" class="card sinpe">
+          <div v-if="method === 'tarjeta'" class="card register-payment" aria-label="Datáfono">
             <p>
-              Estado del pago: <strong>{{ sinpe.estado }}</strong>
+              <strong>Datáfono (simulado)</strong>: cobre {{ formatMoney(total) }}. El cajero no
+              digita datos de la tarjeta.
             </p>
-            <p v-if="sinpe.instrucciones">
-              Envíe {{ formatMoney(sinpe.instrucciones.monto) }} al
-              {{ sinpe.instrucciones.numero_sinpe }}. {{ sinpe.instrucciones.mensaje }}
+            <p v-if="datafono === 'esperando'" class="muted">Esperando la tarjeta del cliente…</p>
+            <p v-else-if="datafono === 'aprobada'" class="ok" role="status">
+              Aprobada. Autorización: <strong>{{ authorization }}</strong>
             </p>
-            <button type="button" @click="refreshSinpe">Actualizar estado</button>
+            <p v-else class="error-text" role="status">
+              Tarjeta rechazada. Pruebe con otra o cambie el método de pago.
+            </p>
+            <div class="row">
+              <button type="button" :disabled="submitting" @click="useDatafono('aprobada')">
+                Aprobar en el datáfono
+              </button>
+              <button type="button" :disabled="submitting" @click="useDatafono('rechazada')">
+                Rechazar en el datáfono
+              </button>
+            </div>
+          </div>
+
+          <div
+            v-if="method === 'sinpe_movil'"
+            class="card register-payment"
+            aria-label="SINPE Móvil"
+          >
+            <p>
+              Reciba {{ formatMoney(total) }} por SINPE Móvil y revise que la transferencia llegó a
+              la cuenta del negocio.
+            </p>
+            <label>
+              Número de comprobante
+              <input v-model="voucher" :maxlength="MAX_REFERENCE" autocomplete="off" />
+            </label>
+            <label class="check">
+              <input v-model="transferReceived" type="checkbox" />
+              Confirmo que la transferencia ya se acreditó
+            </label>
           </div>
 
           <p v-if="submitError" class="error-text" role="alert">{{ submitError }}</p>
@@ -351,7 +408,17 @@ label {
   color: var(--brand-dark);
   font-weight: 600;
 }
-.sinpe {
+.register-payment {
   margin: 0.6rem 0;
+}
+.row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 </style>
