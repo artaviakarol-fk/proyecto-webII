@@ -21,6 +21,29 @@ export interface ExpiredEntry {
   registrada_por: string
   registrada_en: string
 }
+/** How urgent it is to restock a product (GET /inventario/reposicion). */
+export type RestockStatus = 'agotado' | 'critico' | 'bajo' | 'ok'
+
+/** A product with what it sold, how long its stock lasts and how many units to order. */
+export interface RestockItem {
+  id: string
+  codigo: string
+  nombre: string
+  categoria: string | null
+  stock: number
+  vendidas: number
+  promedio_diario: number
+  dias_restantes: number | null
+  estado: RestockStatus
+  sugerido: number
+}
+
+/** The restock report: every product from the most urgent, and the best sellers. */
+export interface RestockReport {
+  dias: number
+  productos: RestockItem[]
+  mas_vendidos: RestockItem[]
+}
 export type SaleRequest = Schemas['SaleRequest']
 export type FiadoSale = Schemas['FiadoSaleResource']
 export type Payment = Schemas['PaymentResource']

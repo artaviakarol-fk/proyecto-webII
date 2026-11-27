@@ -698,6 +698,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inventario/reposicion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show which products to restock and how many units to order
+         * @description The warehouse and the administration see it. For each product it gives the units sold in the last days, the
+         *     average per day, the days the stock lasts at that pace, how urgent it is (agotado, critico, bajo or ok) and the
+         *     units to order to cover 14 days. The most urgent come first, and the best sellers come apart. It only reads.
+         */
+        get: operations["inventory.restock"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ventas": {
         parameters: {
             query?: never;
@@ -1603,6 +1625,12 @@ export interface components {
         /** ResetStaffPasswordRequest */
         ResetStaffPasswordRequest: {
             contrasena_temporal: string;
+        };
+        /** RestockReportResource */
+        RestockReportResource: {
+            dias: number;
+            productos: unknown[];
+            mas_vendidos: unknown[];
         };
         /** SaleDraftResource */
         SaleDraftResource: {
@@ -4212,6 +4240,50 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problema"];
                 };
             };
+        };
+    };
+    "inventory.restock": {
+        parameters: {
+            query?: {
+                /** @description Días de ventas que se analizan, de 7 a 90. Si no se envía, 30. */
+                dias?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `RestockReportResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RestockReportResource"];
+                    };
+                };
+            };
+            /** @description No autenticado: falta el token o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            /** @description La cuenta no tiene el permiso (ability) que pide este endpoint. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problema"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
         };
     };
     "sales.index": {
