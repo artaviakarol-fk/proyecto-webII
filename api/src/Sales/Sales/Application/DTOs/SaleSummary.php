@@ -11,6 +11,7 @@ final readonly class SaleSummary
         public string $id,
         public string $status,
         public string $paymentMethod,
+        public string $paymentOrigin,
         public string $cashierId,
         public string $cashierName,
         public int $lineCount,

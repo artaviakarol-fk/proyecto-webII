@@ -30,6 +30,10 @@ final class SaleResource extends JsonResource
             'id' => $this->sale->id,
             'estado' => $this->sale->status,
             'metodo_pago' => $this->sale->paymentMethod,
+            /** Dónde se cobró: caja (efectivo, fiado, datáfono o SINPE recibido) o pasarela (ONVO o PayPal). */
+            'origen_pago' => $this->sale->paymentOrigin,
+            /** Número de autorización del datáfono o de comprobante SINPE; solo en cobros hechos en caja con tarjeta o SINPE. */
+            'referencia_pago' => $this->sale->paymentReference,
             'cajero' => ['id' => $this->sale->cashierId, 'nombre' => $this->sale->cashierName],
             'cedula_comprador' => $this->sale->buyerIdNumber,
             'creada_en' => $this->sale->createdAt,

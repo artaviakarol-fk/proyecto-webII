@@ -6,6 +6,7 @@ import { useAsync } from '@/composables/useAsync'
 import { cancelSale, getSale, listSales } from '@/services/api'
 import type { Sale, SaleStatus } from '@/services/types'
 import { formatMoney } from '@/utils/money'
+import { paymentLabel } from '@/utils/register'
 
 const estado = ref<SaleStatus | ''>('')
 const fecha = ref('')
@@ -22,12 +23,6 @@ const cancelling = ref(false)
 const notice = ref<string | null>(null)
 
 const statusLabel: Record<string, string> = { abierta: 'Abierta', cobrada: 'Cobrada', anulada: 'Anulada' }
-const methodLabel: Record<string, string> = {
-  efectivo: 'Efectivo',
-  tarjeta: 'Tarjeta',
-  sinpe_movil: 'SINPE Móvil',
-  fiado: 'Fiado',
-}
 const time = (iso: string) => new Date(iso).toLocaleString('es-CR')
 
 async function open(saleId: string) {
@@ -105,7 +100,7 @@ watch([estado, fecha], () => {
             <tr v-for="sale in sales.data.value?.data ?? []" :key="sale.id" :class="{ selected: detail?.id === sale.id }">
               <td>{{ time(sale.creada_en) }}</td>
               <td>{{ sale.cajero.nombre }}</td>
-              <td>{{ methodLabel[sale.metodo_pago] ?? sale.metodo_pago }}</td>
+              <td>{{ paymentLabel(sale) }}</td>
               <td><span class="chip" :class="sale.estado">{{ statusLabel[sale.estado] ?? sale.estado }}</span></td>
               <td>{{ formatMoney(sale.total) }}</td>
               <td><button type="button" @click="open(sale.id)">Ver detalle</button></td>
@@ -137,6 +132,10 @@ watch([estado, fecha], () => {
           </li>
         </ul>
         <p class="total">Total: {{ formatMoney(detail.total) }}</p>
+        <p class="muted">
+          Cobro: {{ paymentLabel(detail) }}
+          <template v-if="detail.referencia_pago"> · Referencia {{ detail.referencia_pago }}</template>
+        </p>
         <p v-if="detail.anulada_en" class="muted">Anulada el {{ time(detail.anulada_en) }}</p>
 
         <template v-if="detail.estado !== 'anulada'">

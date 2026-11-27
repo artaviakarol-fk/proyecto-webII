@@ -67,7 +67,7 @@ final class SaleQueriesTest extends TestCase
     {
         $line = ['producto_id' => '0192f0c4-0000-7000-8000-000000000099', 'codigo' => 'ARROZ-1', 'nombre' => 'Arroz 1 kg', 'cantidad' => 1, 'precio_unitario' => '1500.00', 'subtotal' => '1500.00'];
 
-        return new SaleDetails($this->id($number), $status, 'efectivo', '0192f0c4-0000-7000-8000-000000000077', 'Ana Caja', null, $createdAt, null, null, [$line], '1500.00');
+        return new SaleDetails($this->id($number), $status, 'efectivo', 'caja', null, '0192f0c4-0000-7000-8000-000000000077', 'Ana Caja', null, $createdAt, null, null, [$line], '1500.00');
     }
 
     /** A predictable sale identifier. */
