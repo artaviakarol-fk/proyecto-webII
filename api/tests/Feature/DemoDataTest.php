@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\NegociosDemoSeeder;
 use Database\Seeders\PlataformaDemoSeeder;
+use Database\Seeders\ProductosDemoSeeder;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\RefreshDatabaseAsOwner;
 use Tests\Support\Shared\ScopesQueriesToNegocio;
@@ -40,7 +41,7 @@ final class DemoDataTest extends TestCase
         $this->assertDatabaseCount('negocios', 2);
         $this->assertDatabaseCount('users', 7);
         $this->scopeQueriesTo(NegociosDemoSeeder::TERESITA_ID);
-        $this->assertDatabaseCount('productos', 5);
+        $this->assertDatabaseCount('productos', count(ProductosDemoSeeder::PRODUCTS));
         $this->assertDatabaseCount('clientes', 4);
         $this->assertSame(['0.00'], DB::table('clientes')->distinct()->pluck('saldo_actual')->all());
     }

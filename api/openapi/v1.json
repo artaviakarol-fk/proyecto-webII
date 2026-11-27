@@ -3672,6 +3672,74 @@
                 ]
             }
         },
+        "/inventario/reposicion": {
+            "get": {
+                "operationId": "inventory.restock",
+                "description": "The warehouse and the administration see it. For each product it gives the units sold in the last days, the\naverage per day, the days the stock lasts at that pace, how urgent it is (agotado, critico, bajo or ok) and the\nunits to order to cover 14 days. The most urgent come first, and the best sellers come apart. It only reads.",
+                "summary": "Show which products to restock and how many units to order",
+                "tags": [
+                    "Restock"
+                ],
+                "parameters": [
+                    {
+                        "name": "dias",
+                        "in": "query",
+                        "description": "D\u00edas de ventas que se analizan, de 7 a 90. Si no se env\u00eda, 30.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 7,
+                            "maximum": 90
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`RestockReportResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/RestockReportResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado: falta el token o no es v\u00e1lido.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el permiso (ability) que pide este endpoint.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problema"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-abilities": [
+                    "inventario"
+                ]
+            }
+        },
         "/ventas": {
             "get": {
                 "operationId": "sales.index",
@@ -7358,6 +7426,28 @@
                     "contrasena_temporal"
                 ],
                 "title": "ResetStaffPasswordRequest"
+            },
+            "RestockReportResource": {
+                "type": "object",
+                "properties": {
+                    "dias": {
+                        "type": "integer"
+                    },
+                    "productos": {
+                        "type": "array",
+                        "items": {}
+                    },
+                    "mas_vendidos": {
+                        "type": "array",
+                        "items": {}
+                    }
+                },
+                "required": [
+                    "dias",
+                    "productos",
+                    "mas_vendidos"
+                ],
+                "title": "RestockReportResource"
             },
             "SaleDraftResource": {
                 "type": "object",

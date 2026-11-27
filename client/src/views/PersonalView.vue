@@ -2,8 +2,10 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 
 import PasswordInput from '@/components/PasswordInput.vue'
+import PagerBar from '@/components/PagerBar.vue'
 import StateBox from '@/components/StateBox.vue'
 import { useAsync } from '@/composables/useAsync'
+import { usePager } from '@/composables/usePager'
 import {
   changeStaffAccess,
   createStaffRole,
@@ -19,6 +21,7 @@ import { useSessionStore } from '@/stores/session'
 
 const session = useSessionStore()
 const staff = useAsync(listStaff)
+const staffPager = usePager(() => staff.data.value ?? [])
 const roles = useAsync(listStaffRoles)
 
 const PERMISSIONS: { value: Permission; label: string; help: string }[] = [
@@ -125,7 +128,7 @@ function removeRole(role: StaffRole) {
               <tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th></th></tr>
             </thead>
             <tbody>
-              <tr v-for="member in staff.data.value ?? []" :key="member.id">
+              <tr v-for="member in staffPager.visible.value" :key="member.id">
                 <td>
                   {{ member.nombre }}
                   <span v-if="member.id === session.user?.id" class="chip">Usted</span>
@@ -161,6 +164,7 @@ function removeRole(role: StaffRole) {
             </tbody>
           </table>
         </div>
+        <PagerBar :pager="staffPager" noun="Personal" />
       </StateBox>
 
       <form v-if="resetting" class="inline-form" @submit.prevent="resetPassword">

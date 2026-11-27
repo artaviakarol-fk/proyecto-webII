@@ -195,6 +195,7 @@ final class PermisosRolTest extends TestCase
             ['PATCH', '/productos/{id}/precio', $administration],
             ['GET', '/productos/{id}/historial-precios', $administration],
             // Stock: the warehouse and the administration.
+            ['GET', '/inventario/reposicion', $warehouse],
             ['POST', '/productos/{id}/vencidos', $warehouse],
             ['POST', '/entradas', $warehouse],
             ['GET', '/entradas/{id}', $warehouse],

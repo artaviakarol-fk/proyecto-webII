@@ -2,8 +2,10 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import PagerBar from '@/components/PagerBar.vue'
 import StateBox from '@/components/StateBox.vue'
 import { useAsync } from '@/composables/useAsync'
+import { usePager } from '@/composables/usePager'
 import { getSubscription, listGateways, paySubscription, refreshSubscriptionPayment } from '@/services/api'
 import { createCardMethod, createSinpeMethod } from '@/services/onvo'
 import type { GatewayOption, SubscriptionPayment } from '@/services/types'
@@ -19,6 +21,7 @@ const banner = useSubscriptionStore()
 const route = useRoute()
 const router = useRouter()
 const plan = useAsync(getSubscription)
+const paymentsPager = usePager(() => plan.data.value?.pagos ?? [], 5)
 const gateways = useAsync(listGateways)
 
 const PAYMENT_STATUS: Record<SubscriptionPayment['estado'], { label: string; tone: string }> = {
@@ -232,7 +235,7 @@ function describe(payment: SubscriptionPayment): string {
           <section class="card">
             <div class="step"><i>2</i><h3>Pagos</h3></div>
             <p v-if="plan.data.value.pagos.length === 0" class="muted">Todavía no hay pagos.</p>
-            <div v-for="p in plan.data.value.pagos" :key="p.id" class="li">
+            <div v-for="p in paymentsPager.visible.value" :key="p.id" class="li">
               <div>
                 <b>{{ formatMoney(p.monto) }}</b> · {{ p.meses }} {{ p.meses === 1 ? 'mes' : 'meses' }}
                 <div class="muted small">{{ formatDay(p.creado_el) }} · {{ METHOD[p.metodo] }} · {{ PROVIDER[p.proveedor] }}</div>
@@ -245,6 +248,7 @@ function describe(payment: SubscriptionPayment): string {
                 </button>
               </div>
             </div>
+            <PagerBar :pager="paymentsPager" noun="Pagos" />
           </section>
         </div>
       </template>

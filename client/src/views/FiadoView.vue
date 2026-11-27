@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
+import PagerBar from '@/components/PagerBar.vue'
 import StateBox from '@/components/StateBox.vue'
 import { useAsync } from '@/composables/useAsync'
+import { usePager } from '@/composables/usePager'
 import { grantCreditIncrease, listCustomers, receiveCreditPayment } from '@/services/api'
 import type { Customer } from '@/services/types'
 import { formatMoney } from '@/utils/money'
 
 const search = ref('')
 const customers = useAsync(() => listCustomers(search.value || undefined))
+const customersPager = usePager(() => customers.data.value ?? [])
 
 // One customer is worked on at a time: what is typed, what is being sent and what the API answered.
 const selected = ref<Customer | null>(null)
@@ -90,7 +93,7 @@ onMounted(customers.run)
             <tr><th>Cliente</th><th>Debe</th><th>Límite</th><th>Disponible</th><th></th></tr>
           </thead>
           <tbody>
-            <tr v-for="c in customers.data.value ?? []" :key="c.id" :class="{ selected: selected?.id === c.id }">
+            <tr v-for="c in customersPager.visible.value" :key="c.id" :class="{ selected: selected?.id === c.id }">
               <td>
                 {{ c.nombre }}
                 <span v-if="!c.activo" class="chip">Inactivo</span>
@@ -102,6 +105,7 @@ onMounted(customers.run)
             </tr>
           </tbody>
         </table>
+        <PagerBar :pager="customersPager" noun="Clientes" />
       </StateBox>
     </section>
 

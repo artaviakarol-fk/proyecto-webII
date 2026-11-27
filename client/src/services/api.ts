@@ -14,6 +14,7 @@ import type {
   Product,
   PurchaseRequest,
   RegisterClienteRequest,
+  RestockReport,
   Page,
   Receipt,
   Reservation,
@@ -137,6 +138,11 @@ export const registerReceipt = (body: {
 
 export const listExpired = () =>
   request<{ data: ExpiredEntry[] }>('GET', '/vencidos').then((r) => r.data)
+
+export const getRestock = (dias?: number) =>
+  request<One<RestockReport>>('GET', '/inventario/reposicion', { query: { dias } }).then(
+    (r) => r.data,
+  )
 
 export const markExpired = (productId: string, cantidad: number, motivo: string) =>
   request<One<ExpiredUnits>>('POST', `/productos/${productId}/vencidos`, {
