@@ -12,6 +12,7 @@ require base_path('src/Inventory/Products/Infrastructure/Http/routes.php');
 require base_path('src/Inventory/Receipts/Infrastructure/Http/routes.php');
 require base_path('src/Inventory/Expirations/Infrastructure/Http/routes.php');
 require base_path('src/Inventory/Reservations/Infrastructure/Http/routes.php');
+require base_path('src/Inventory/Restock/Infrastructure/Http/routes.php');
 require base_path('src/Sales/SaleDrafts/Infrastructure/Http/routes.php');
 require base_path('src/Sales/Sales/Infrastructure/Http/routes.php');
 require base_path('src/Sales/Purchases/Infrastructure/Http/routes.php');
