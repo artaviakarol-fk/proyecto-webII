@@ -16,6 +16,8 @@ final readonly class SaleDetails
         public string $id,
         public string $status,
         public string $paymentMethod,
+        public string $paymentOrigin,
+        public ?string $paymentReference,
         public string $cashierId,
         public string $cashierName,
         public ?string $buyerIdNumber,

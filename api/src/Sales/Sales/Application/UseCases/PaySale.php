@@ -22,14 +22,18 @@ final readonly class PaySale
         private GetSale $getSale,
     ) {}
 
-    /** Close an open sale as paid (in cash unless a provider took the payment); from then on it cannot change. */
-    public function execute(string $saleId, string $method = Sale::CASH): SaleDetails
+    /**
+     * Close an open sale as paid (in cash unless a provider took the payment); from then on it cannot change.
+     *
+     * A card or SINPE payment recorded at the register brings its reference: the authorization or voucher number.
+     */
+    public function execute(string $saleId, string $method = Sale::CASH, ?string $reference = null): SaleDetails
     {
         $negocioId = $this->context->current();
 
-        $this->transaction->run(function () use ($saleId, $negocioId, $method): void {
+        $this->transaction->run(function () use ($saleId, $negocioId, $method, $reference): void {
             $sale = $this->sales->findForUpdate(new SaleId($saleId), $negocioId) ?? throw SaleNotFoundException::create();
-            $sale->pay($method);
+            $sale->pay($method, $reference);
             $this->sales->save($sale);
         });
 

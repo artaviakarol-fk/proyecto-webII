@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Sales\Sales\Domain;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Src\Sales\Sales\Domain\Entities\Sale;
 use Src\Sales\Sales\Domain\Exceptions\InvalidSaleStateException;
@@ -97,6 +98,56 @@ final class SaleTest extends TestCase
 
         $this->expectException(InvalidValueException::class);
         $this->openSale([$this->line(self::ARROZ, 1, '1500.00')])->pay('cheque');
+    }
+
+    /** A card or SINPE payment taken at the register keeps its reference, trimmed, and tells it was taken there. */
+    public function test_sale_paid_at_the_register_keeps_the_reference(): void
+    {
+        $card = $this->openSale([$this->line(self::ARROZ, 1, '1500.00')]);
+        $card->pay('tarjeta', '  AUT-123456 ');
+
+        $this->assertSame('AUT-123456', $card->paymentReference);
+        $this->assertSame('caja', Sale::originOf($card->paymentMethod, $card->paymentReference));
+    }
+
+    /** A card or SINPE payment without a reference went through a provider; cash and fiado are always taken at the register. */
+    public function test_origin_of_the_payment(): void
+    {
+        $this->assertSame('pasarela', Sale::originOf('tarjeta', null));
+        $this->assertSame('pasarela', Sale::originOf('sinpe_movil', null));
+        $this->assertSame('caja', Sale::originOf('tarjeta', 'AUT-1'));
+        $this->assertSame('caja', Sale::originOf('efectivo', null));
+        $this->assertSame('caja', Sale::originOf('fiado', null));
+    }
+
+    /**
+     * Only a card or SINPE payment takes a reference, and it cannot be empty or longer than 60 characters.
+     *
+     * @return array<string, array{string, string}>
+     */
+    public static function invalidReferences(): array
+    {
+        return [
+            'con efectivo' => ['efectivo', 'AUT-1'],
+            'con fiado' => ['fiado', 'AUT-1'],
+            'vacía' => ['tarjeta', '   '],
+            'demasiado larga' => ['sinpe_movil', str_repeat('9', 61)],
+        ];
+    }
+
+    /** A reference that does not fit the way of paying is rejected and the sale stays open. */
+    #[DataProvider('invalidReferences')]
+    public function test_invalid_reference_is_rejected(string $method, string $reference): void
+    {
+        $sale = $this->openSale([$this->line(self::ARROZ, 1, '1500.00')]);
+
+        try {
+            $sale->pay($method, $reference);
+            $this->fail('The reference should have been rejected.');
+        } catch (InvalidValueException) {
+            $this->assertSame(SaleStatus::Open, $sale->status);
+            $this->assertNull($sale->paymentReference);
+        }
     }
 
     /** An open or paid sale can be cancelled, and a cancelled one cannot be cancelled again. */

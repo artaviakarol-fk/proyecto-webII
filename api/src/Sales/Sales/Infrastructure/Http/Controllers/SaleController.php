@@ -14,6 +14,7 @@ use Src\Sales\Sales\Application\UseCases\OpenSale;
 use Src\Sales\Sales\Application\UseCases\PaySale;
 use Src\Sales\Sales\Application\UseCases\ReviseSale;
 use Src\Sales\Sales\Infrastructure\Http\Requests\ListSalesRequest;
+use Src\Sales\Sales\Infrastructure\Http\Requests\PaySaleRequest;
 use Src\Sales\Sales\Infrastructure\Http\Requests\SaleRequest;
 use Src\Sales\Sales\Infrastructure\Http\Resources\SaleResource;
 use Src\Sales\Sales\Infrastructure\Http\Resources\SaleSummaryResource;
@@ -59,10 +60,10 @@ final readonly class SaleController
         return new SaleResource($reviseSale->execute($venta, $request->toLines(), $request->buyerIdNumber()));
     }
 
-    /** Close an open sale as paid in cash. */
-    public function pay(string $venta, PaySale $paySale): SaleResource
+    /** Close an open sale as paid at the register: in cash, by card on the datáfono or by a SINPE transfer received. */
+    public function pay(string $venta, PaySaleRequest $request, PaySale $paySale): SaleResource
     {
-        return new SaleResource($paySale->execute($venta));
+        return new SaleResource($paySale->execute($venta, $request->method(), $request->reference()));
     }
 
     /** Cancel a sale and give its units back to the stock. */

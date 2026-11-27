@@ -765,7 +765,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Close an open sale as paid in cash */
+        /** Close an open sale as paid at the register: in cash, by card on the datáfono or by a SINPE transfer received */
         post: operations["sales.pay"];
         delete?: never;
         options?: never;
@@ -1405,6 +1405,19 @@ export interface components {
             /** @constant */
             zona_horaria: "America/Costa_Rica";
         };
+        /**
+         * PaySaleRequest
+         * @description How the cashier collects: in cash by default, or by card (datáfono) or SINPE Móvil with the reference of the payment.
+         */
+        PaySaleRequest: {
+            /**
+             * @description Forma de cobro en caja: efectivo (por defecto), tarjeta (datáfono) o sinpe_movil (transferencia recibida).
+             * @enum {string}
+             */
+            metodo_pago?: "efectivo" | "tarjeta" | "sinpe_movil";
+            /** @description Número de autorización del datáfono o de comprobante de la transferencia SINPE. Obligatorio con tarjeta y SINPE Móvil. */
+            referencia?: string;
+        };
         /** PaySubscriptionRequest */
         PaySubscriptionRequest: {
             /** @description Meses que se pagan, de 1 a 12. Por defecto, 1. */
@@ -1677,6 +1690,10 @@ export interface components {
             id: string;
             estado: string;
             metodo_pago: string;
+            /** @description Dónde se cobró: caja (efectivo, fiado, datáfono o SINPE recibido) o pasarela (ONVO o PayPal). */
+            origen_pago: string;
+            /** @description Número de autorización del datáfono o de comprobante SINPE; solo en cobros hechos en caja con tarjeta o SINPE. */
+            referencia_pago: string | null;
             cajero: {
                 id: string;
                 nombre: string;
@@ -1712,6 +1729,8 @@ export interface components {
             id: string;
             estado: string;
             metodo_pago: string;
+            /** @description Dónde se cobró: caja (efectivo, fiado, datáfono o SINPE recibido) o pasarela (ONVO o PayPal). */
+            origen_pago: string;
             cajero: {
                 id: string;
                 nombre: string;
@@ -4520,7 +4539,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PaySaleRequest"];
+            };
+        };
         responses: {
             /** @description `SaleResource` */
             200: {
@@ -4569,6 +4592,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problema"];
                 };
             };
+            422: components["responses"]["ValidationException"];
         };
     };
     "sales.cancel": {

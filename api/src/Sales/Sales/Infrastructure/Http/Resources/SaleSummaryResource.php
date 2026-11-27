@@ -22,7 +22,7 @@ final class SaleSummaryResource extends JsonResource
     /**
      * Expose the sale without its lines; the total is colones with two decimals.
      *
-     * @return array{id: string, estado: string, metodo_pago: string, cajero: array{id: string, nombre: string}, cantidad_lineas: int, total: float, creada_en: string, cobrada_en: string|null, anulada_en: string|null}
+     * @return array{id: string, estado: string, metodo_pago: string, origen_pago: string, cajero: array{id: string, nombre: string}, cantidad_lineas: int, total: float, creada_en: string, cobrada_en: string|null, anulada_en: string|null}
      */
     public function toArray(Request $request): array
     {
@@ -30,6 +30,8 @@ final class SaleSummaryResource extends JsonResource
             'id' => $this->sale->id,
             'estado' => $this->sale->status,
             'metodo_pago' => $this->sale->paymentMethod,
+            /** Dónde se cobró: caja (efectivo, fiado, datáfono o SINPE recibido) o pasarela (ONVO o PayPal). */
+            'origen_pago' => $this->sale->paymentOrigin,
             'cajero' => ['id' => $this->sale->cashierId, 'nombre' => $this->sale->cashierName],
             'cantidad_lineas' => $this->sale->lineCount,
             'total' => (float) $this->sale->total,

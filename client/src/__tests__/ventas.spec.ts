@@ -16,7 +16,7 @@ const api = vi.hoisted(() => ({
 vi.mock('@/services/api', () => api)
 
 const summary = {
-  id: 's1', estado: 'cobrada', metodo_pago: 'efectivo', cajero: { id: 'u1', nombre: 'Carla' },
+  id: 's1', estado: 'cobrada', metodo_pago: 'efectivo', origen_pago: 'caja', referencia_pago: null, cajero: { id: 'u1', nombre: 'Carla' },
   cantidad_lineas: 1, total: 2400, creada_en: '2026-11-17T10:00:00Z', cobrada_en: '2026-11-17T10:01:00Z', anulada_en: null,
 }
 const detail = {
@@ -36,6 +36,31 @@ describe('VentasView', () => {
     await flushPromises()
     expect(w.text()).toContain('Carla')
     expect(w.text()).toContain('Cobrada')
+  })
+
+  it('tells a card paid on the datáfono from one paid through a gateway', async () => {
+    api.listSales.mockResolvedValue(
+      page([
+        { ...summary, id: 's2', metodo_pago: 'tarjeta', origen_pago: 'caja' },
+        { ...summary, id: 's3', metodo_pago: 'tarjeta', origen_pago: 'pasarela' },
+        { ...summary, id: 's4', metodo_pago: 'sinpe_movil', origen_pago: 'caja' },
+      ]),
+    )
+    const w = mount(VentasView)
+    await flushPromises()
+    expect(w.text()).toContain('Tarjeta (datáfono)')
+    expect(w.text()).toContain('Tarjeta (pasarela)')
+    expect(w.text()).toContain('SINPE Móvil (recibido en caja)')
+  })
+
+  it('shows the reference of a payment taken at the register in the detail', async () => {
+    api.listSales.mockResolvedValue(page([{ ...summary, metodo_pago: 'tarjeta' }]))
+    api.getSale.mockResolvedValue({ ...detail, metodo_pago: 'tarjeta', referencia_pago: 'AUT-123456' })
+    const w = mount(VentasView)
+    await flushPromises()
+    await w.findAll('button').find((b) => b.text() === 'Ver detalle')?.trigger('click')
+    await flushPromises()
+    expect(w.text()).toContain('Referencia AUT-123456')
   })
 
   it('shows the empty state', async () => {

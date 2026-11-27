@@ -24,6 +24,18 @@ final class Sale
     /** The ways a sale can be paid: in cash at the register, through a payment provider or on fiado. */
     public const array PAYMENT_METHODS = [self::CASH, 'tarjeta', 'sinpe_movil', self::FIADO];
 
+    /** The ways of paying that a payment provider can take, or that the register can record with a reference. */
+    public const array REFERENCED_METHODS = ['tarjeta', 'sinpe_movil'];
+
+    /** The payment went through a payment provider, which holds the proof. */
+    public const string PROVIDER_ORIGIN = 'pasarela';
+
+    /** The payment was taken at the register: cash, fiado, the datáfono or a SINPE transfer received. */
+    public const string REGISTER_ORIGIN = 'caja';
+
+    /** The longest reference (authorization or voucher number) a sale keeps. */
+    public const int MAX_REFERENCE_LENGTH = 60;
+
     /**
      * Hold a sale paid in cash or through a provider: who sold it, what was sold, who bought it when it is known and the stage it is in.
      *
@@ -37,6 +49,7 @@ final class Sale
         public private(set) array $lines,
         public private(set) ?BuyerIdNumber $buyer,
         public private(set) string $paymentMethod = self::CASH,
+        public private(set) ?string $paymentReference = null,
     ) {}
 
     /**
@@ -56,9 +69,17 @@ final class Sale
      *
      * @param  list<SaleLine>  $lines
      */
-    public static function reconstitute(SaleId $id, NegocioId $negocioId, string $cashierId, SaleStatus $status, array $lines, ?BuyerIdNumber $buyer = null, string $paymentMethod = self::CASH): self
+    public static function reconstitute(SaleId $id, NegocioId $negocioId, string $cashierId, SaleStatus $status, array $lines, ?BuyerIdNumber $buyer = null, string $paymentMethod = self::CASH, ?string $paymentReference = null): self
     {
-        return new self($id, $negocioId, $cashierId, $status, $lines, $buyer, $paymentMethod);
+        return new self($id, $negocioId, $cashierId, $status, $lines, $buyer, $paymentMethod, $paymentReference);
+    }
+
+    /** Tell where a payment was taken: with a reference it was recorded at the register, a card or SINPE payment without one went through a provider. */
+    public static function originOf(string $method, ?string $reference): string
+    {
+        return in_array($method, self::REFERENCED_METHODS, true) && $reference === null
+            ? self::PROVIDER_ORIGIN
+            : self::REGISTER_ORIGIN;
     }
 
     /** The sum of the lines. */
@@ -86,8 +107,13 @@ final class Sale
         $this->buyer = $buyer;
     }
 
-    /** Close the sale as paid, in cash unless a provider took the payment. */
-    public function pay(string $method = self::CASH): void
+    /**
+     * Close the sale as paid, in cash unless a provider took the payment.
+     *
+     * A card or SINPE payment recorded at the register carries its reference (the authorization or voucher number);
+     * any other way of paying carries none.
+     */
+    public function pay(string $method = self::CASH, ?string $reference = null): void
     {
         $this->assertOpen();
 
@@ -95,8 +121,15 @@ final class Sale
             throw new InvalidValueException('sales.payment_method_invalid');
         }
 
+        $reference = $reference === null ? null : trim($reference);
+
+        if ($reference !== null && ($reference === '' || mb_strlen($reference) > self::MAX_REFERENCE_LENGTH || ! in_array($method, self::REFERENCED_METHODS, true))) {
+            throw new InvalidValueException('sales.payment_reference_invalid');
+        }
+
         $this->status = SaleStatus::Paid;
         $this->paymentMethod = $method;
+        $this->paymentReference = $reference;
     }
 
     /** Tell whether the sale was closed on fiado, so its total is part of what a customer owes. */

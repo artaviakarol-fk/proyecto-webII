@@ -9,6 +9,7 @@ import type {
   ExpiredUnits,
   FiadoSale,
   GatewayOption,
+  PaySaleRequest,
   Payment,
   Product,
   PurchaseRequest,
@@ -67,13 +68,9 @@ export const chargeFiado = (saleId: string, clienteId: string) =>
     body: { cliente_id: clienteId },
   }).then((r) => r.data)
 
-export const startSinpe = (saleId: string) =>
-  request<One<Payment>>('POST', `/ventas/${saleId}/pago`, {
-    body: { metodo_pago: 'sinpe_movil' },
-  }).then((r) => r.data)
-
-export const getPayment = (saleId: string) =>
-  request<One<Payment>>('GET', `/ventas/${saleId}/pago`).then((r) => r.data)
+/** Collects at the register by card (datáfono) or SINPE received, with the authorization or voucher number. */
+export const chargeAtRegister = (saleId: string, body: PaySaleRequest) =>
+  request<One<Sale>>('POST', `/ventas/${saleId}/cobrar`, { body }).then((r) => r.data)
 
 export const dailyClosing = (fecha?: string) =>
   request<One<DailyClosing>>('GET', '/reportes/cierre-diario', { query: { fecha } }).then(

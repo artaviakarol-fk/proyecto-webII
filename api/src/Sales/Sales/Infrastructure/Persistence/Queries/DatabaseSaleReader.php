@@ -10,6 +10,7 @@ use Src\Sales\Sales\Application\Contracts\SaleReader;
 use Src\Sales\Sales\Application\DTOs\SaleDetails;
 use Src\Sales\Sales\Application\DTOs\SaleFilter;
 use Src\Sales\Sales\Application\DTOs\SaleSummary;
+use Src\Sales\Sales\Domain\Entities\Sale;
 use Src\Sales\Sales\Domain\ValueObjects\SaleId;
 use Src\Sales\Sales\Domain\ValueObjects\SaleStatus;
 use Src\Shared\Domain\ValueObjects\NegocioId;
@@ -25,7 +26,7 @@ final readonly class DatabaseSaleReader implements SaleReader
             ->join('users as u', 'u.id', '=', 'v.cajero_id')
             ->where('v.negocio_id', $negocioId->value)
             ->where('v.id', $id->value)
-            ->first(['v.id', 'v.estado', 'v.metodo_pago', 'v.cedula_comprador', 'v.total', 'v.created_at', 'v.cobrada_at', 'v.anulada_at', 'u.id as cajero_id', 'u.nombre as cajero_nombre']);
+            ->first(['v.id', 'v.estado', 'v.metodo_pago', 'v.referencia_pago', 'v.cedula_comprador', 'v.total', 'v.created_at', 'v.cobrada_at', 'v.anulada_at', 'u.id as cajero_id', 'u.nombre as cajero_nombre']);
 
         if ($sale === null) {
             return null;
@@ -55,6 +56,8 @@ final readonly class DatabaseSaleReader implements SaleReader
             (string) $sale->id,
             (string) $sale->estado,
             (string) $sale->metodo_pago,
+            Sale::originOf((string) $sale->metodo_pago, $sale->referencia_pago === null ? null : (string) $sale->referencia_pago),
+            $sale->referencia_pago === null ? null : (string) $sale->referencia_pago,
             (string) $sale->cajero_id,
             (string) $sale->cajero_nombre,
             $sale->cedula_comprador === null ? null : (string) $sale->cedula_comprador,
@@ -98,7 +101,7 @@ final readonly class DatabaseSaleReader implements SaleReader
                     DB::table('venta_lineas as l')->whereColumn('l.venta_id', 'v.id')->whereColumn('l.negocio_id', 'v.negocio_id')->selectRaw('count(*)'),
                     'cantidad_lineas',
                 )
-                ->addSelect(['v.id', 'v.estado', 'v.metodo_pago', 'v.total', 'v.created_at', 'v.cobrada_at', 'v.anulada_at', 'u.id as cajero_id', 'u.nombre as cajero_nombre'])
+                ->addSelect(['v.id', 'v.estado', 'v.metodo_pago', 'v.referencia_pago', 'v.total', 'v.created_at', 'v.cobrada_at', 'v.anulada_at', 'u.id as cajero_id', 'u.nombre as cajero_nombre'])
                 ->get()
                 ->all()
             : [];
@@ -110,6 +113,7 @@ final readonly class DatabaseSaleReader implements SaleReader
                 (string) $sale->id,
                 (string) $sale->estado,
                 (string) $sale->metodo_pago,
+                Sale::originOf((string) $sale->metodo_pago, $sale->referencia_pago === null ? null : (string) $sale->referencia_pago),
                 (string) $sale->cajero_id,
                 (string) $sale->cajero_nombre,
                 (int) $sale->cantidad_lineas,

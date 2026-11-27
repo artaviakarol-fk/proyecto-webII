@@ -51,7 +51,7 @@ final class InMemorySaleReader implements SaleReader
 
             if ($negocio === $negocioId->value && ($filter->status === null || $filter->status->value === $sale->status) && $sameDay) {
                 $matches[] = new SaleSummary(
-                    $sale->id, $sale->status, $sale->paymentMethod, $sale->cashierId, $sale->cashierName,
+                    $sale->id, $sale->status, $sale->paymentMethod, $sale->paymentOrigin, $sale->cashierId, $sale->cashierName,
                     count($sale->lines), $sale->total, $sale->createdAt, $sale->paidAt, $sale->cancelledAt,
                 );
             }
